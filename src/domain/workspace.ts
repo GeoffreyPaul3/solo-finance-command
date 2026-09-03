@@ -50,7 +50,8 @@ export function canManageFinancialSettings(role: AppRole | null | undefined): bo
 
 function unwrap<T>(result: { data: T | null; error: { message: string } | null }): T {
   if (result.error) throw new Error(result.error.message);
-  return result.data as T;
+  if (result.data === null) throw new Error("The record could not be found.");
+  return result.data;
 }
 
 export const profileQueryOptions = (userId: string | undefined) =>
@@ -152,8 +153,8 @@ export type CreateWorkspaceInput = {
 export async function createWorkspace(input: CreateWorkspaceInput): Promise<string> {
   const { data, error } = await supabase.rpc("create_workspace", {
     _name: input.name,
-    _business_type: input.businessType ?? null,
-    _country: input.country ?? null,
+    _business_type: input.businessType ?? undefined,
+    _country: input.country ?? undefined,
     _timezone: input.timezone,
     _currency: input.currency,
     _fiscal_year_start_month: input.fiscalYearStartMonth,
@@ -175,7 +176,7 @@ export type ProfileInput = {
 };
 
 export async function upsertProfile(input: ProfileInput): Promise<Profile> {
-  return unwrap(
+  return unwrap<Profile>(
     await supabase
       .from("profiles")
       .upsert(
@@ -198,7 +199,7 @@ export async function updateWorkspace(
   workspaceId: string,
   patch: Partial<Pick<Workspace, "name" | "business_type" | "country" | "timezone" | "currency" | "fiscal_year_start_month">>,
 ): Promise<Workspace> {
-  const workspace = unwrap(
+  const workspace = unwrap<Workspace>(
     await supabase.from("workspaces").update(patch).eq("id", workspaceId).select("*").single(),
   );
   await supabase.rpc("write_audit_log", {
@@ -229,7 +230,7 @@ export async function updateWorkspaceSettings(
     >
   >,
 ): Promise<WorkspaceSettings> {
-  const settings = unwrap(
+  const settings = unwrap<WorkspaceSettings>(
     await supabase
       .from("workspace_settings")
       .update(patch)
