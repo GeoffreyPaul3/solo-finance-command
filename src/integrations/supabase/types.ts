@@ -14,16 +14,266 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      audit_logs: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: number
+          metadata: Json
+          workspace_id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: number
+          metadata?: Json
+          workspace_id: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: number
+          metadata?: Json
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          onboarded_at: string | null
+          phone: string | null
+          profession: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          onboarded_at?: string | null
+          phone?: string | null
+          profession?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          onboarded_at?: string | null
+          phone?: string | null
+          profession?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      workspace_members: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspace_settings: {
+        Row: {
+          created_at: string
+          default_payment_terms_days: number
+          desired_monthly_income: number | null
+          invoice_next_number: number
+          invoice_notes: string | null
+          invoice_number_prefix: string
+          operating_buffer: number
+          payment_instructions: string | null
+          target_hourly_rate: number | null
+          target_margin_percent: number | null
+          tax_mode: string
+          tax_reserve_percent: number
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          default_payment_terms_days?: number
+          desired_monthly_income?: number | null
+          invoice_next_number?: number
+          invoice_notes?: string | null
+          invoice_number_prefix?: string
+          operating_buffer?: number
+          payment_instructions?: string | null
+          target_hourly_rate?: number | null
+          target_margin_percent?: number | null
+          tax_mode?: string
+          tax_reserve_percent?: number
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          default_payment_terms_days?: number
+          desired_monthly_income?: number | null
+          invoice_next_number?: number
+          invoice_notes?: string | null
+          invoice_number_prefix?: string
+          operating_buffer?: number
+          payment_instructions?: string | null
+          target_hourly_rate?: number | null
+          target_margin_percent?: number | null
+          tax_mode?: string
+          tax_reserve_percent?: number
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_settings_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: true
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspaces: {
+        Row: {
+          business_type: string | null
+          country: string | null
+          created_at: string
+          created_by: string
+          currency: string
+          fiscal_year_start_month: number
+          id: string
+          name: string
+          plan: string
+          status: string
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          business_type?: string | null
+          country?: string | null
+          created_at?: string
+          created_by: string
+          currency?: string
+          fiscal_year_start_month?: number
+          id?: string
+          name: string
+          plan?: string
+          status?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          business_type?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string
+          currency?: string
+          fiscal_year_start_month?: number
+          id?: string
+          name?: string
+          plan?: string
+          status?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_workspace: {
+        Args: {
+          _business_type?: string
+          _country?: string
+          _currency?: string
+          _default_payment_terms_days?: number
+          _fiscal_year_start_month?: number
+          _name: string
+          _operating_buffer?: number
+          _tax_reserve_percent?: number
+          _timezone?: string
+        }
+        Returns: string
+      }
+      current_workspace_role: {
+        Args: { _workspace_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_workspace_role: {
+        Args: {
+          _roles: Database["public"]["Enums"]["app_role"][]
+          _workspace_id: string
+        }
+        Returns: boolean
+      }
+      is_workspace_member: { Args: { _workspace_id: string }; Returns: boolean }
+      write_audit_log: {
+        Args: {
+          _action: string
+          _entity_id?: string
+          _entity_type: string
+          _metadata?: Json
+          _workspace_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "owner" | "admin" | "finance" | "manager" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +400,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["owner", "admin", "finance", "manager", "viewer"],
+    },
   },
 } as const
