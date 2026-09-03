@@ -1,0 +1,12 @@
+REVOKE ALL ON FUNCTION public.is_workspace_member(UUID) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.has_workspace_role(UUID, public.app_role[]) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.current_workspace_role(UUID) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.write_audit_log(UUID, TEXT, TEXT, TEXT, JSONB) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.create_workspace(TEXT, TEXT, TEXT, TEXT, TEXT, SMALLINT, NUMERIC, SMALLINT, NUMERIC) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.is_workspace_member(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.has_workspace_role(UUID, public.app_role[]) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.current_workspace_role(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.write_audit_log(UUID, TEXT, TEXT, TEXT, JSONB) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.create_workspace(TEXT, TEXT, TEXT, TEXT, TEXT, SMALLINT, NUMERIC, SMALLINT, NUMERIC) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.set_updated_at() TO service_role;
+REVOKE ALL ON FUNCTION public.set_updated_at() FROM PUBLIC, anon, authenticated;
