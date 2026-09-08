@@ -57,40 +57,47 @@ export function isModuleKey(value: string): value is ModuleKey {
   return Object.prototype.hasOwnProperty.call(MODULES, value);
 }
 
-type NavGroup = {
-  label: string;
-  items: { label: string; icon: LucideIcon; to: "/app" | "/app/settings" | ModuleKey }[];
-};
+type NavItem =
+  | { kind: "route"; to: "/app" | "/app/settings"; label: string; icon: LucideIcon }
+  | { kind: "module"; module: ModuleKey; label: string; icon: LucideIcon };
+
+type NavGroup = { label: string; items: NavItem[] };
 
 const NAV: NavGroup[] = [
   {
     label: "Run",
     items: [
-      { label: "Command Center", icon: LayoutDashboard, to: "/app" },
-      { label: "Clients", icon: Users, to: "clients" },
-      { label: "Projects", icon: Briefcase, to: "projects" },
+      { kind: "route", label: "Command Center", icon: LayoutDashboard, to: "/app" },
+      { kind: "module", label: "Clients", icon: Users, module: "clients" },
+      { kind: "module", label: "Projects", icon: Briefcase, module: "projects" },
     ],
   },
   {
     label: "Money",
     items: [
-      { label: "Invoices", icon: FileText, to: "invoices" },
-      { label: "Payments", icon: CreditCard, to: "payments" },
-      { label: "Expenses", icon: Receipt, to: "expenses" },
-      { label: "Cash", icon: Wallet, to: "cash" },
+      { kind: "module", label: "Invoices", icon: FileText, module: "invoices" },
+      { kind: "module", label: "Payments", icon: CreditCard, module: "payments" },
+      { kind: "module", label: "Expenses", icon: Receipt, module: "expenses" },
+      { kind: "module", label: "Cash", icon: Wallet, module: "cash" },
     ],
   },
   {
     label: "Understand",
     items: [
-      { label: "Profitability", icon: Gauge, to: "profitability" },
-      { label: "Taxes", icon: Calculator, to: "taxes" },
-      { label: "Reports", icon: BarChart3, to: "reports" },
-      { label: "Insights", icon: Lightbulb, to: "insights" },
+      { kind: "module", label: "Profitability", icon: Gauge, module: "profitability" },
+      { kind: "module", label: "Taxes", icon: Calculator, module: "taxes" },
+      { kind: "module", label: "Reports", icon: BarChart3, module: "reports" },
+      { kind: "module", label: "Insights", icon: Lightbulb, module: "insights" },
     ],
   },
-  { label: "Intelligence", items: [{ label: "AI CFO", icon: Bot, to: "ai-cfo" }] },
-  { label: "System", items: [{ label: "Settings", icon: SettingsIcon, to: "/app/settings" }] },
+  {
+    label: "Intelligence",
+    items: [{ kind: "module", label: "AI CFO", icon: Bot, module: "ai-cfo" }],
+  },
+  {
+    label: "System",
+    items: [{ kind: "route", label: "Settings", icon: SettingsIcon, to: "/app/settings" }],
+  },
 ];
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
@@ -106,8 +113,7 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
           <ul className="mt-2 space-y-0.5">
             {group.items.map((item) => {
               const Icon = item.icon;
-              const isPlaceholder = item.to !== "/app" && item.to !== "/app/settings";
-              const href = isPlaceholder ? `/app/${item.to}` : item.to;
+              const href = item.kind === "module" ? `/app/${item.module}` : item.to;
               const active = pathname === href;
               const className = cn(
                 "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
@@ -118,10 +124,10 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 
               return (
                 <li key={item.label}>
-                  {isPlaceholder ? (
+                  {item.kind === "module" ? (
                     <Link
                       to="/app/$module"
-                      params={{ module: item.to }}
+                      params={{ module: item.module }}
                       onClick={onNavigate}
                       className={className}
                     >

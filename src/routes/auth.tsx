@@ -13,7 +13,7 @@ type Mode = "signin" | "signup";
 
 export const Route = createFileRoute("/auth")({
   validateSearch: (search: Record<string, unknown>) => ({
-    mode: search.mode === "signup" ? ("signup" as const) : ("signin" as const),
+    mode: search["mode"] === "signup" ? ("signup" as const) : ("signin" as const),
   }),
   head: () => ({
     meta: [
@@ -81,7 +81,7 @@ function AuthPage() {
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/app`,
-            data: fullName.trim() ? { full_name: fullName.trim() } : undefined,
+            ...(fullName.trim() ? { data: { full_name: fullName.trim() } } : {}),
           },
         });
         if (signUpError) throw signUpError;

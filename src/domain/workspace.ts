@@ -153,8 +153,8 @@ export type CreateWorkspaceInput = {
 export async function createWorkspace(input: CreateWorkspaceInput): Promise<string> {
   const { data, error } = await supabase.rpc("create_workspace", {
     _name: input.name,
-    _business_type: input.businessType ?? undefined,
-    _country: input.country ?? undefined,
+    ...(input.businessType ? { _business_type: input.businessType } : {}),
+    ...(input.country ? { _country: input.country } : {}),
     _timezone: input.timezone,
     _currency: input.currency,
     _fiscal_year_start_month: input.fiscalYearStartMonth,
