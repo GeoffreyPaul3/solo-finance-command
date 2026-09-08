@@ -224,11 +224,230 @@ export type Database = {
         };
         Relationships: [];
       };
+      financial_accounts: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          current_balance: number;
+          description: string | null;
+          id: string;
+          name: string;
+          opening_balance: number;
+          opening_balance_date: string;
+          status: Database["public"]["Enums"]["financial_account_status"];
+          type: Database["public"]["Enums"]["financial_account_type"];
+          updated_at: string;
+          workspace_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          currency: string;
+          current_balance?: number;
+          description?: string | null;
+          id?: string;
+          name: string;
+          opening_balance?: number;
+          opening_balance_date?: string;
+          status?: Database["public"]["Enums"]["financial_account_status"];
+          type?: Database["public"]["Enums"]["financial_account_type"];
+          updated_at?: string;
+          workspace_id: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          current_balance?: number;
+          description?: string | null;
+          id?: string;
+          name?: string;
+          opening_balance?: number;
+          opening_balance_date?: string;
+          status?: Database["public"]["Enums"]["financial_account_status"];
+          type?: Database["public"]["Enums"]["financial_account_type"];
+          updated_at?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "financial_accounts_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      financial_categories: {
+        Row: {
+          color: string | null;
+          created_at: string;
+          icon: string | null;
+          id: string;
+          is_system: boolean;
+          name: string;
+          type: Database["public"]["Enums"]["financial_category_type"];
+          updated_at: string;
+          workspace_id: string;
+        };
+        Insert: {
+          color?: string | null;
+          created_at?: string;
+          icon?: string | null;
+          id?: string;
+          is_system?: boolean;
+          name: string;
+          type: Database["public"]["Enums"]["financial_category_type"];
+          updated_at?: string;
+          workspace_id: string;
+        };
+        Update: {
+          color?: string | null;
+          created_at?: string;
+          icon?: string | null;
+          id?: string;
+          is_system?: boolean;
+          name?: string;
+          type?: Database["public"]["Enums"]["financial_category_type"];
+          updated_at?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "financial_categories_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      financial_transactions: {
+        Row: {
+          account_id: string;
+          amount: number;
+          category_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          description: string;
+          id: string;
+          idempotency_key: string | null;
+          paired_account_id: string | null;
+          reference: string | null;
+          reversal_of_transaction_id: string | null;
+          reversal_reason: string | null;
+          reversed_by_transaction_id: string | null;
+          source_id: string | null;
+          source_type: string | null;
+          status: Database["public"]["Enums"]["financial_transaction_status"];
+          transaction_date: string;
+          transaction_type: Database["public"]["Enums"]["financial_transaction_type"];
+          transfer_id: string | null;
+          transfer_role: string | null;
+          updated_at: string;
+          workspace_id: string;
+        };
+        Insert: {
+          account_id: string;
+          amount: number;
+          category_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency: string;
+          description: string;
+          id?: string;
+          idempotency_key?: string | null;
+          paired_account_id?: string | null;
+          reference?: string | null;
+          reversal_of_transaction_id?: string | null;
+          reversal_reason?: string | null;
+          reversed_by_transaction_id?: string | null;
+          source_id?: string | null;
+          source_type?: string | null;
+          status?: Database["public"]["Enums"]["financial_transaction_status"];
+          transaction_date: string;
+          transaction_type: Database["public"]["Enums"]["financial_transaction_type"];
+          transfer_id?: string | null;
+          transfer_role?: string | null;
+          updated_at?: string;
+          workspace_id: string;
+        };
+        Update: {
+          account_id?: string;
+          amount?: number;
+          category_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          description?: string;
+          id?: string;
+          idempotency_key?: string | null;
+          paired_account_id?: string | null;
+          reference?: string | null;
+          reversal_of_transaction_id?: string | null;
+          reversal_reason?: string | null;
+          reversed_by_transaction_id?: string | null;
+          source_id?: string | null;
+          source_type?: string | null;
+          status?: Database["public"]["Enums"]["financial_transaction_status"];
+          transaction_date?: string;
+          transaction_type?: Database["public"]["Enums"]["financial_transaction_type"];
+          transfer_id?: string | null;
+          transfer_role?: string | null;
+          updated_at?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "financial_transactions_account_id_fkey";
+            columns: ["account_id"];
+            isOneToOne: false;
+            referencedRelation: "financial_accounts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "financial_transactions_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "financial_categories";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "financial_transactions_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
+      archive_financial_account: {
+        Args: {
+          _account_id: string;
+          _workspace_id: string;
+        };
+        Returns: undefined;
+      };
+      create_financial_account: {
+        Args: {
+          _currency: string;
+          _description?: string;
+          _name: string;
+          _opening_balance?: number;
+          _opening_balance_date?: string;
+          _type: Database["public"]["Enums"]["financial_account_type"];
+          _workspace_id: string;
+        };
+        Returns: string;
+      };
       create_workspace: {
         Args: {
           _business_type?: string;
@@ -255,6 +474,85 @@ export type Database = {
         Returns: boolean;
       };
       is_workspace_member: { Args: { _workspace_id: string }; Returns: boolean };
+      reconcile_account_balance: {
+        Args: {
+          _account_id: string;
+          _workspace_id: string;
+        };
+        Returns: {
+          account_id: string;
+          account_name: string;
+          calculated_balance: number;
+          currency: string;
+          is_reconciled: boolean;
+          opening_balance: number;
+          stored_balance: number;
+          variance: number;
+        }[];
+      };
+      record_adjustment: {
+        Args: {
+          _account_id: string;
+          _delta_amount: number;
+          _idempotency_key?: string;
+          _reason: string;
+          _reference?: string;
+          _transaction_date: string;
+          _workspace_id: string;
+        };
+        Returns: string;
+      };
+      record_expense: {
+        Args: {
+          _account_id: string;
+          _amount: number;
+          _category_id?: string;
+          _description: string;
+          _idempotency_key?: string;
+          _reference?: string;
+          _transaction_date: string;
+          _workspace_id: string;
+        };
+        Returns: string;
+      };
+      record_income: {
+        Args: {
+          _account_id: string;
+          _amount: number;
+          _category_id?: string;
+          _description: string;
+          _idempotency_key?: string;
+          _reference?: string;
+          _transaction_date: string;
+          _workspace_id: string;
+        };
+        Returns: string;
+      };
+      record_transfer: {
+        Args: {
+          _amount: number;
+          _description: string;
+          _destination_account_id: string;
+          _idempotency_key?: string;
+          _reference?: string;
+          _source_account_id: string;
+          _transaction_date: string;
+          _workspace_id: string;
+        };
+        Returns: string;
+      };
+      reverse_transaction: {
+        Args: {
+          _reversal_reason: string;
+          _transaction_id: string;
+          _workspace_id: string;
+        };
+        Returns: string;
+      };
+      seed_default_financial_categories: {
+        Args: { _workspace_id: string };
+        Returns: undefined;
+      };
       write_audit_log: {
         Args: {
           _action: string;
@@ -268,6 +566,12 @@ export type Database = {
     };
     Enums: {
       app_role: "owner" | "admin" | "finance" | "manager" | "viewer";
+      financial_account_status: "active" | "archived";
+      financial_account_type:
+        "bank" | "cash" | "mobile_money" | "payment_processor" | "digital_wallet" | "other";
+      financial_category_type: "income" | "expense";
+      financial_transaction_status: "posted" | "reversed";
+      financial_transaction_type: "income" | "expense" | "transfer" | "adjustment";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -390,6 +694,18 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["owner", "admin", "finance", "manager", "viewer"],
+      financial_account_status: ["active", "archived"],
+      financial_account_type: [
+        "bank",
+        "cash",
+        "mobile_money",
+        "payment_processor",
+        "digital_wallet",
+        "other",
+      ],
+      financial_category_type: ["income", "expense"],
+      financial_transaction_status: ["posted", "reversed"],
+      financial_transaction_type: ["income", "expense", "transfer", "adjustment"],
     },
   },
 } as const;

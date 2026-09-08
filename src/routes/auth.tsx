@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 
@@ -111,12 +110,13 @@ function AuthPage() {
     setError(null);
     setGooglePending(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+      const { error: oAuthError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/app`,
+        },
       });
-      if (result.error) throw result.error;
-      if (result.redirected) return;
-      navigate({ to: "/app", replace: true });
+      if (oAuthError) throw oAuthError;
     } catch (err) {
       setGooglePending(false);
       setError(describeAuthError((err as Error).message));
@@ -139,29 +139,51 @@ function AuthPage() {
   }
 
   return (
-    <div className="grid min-h-screen lg:grid-cols-[1fr_minmax(0,520px)]">
-      <aside className="hidden flex-col justify-between bg-secondary p-10 lg:flex">
-        <Link to="/" className="text-display text-lg font-semibold">
-          SoloOS
+    <div className="grid min-h-screen lg:grid-cols-[1.1fr_minmax(0,500px)]">
+      <aside className="hidden flex-col justify-between border-r border-border/80 bg-gradient-to-b from-primary/10 via-background to-secondary/40 p-12 lg:flex">
+        <Link to="/" className="flex items-center gap-2.5 group">
+          <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm shadow-xs">
+            S
+          </span>
+          <span className="text-display text-xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
+            SoloOS
+          </span>
+          <span className="rounded-full bg-primary/10 border border-primary/25 px-2 py-0.5 text-[10px] font-bold text-primary">
+            v2.0
+          </span>
         </Link>
-        <div>
-          <h2 className="max-w-sm text-3xl font-semibold leading-tight">
-            Know what you earned. Know what you keep. Know what to do next.
+        <div className="space-y-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary">
+            <span>Authoritative Financial Engine</span>
+          </div>
+          <h2 className="text-display max-w-md text-4xl font-bold leading-[1.15] text-foreground">
+            Know what you earned. <br />
+            Know what you keep. <br />
+            <span className="text-primary">Know what to do next.</span>
           </h2>
-          <p className="mt-4 max-w-sm text-sm text-muted-foreground">
-            One command center for invoicing, cash, profitability and tax — built for independent
-            professionals.
+          <p className="max-w-md text-sm text-muted-foreground leading-relaxed">
+            The complete financial operating system for independent operators. Multi-currency
+            ledger, immutable audit trails, and algorithmic safe-to-spend clarity.
           </p>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Your financial data stays private to your workspace.
-        </p>
+        <div className="rounded-lg border border-border/60 bg-card/60 p-4 text-xs text-muted-foreground space-y-1.5">
+          <p className="font-semibold text-foreground flex items-center gap-1.5">
+            <span className="size-2 rounded-full bg-primary" />
+            PostgreSQL Multi-Tenant Isolation
+          </p>
+          <p>
+            Your financial ledger is protected by Row Level Security and immutable append-only logs.
+          </p>
+        </div>
       </aside>
 
-      <main className="flex items-center justify-center px-5 py-12">
+      <main className="flex items-center justify-center px-6 py-12 bg-background">
         <div className="w-full max-w-sm">
-          <Link to="/" className="text-display text-lg font-semibold lg:hidden">
-            SoloOS
+          <Link to="/" className="flex items-center gap-2 mb-8 lg:hidden">
+            <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xs">
+              S
+            </span>
+            <span className="text-display text-lg font-bold">SoloOS</span>
           </Link>
           <h1 className="mt-6 text-2xl font-semibold lg:mt-0">
             {isSignup ? "Create your account" : "Sign in to SoloOS"}

@@ -162,22 +162,23 @@ flowchart TD
 
 ## 🛠️ Technology Stack
 
-### Frontend & UI Layer
+### Frontend & Application Framework
 
-- **Framework:** [React 19](https://react.dev/) with Concurrent Mode and React Server integration.
-- **Routing & SSR:** [TanStack Start](https://tanstack.com/start/latest) + [TanStack Router](https://tanstack.com/router/latest) with full type-safe route trees.
-- **State & Data Synchronization:** [TanStack React Query v5](https://tanstack.com/query/latest) with optimistic updates and hydration caching.
-- **Styling & Design System:** [Tailwind CSS v4](https://tailwindcss.com/) with CSS variables design tokens.
-- **Component Primitives:** [Radix UI](https://www.radix-ui.com/) accessible unstyled headless primitives.
-- **Icons & Visuals:** [Lucide React](https://lucide.dev/) consistent vector iconography.
-- **Notifications & Dialogs:** [Sonner](https://sonner.emilkowal.ski/) toast system with accessibility compliance.
+- **Framework:** [TanStack Start](https://tanstack.com/start) (Full-stack React with SSR, hydration, and streaming).
+- **Client Routing:** [TanStack Router](https://tanstack.com/router) (Strictly typed, file-based routing architecture).
+- **State & Caching:** [TanStack Query v5](https://tanstack.com/query) (Automatic background refetching and optimistic cache updates).
+- **Styling & CSS:** [Tailwind CSS v4](https://tailwindcss.com/) with `@tailwindcss/vite` and SoloOS 2.0 financial green tokens.
+- **Typography:** [Bricolage Grotesque](https://fonts.google.com/specimen/Bricolage+Grotesque) (Display & brand) and [DM Sans](https://fonts.google.com/specimen/DM+Sans) (UI, ledger, tabular numerals).
+- **Icons & UI Primitives:** [Lucide React](https://lucide.dev/) and [Radix UI](https://www.radix-ui.com/).
+- **Notifications:** [Sonner](https://sonner.emilkowal.ski/).
 
 ### Backend, Database & Infrastructure
 
 - **Serverless SSR Engine:** [Nitro 3](https://nitro.unjs.io/) packaged for Vercel Node.js Serverless Functions (`api/server.ts`).
 - **Database Engine:** [PostgreSQL](https://www.postgresql.org/) managed via [Supabase](https://supabase.com/).
+- **Financial Engine:** Atomic database stored procedures (`numeric(18, 4)` ledger, anti-tamper triggers, auditable reversals).
 - **Authorization & Security:** PostgreSQL Row-Level Security (RLS) with non-recursive `SECURITY DEFINER` authorization functions.
-- **Identity & Authentication:** Supabase Auth (JWT) integrated with Lovable Cloud Auth.
+- **Identity & Authentication:** Native Supabase Auth (JWT).
 - **Hosting & Edge Delivery:** [Vercel](https://vercel.com/) with immutable asset caching and HTTP security headers.
 
 ---
@@ -282,9 +283,9 @@ solo-finance-command/
 | Variable                    | Description                                 | Required | Default / Format                  |
 | :-------------------------- | :------------------------------------------ | :------: | :-------------------------------- |
 | `VITE_SUPABASE_URL`         | Supabase project API gateway URL            | **Yes**  | `https://<ref>.supabase.co`       |
-| `VITE_SUPABASE_ANON_KEY`    | Supabase public anonymous API key           | **Yes**  | `eyJhbGciOiJIUzI1NiIsInR5cCI6...` |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase public anonymous API key       | **Yes**  | `eyJhbGciOiJIUzI1NiIsInR5cCI6...` |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase privileged server key (SSR / Edge) | Optional | `eyJhbGciOiJIUzI1NiIsInR5cCI6...` |
-| `LOVABLE_API_KEY`           | Lovable cloud error reporting & telemetry   | Optional | `lovable_live_...`                |
+| `CRON_SECRET`               | Secret for authorized automated tasks       | Optional | `secret-cron-token`               |
 | `NODE_ENV`                  | Runtime execution environment               |    No    | `development` / `production`      |
 
 ---
