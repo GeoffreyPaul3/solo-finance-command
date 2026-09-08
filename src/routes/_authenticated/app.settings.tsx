@@ -26,7 +26,10 @@ export const Route = createFileRoute("/_authenticated/app/settings")({
   head: () => ({
     meta: [
       { title: "Settings | SoloOS" },
-      { name: "description", content: "Manage your SoloOS workspace, profile and financial preferences." },
+      {
+        name: "description",
+        content: "Manage your SoloOS workspace, profile and financial preferences.",
+      },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -35,8 +38,18 @@ export const Route = createFileRoute("/_authenticated/app/settings")({
 
 const CURRENCIES = ["USD", "EUR", "GBP", "MWK", "ZAR", "KES", "NGN", "CAD", "AUD"] as const;
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ] as const;
 
 function fieldClass() {
@@ -198,7 +211,10 @@ function SettingsPage() {
         }
       >
         <form className="space-y-4" onSubmit={(e) => submit(e, () => workspaceMutation.mutate())}>
-          <fieldset className="space-y-4" disabled={!canEditWorkspace || workspaceMutation.isPending}>
+          <fieldset
+            className="space-y-4"
+            disabled={!canEditWorkspace || workspaceMutation.isPending}
+          >
             <div className="space-y-2">
               <Label htmlFor="s-name">Business name</Label>
               <Input id="s-name" value={name} onChange={(e) => setName(e.target.value)} required />
@@ -206,11 +222,19 @@ function SettingsPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="s-type">Business type</Label>
-                <Input id="s-type" value={businessType} onChange={(e) => setBusinessType(e.target.value)} />
+                <Input
+                  id="s-type"
+                  value={businessType}
+                  onChange={(e) => setBusinessType(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="s-country">Country</Label>
-                <Input id="s-country" value={country} onChange={(e) => setCountry(e.target.value)} />
+                <Input
+                  id="s-country"
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="s-tz">Timezone</Label>
@@ -250,7 +274,9 @@ function SettingsPage() {
           </fieldset>
           {canEditWorkspace ? (
             <Button type="submit" disabled={workspaceMutation.isPending}>
-              {workspaceMutation.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
+              {workspaceMutation.isPending ? (
+                <Loader2 className="size-4 animate-spin" aria-hidden />
+              ) : null}
               Save workspace
             </Button>
           ) : null}
@@ -262,7 +288,12 @@ function SettingsPage() {
           <fieldset className="grid gap-4 sm:grid-cols-2" disabled={profileMutation.isPending}>
             <div className="space-y-2">
               <Label htmlFor="s-fullname">Full name</Label>
-              <Input id="s-fullname" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+              <Input
+                id="s-fullname"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="s-email">Email</Label>
@@ -270,15 +301,26 @@ function SettingsPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="s-profession">Profession or category</Label>
-              <Input id="s-profession" value={profession} onChange={(e) => setProfession(e.target.value)} />
+              <Input
+                id="s-profession"
+                value={profession}
+                onChange={(e) => setProfession(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="s-phone">Phone</Label>
-              <Input id="s-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <Input
+                id="s-phone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
             </div>
           </fieldset>
           <Button type="submit" disabled={profileMutation.isPending}>
-            {profileMutation.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
+            {profileMutation.isPending ? (
+              <Loader2 className="size-4 animate-spin" aria-hidden />
+            ) : null}
             Save profile
           </Button>
         </form>
@@ -302,7 +344,10 @@ function SettingsPage() {
           />
         ) : (
           <form className="space-y-4" onSubmit={(e) => submit(e, () => financeMutation.mutate())}>
-            <fieldset className="grid gap-4 sm:grid-cols-2" disabled={!canEditFinance || financeMutation.isPending}>
+            <fieldset
+              className="grid gap-4 sm:grid-cols-2"
+              disabled={!canEditFinance || financeMutation.isPending}
+            >
               <div className="space-y-2">
                 <Label htmlFor="s-taxmode">Tax handling</Label>
                 <select
@@ -351,16 +396,26 @@ function SettingsPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="s-prefix">Invoice number prefix</Label>
-                <Input id="s-prefix" value={invoicePrefix} onChange={(e) => setInvoicePrefix(e.target.value)} />
+                <Input
+                  id="s-prefix"
+                  value={invoicePrefix}
+                  onChange={(e) => setInvoicePrefix(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="s-notes">Default invoice notes</Label>
-                <Input id="s-notes" value={invoiceNotes} onChange={(e) => setInvoiceNotes(e.target.value)} />
+                <Input
+                  id="s-notes"
+                  value={invoiceNotes}
+                  onChange={(e) => setInvoiceNotes(e.target.value)}
+                />
               </div>
             </fieldset>
             {canEditFinance ? (
               <Button type="submit" disabled={financeMutation.isPending}>
-                {financeMutation.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
+                {financeMutation.isPending ? (
+                  <Loader2 className="size-4 animate-spin" aria-hidden />
+                ) : null}
                 Save preferences
               </Button>
             ) : null}
@@ -375,7 +430,10 @@ function SettingsPage() {
         {members.isPending ? (
           <LoadingState label="Loading members" />
         ) : members.isError ? (
-          <ErrorState message={(members.error as Error).message} onRetry={() => void members.refetch()} />
+          <ErrorState
+            message={(members.error as Error).message}
+            onRetry={() => void members.refetch()}
+          />
         ) : (
           <p className="mt-3 text-sm text-muted-foreground">
             {members.data?.length ?? 0} member{(members.data?.length ?? 0) === 1 ? "" : "s"} in this

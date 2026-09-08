@@ -1,0 +1,19 @@
+{
+  "name": "SoloOS — Financial Operating System",
+  "short_name": "SoloOS",
+  "description": "The financial operating system for independent professionals. Know what you earned, what you keep, and what to do next.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "categories": ["finance", "business", "productivity"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -197,7 +197,12 @@ export async function upsertProfile(input: ProfileInput): Promise<Profile> {
 
 export async function updateWorkspace(
   workspaceId: string,
-  patch: Partial<Pick<Workspace, "name" | "business_type" | "country" | "timezone" | "currency" | "fiscal_year_start_month">>,
+  patch: Partial<
+    Pick<
+      Workspace,
+      "name" | "business_type" | "country" | "timezone" | "currency" | "fiscal_year_start_month"
+    >
+  >,
 ): Promise<Workspace> {
   const workspace = unwrap<Workspace>(
     await supabase.from("workspaces").update(patch).eq("id", workspaceId).select("*").single(),

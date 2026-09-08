@@ -39,8 +39,18 @@ const BUSINESS_TYPES = [
 const CURRENCIES = ["USD", "EUR", "GBP", "MWK", "ZAR", "KES", "NGN", "CAD", "AUD"] as const;
 
 const MONTHS = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December",
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
 ] as const;
 
 const TAX_MODES = [
@@ -164,8 +174,8 @@ function OnboardingPage() {
       <p className="text-display text-lg font-semibold">SoloOS</p>
       <h1 className="mt-6 text-2xl font-semibold sm:text-3xl">Set up your workspace</h1>
       <p className="mt-3 text-sm text-muted-foreground">
-        These details shape your currency, invoicing defaults and tax reserve. You can change all
-        of them later in Settings.
+        These details shape your currency, invoicing defaults and tax reserve. You can change all of
+        them later in Settings.
       </p>
 
       <form className="mt-10 space-y-10" onSubmit={handleSubmit} noValidate>

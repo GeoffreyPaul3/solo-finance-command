@@ -1,14 +1,9 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
 User-agent: *
 Allow: /
+Allow: /auth
+Disallow: /app/
+Disallow: /app/*
+Disallow: /onboarding
+Disallow: /api/
+
+Sitemap: https://solo-finance-command.vercel.app/sitemap.xml

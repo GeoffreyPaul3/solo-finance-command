@@ -32,10 +32,13 @@ export const Route = createFileRoute("/auth")({
 
 function describeAuthError(message: string): string {
   const m = message.toLowerCase();
-  if (m.includes("invalid login credentials")) return "That email and password don't match an account.";
-  if (m.includes("user already registered")) return "An account already exists for this email. Try signing in.";
+  if (m.includes("invalid login credentials"))
+    return "That email and password don't match an account.";
+  if (m.includes("user already registered"))
+    return "An account already exists for this email. Try signing in.";
   if (m.includes("email not confirmed")) return "Confirm your email address, then sign in.";
-  if (m.includes("unsupported provider")) return "Google sign-in isn't enabled for this workspace yet.";
+  if (m.includes("unsupported provider"))
+    return "Google sign-in isn't enabled for this workspace yet.";
   return message;
 }
 
@@ -71,7 +74,8 @@ function AuthPage() {
     setNotice(null);
 
     if (!email.trim()) return setError("Enter your email address.");
-    if (password.length < 8 && isSignup) return setError("Use at least 8 characters for your password.");
+    if (password.length < 8 && isSignup)
+      return setError("Use at least 8 characters for your password.");
     if (!password) return setError("Enter your password.");
 
     setPending(true);
@@ -149,7 +153,9 @@ function AuthPage() {
             professionals.
           </p>
         </div>
-        <p className="text-xs text-muted-foreground">Your financial data stays private to your workspace.</p>
+        <p className="text-xs text-muted-foreground">
+          Your financial data stays private to your workspace.
+        </p>
       </aside>
 
       <main className="flex items-center justify-center px-5 py-12">
@@ -226,7 +232,11 @@ function AuthPage() {
                   aria-label={showPassword ? "Hide password" : "Show password"}
                   className="absolute inset-y-0 right-0 flex w-10 items-center justify-center rounded-r-md text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 >
-                  {showPassword ? <EyeOff className="size-4" aria-hidden /> : <Eye className="size-4" aria-hidden />}
+                  {showPassword ? (
+                    <EyeOff className="size-4" aria-hidden />
+                  ) : (
+                    <Eye className="size-4" aria-hidden />
+                  )}
                 </button>
               </div>
               {isSignup ? (

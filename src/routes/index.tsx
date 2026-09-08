@@ -6,24 +6,42 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "SoloOS — The financial operating system for independent professionals" },
+      { title: "SoloOS — The Financial Operating System for Independent Professionals" },
       {
         name: "description",
         content:
-          "SoloOS helps freelancers, consultants and solo businesses know what they earned, what they keep, and what to do next.",
+          "SoloOS helps freelancers, consultants, and solo businesses know what they earned, what they keep, and what to do next. Track invoices, expenses, cashflow runway, and tax reserves.",
+      },
+      {
+        name: "keywords",
+        content:
+          "freelance finance, solo business command, cashflow forecasting, tax reserve calculator, invoice tracker, independent professional operating system, profit tracking",
       },
       {
         property: "og:title",
-        content: "SoloOS — The financial operating system for independent professionals",
+        content: "SoloOS — The Financial Operating System for Independent Professionals",
       },
       {
         property: "og:description",
         content:
-          "Understand your money, your clients and your cashflow in one calm financial command center.",
+          "Understand your money, your clients, and your cashflow in one calm, authoritative financial command center.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://solo-finance-command.vercel.app/" },
+      { property: "og:image", content: "https://solo-finance-command.vercel.app/og-image.svg" },
       { name: "twitter:card", content: "summary_large_image" },
+      {
+        name: "twitter:title",
+        content: "SoloOS — Financial Operating System for Independent Professionals",
+      },
+      {
+        name: "twitter:description",
+        content:
+          "Know what you earned. Know what you keep. Know what to do next. Built for people who run their own business.",
+      },
+      { name: "twitter:image", content: "https://solo-finance-command.vercel.app/og-image.svg" },
     ],
+    links: [{ rel: "canonical", href: "https://solo-finance-command.vercel.app/" }],
   }),
   component: Landing,
 });
@@ -79,8 +97,8 @@ function Landing() {
             The financial operating system for independent professionals.
           </h1>
           <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-            Know what you earned. Know what you keep. Know what to do next. SoloOS brings
-            invoicing, expenses, cash, profitability and tax into one calm command center.
+            Know what you earned. Know what you keep. Know what to do next. SoloOS brings invoicing,
+            expenses, cash, profitability and tax into one calm command center.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button asChild size="lg">

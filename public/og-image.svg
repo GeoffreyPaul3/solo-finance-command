@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#09090B" />
+      <stop offset="50%" stop-color="#111827" />
+      <stop offset="100%" stop-color="#030712" />
+    </linearGradient>
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10B981" />
+      <stop offset="50%" stop-color="#06B6D4" />
+      <stop offset="100%" stop-color="#3B82F6" />
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="rgba(255, 255, 255, 0.05)" />
+      <stop offset="100%" stop-color="rgba(255, 255, 255, 0.01)" />
+    </linearGradient>
+    <radialGradient id="glow" cx="20%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#10B981" stop-opacity="0.18" />
+      <stop offset="50%" stop-color="#06B6D4" stop-opacity="0.08" />
+      <stop offset="100%" stop-color="#09090B" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGrad)" />
+  <rect width="1200" height="630" fill="url(#glow)" />
+
+  <!-- Subtle grid lines -->
+  <g stroke="rgba(255, 255, 255, 0.04)" stroke-width="1">
+    <line x1="100" y1="0" x2="100" y2="630" />
+    <line x1="300" y1="0" x2="300" y2="630" />
+    <line x1="500" y1="0" x2="500" y2="630" />
+    <line x1="700" y1="0" x2="700" y2="630" />
+    <line x1="900" y1="0" x2="900" y2="630" />
+    <line x1="1100" y1="0" x2="1100" y2="630" />
+    <line x1="0" y1="120" x2="1200" y2="120" />
+    <line x1="0" y1="260" x2="1200" y2="260" />
+    <line x1="0" y1="400" x2="1200" y2="400" />
+    <line x1="0" y1="540" x2="1200" y2="540" />
+  </g>
+
+  <!-- Logo Mark -->
+  <g transform="translate(100, 90)">
+    <rect width="64" height="64" rx="16" fill="#18181B" stroke="rgba(255,255,255,0.15)" stroke-width="1.5" />
+    <path d="M32 14 L48 24 L48 40 L32 50 L16 40 L16 24 Z" fill="none" stroke="url(#primaryGrad)" stroke-width="3" stroke-linejoin="round" />
+    <circle cx="32" cy="32" r="5" fill="url(#primaryGrad)" />
+  </g>
+
+  <!-- Brand Name -->
+  <text x="180" y="132" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="34" font-weight="700" letter-spacing="-0.03em">SoloOS</text>
+
+  <!-- Category Badge -->
+  <g transform="translate(320, 104)">
+    <rect width="210" height="34" rx="17" fill="rgba(16, 185, 129, 0.12)" stroke="rgba(16, 185, 129, 0.4)" stroke-width="1" />
+    <text x="105" y="22" fill="#10B981" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="14" font-weight="600" text-anchor="middle" letter-spacing="0.05em">FINANCIAL OPERATING SYSTEM</text>
+  </g>
+
+  <!-- Main Headline -->
+  <text x="100" y="240" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="52" font-weight="800" letter-spacing="-0.04em" line-height="1.15">
+    <tspan x="100" dy="0">The Financial Command Center</tspan>
+    <tspan x="100" dy="64" fill="url(#primaryGrad)">for Independent Professionals.</tspan>
+  </text>
+
+  <!-- Subtitle / Value Proposition -->
+  <text x="100" y="380" fill="#9CA3AF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="24" font-weight="400">
+    Know what you earned. Know what you keep. Know what to do next.
+  </text>
+
+  <!-- Feature Cards Row -->
+  <g transform="translate(100, 440)">
+    <!-- Card 1 -->
+    <rect width="230" height="110" rx="12" fill="url(#cardGrad)" stroke="rgba(255,255,255,0.08)" stroke-width="1" />
+    <circle cx="36" cy="36" r="14" fill="rgba(16, 185, 129, 0.15)" />
+    <path d="M30 36 L34 40 L42 32" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+    <text x="36" y="74" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="600">Authoritative Ledger</text>
+    <text x="36" y="94" fill="#9CA3AF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13">Zero estimated metrics</text>
+
+    <!-- Card 2 -->
+    <g transform="translate(250, 0)">
+      <rect width="230" height="110" rx="12" fill="url(#cardGrad)" stroke="rgba(255,255,255,0.08)" stroke-width="1" />
+      <circle cx="36" cy="36" r="14" fill="rgba(6, 182, 212, 0.15)" />
+      <path d="M30 32 L42 32 M30 36 L39 36 M30 40 L42 40" stroke="#06B6D4" stroke-width="2.5" stroke-linecap="round" />
+      <text x="36" y="74" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="600">Tax Vault &amp; Runway</text>
+      <text x="36" y="94" fill="#9CA3AF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13">True safe-to-spend</text>
+    </g>
+
+    <!-- Card 3 -->
+    <g transform="translate(500, 0)">
+      <rect width="230" height="110" rx="12" fill="url(#cardGrad)" stroke="rgba(255,255,255,0.08)" stroke-width="1" />
+      <circle cx="36" cy="36" r="14" fill="rgba(59, 130, 246, 0.15)" />
+      <path d="M30 42 L34 35 L39 38 L43 30" fill="none" stroke="#3B82F6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+      <text x="36" y="74" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="600">Profit Intelligence</text>
+      <text x="36" y="94" fill="#9CA3AF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13">Per client &amp; project</text>
+    </g>
+
+    <!-- Card 4 -->
+    <g transform="translate(750, 0)">
+      <rect width="240" height="110" rx="12" fill="url(#cardGrad)" stroke="rgba(255,255,255,0.08)" stroke-width="1" />
+      <circle cx="36" cy="36" r="14" fill="rgba(168, 85, 247, 0.15)" />
+      <circle cx="36" cy="36" r="6" fill="none" stroke="#A855F7" stroke-width="2" />
+      <path d="M36 26 L36 30 M36 42 L36 46 M26 36 L30 36 M42 36 L46 36" stroke="#A855F7" stroke-width="2" stroke-linecap="round" />
+      <text x="36" y="74" fill="#FFFFFF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="600">Enterprise Security</text>
+      <text x="36" y="94" fill="#9CA3AF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="13">PostgreSQL RLS &amp; RBAC</text>
+    </g>
+  </g>
+</svg>
