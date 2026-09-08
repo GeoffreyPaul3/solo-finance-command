@@ -7,6 +7,7 @@ import {
   CreditCard,
   FileText,
   Gauge,
+  Landmark,
   Layers,
   Lock,
   PieChart,
@@ -21,6 +22,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import logo from "@/assets/solo.png"
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -190,14 +192,13 @@ function Landing() {
       {/* Main Navigation */}
       <header className="sticky top-0 z-30 border-b border-border/80 bg-background/85 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
-          <div className="flex items-center gap-3">
-            <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-semibold text-sm shadow-sm">
-              S
+          <div className="flex items-center ">
+              <Link to="/app" className="flex items-center gap-2.5 group">
+            <img src={logo} width={60} height={60} alt="Solo OS Logo" />
+            <span className="text-display text-lg font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
+              SoloOS
             </span>
-            <span className="text-display text-lg font-bold tracking-tight">SoloOS</span>
-            <span className="hidden sm:inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary border border-primary/20">
-              v2.0
-            </span>
+          </Link>
           </div>
 
           <nav className="flex items-center gap-3">
@@ -220,7 +221,7 @@ function Landing() {
         {/* Hero Section */}
         <section className="relative mx-auto max-w-6xl px-5 pt-16 pb-20 sm:pt-24 sm:pb-28">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary mb-6">
-            <Sparkles className="size-3.5" />
+            <Landmark className="size-3.5" />
             <span>The Financial Operating System for Independent Professionals</span>
           </div>
 
@@ -653,7 +654,7 @@ function Landing() {
       <footer className="border-t border-border bg-background py-8">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-foreground">SoloOS</span>
+              <img src={logo} width={100} height={100} alt="Solo OS Logo" />
             <span>— The Financial Operating System for Independent Professionals</span>
           </div>
           <div className="flex items-center gap-4">

@@ -475,19 +475,19 @@ BEGIN
     GROUP BY ft.currency
   ),
   currencies AS (
-    SELECT currency FROM rev
-    UNION SELECT currency FROM exp
+    SELECT rev.currency AS cur FROM rev
+    UNION SELECT exp.currency AS cur FROM exp
   )
   SELECT
-    c.currency::CHAR(3),
-    COALESCE(r.total, 0)::NUMERIC(18,4)                        AS total_revenue,
-    COALESCE(e.total, 0)::NUMERIC(18,4)                        AS total_expenses,
+    c.cur::CHAR(3)                                                AS currency,
+    COALESCE(r.total, 0)::NUMERIC(18,4)                          AS total_revenue,
+    COALESCE(e.total, 0)::NUMERIC(18,4)                          AS total_expenses,
     (COALESCE(r.total, 0) - COALESCE(e.total, 0))::NUMERIC(18,4) AS net_profit,
-    COALESCE(r.cnt, 0)                                         AS invoice_count,
-    COALESCE(e.cnt, 0)                                         AS expense_count
+    COALESCE(r.cnt, 0)                                            AS invoice_count,
+    COALESCE(e.cnt, 0)                                            AS expense_count
   FROM currencies c
-  LEFT JOIN rev r ON r.currency = c.currency
-  LEFT JOIN exp e ON e.currency = c.currency
-  ORDER BY c.currency;
+  LEFT JOIN rev r ON r.currency = c.cur
+  LEFT JOIN exp e ON e.currency = c.cur
+  ORDER BY c.cur;
 END; $$;
 GRANT EXECUTE ON FUNCTION public.get_profitability_summary(UUID, DATE, DATE) TO authenticated;

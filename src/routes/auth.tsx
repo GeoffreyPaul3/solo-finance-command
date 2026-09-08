@@ -143,11 +143,8 @@ function AuthPage() {
     <div className="grid min-h-screen lg:grid-cols-[1.1fr_minmax(0,500px)]">
       <aside className="hidden flex-col justify-between border-r border-border/80 bg-gradient-to-b from-primary/10 via-background to-secondary/40 p-12 lg:flex">
         <Link to="/" className="flex items-center gap-2.5 group">
-          <img src={logo} width={60} height={60} alt="Solo OS Logo" />
-          <span className="text-display text-xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
-            SoloOS
-          </span>
-       
+          <img src={logo} width={100} height={100} alt="Solo OS Logo" />
+         
         </Link>
         <div className="space-y-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary">
