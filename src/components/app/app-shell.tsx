@@ -38,8 +38,6 @@ import { cn } from "@/lib/utils";
 
 /** Modules that are not yet built. Route: /app/$module (placeholder page). */
 export const MODULES = {
-  clients: { label: "Clients", icon: Users, phase: 3 },
-  projects: { label: "Projects", icon: Briefcase, phase: 3 },
   invoices: { label: "Invoices", icon: FileText, phase: 4 },
   payments: { label: "Payments", icon: CreditCard, phase: 4 },
   expenses: { label: "Expenses", icon: Receipt, phase: 2 },
@@ -60,7 +58,7 @@ export function isModuleKey(value: string): value is ModuleKey {
 type NavItem =
   | {
       kind: "route";
-      to: "/app" | "/app/settings" | "/app/cash";
+      to: "/app" | "/app/settings" | "/app/cash" | "/app/clients" | "/app/projects";
       label: string;
       icon: LucideIcon;
     }
@@ -73,8 +71,8 @@ const NAV: NavGroup[] = [
     label: "Run",
     items: [
       { kind: "route", label: "Command Center", icon: LayoutDashboard, to: "/app" },
-      { kind: "module", label: "Clients", icon: Users, module: "clients" },
-      { kind: "module", label: "Projects", icon: Briefcase, module: "projects" },
+      { kind: "route", label: "Clients", icon: Users, to: "/app/clients" },
+      { kind: "route", label: "Projects", icon: Briefcase, to: "/app/projects" },
     ],
   },
   {
@@ -119,7 +117,12 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
             {group.items.map((item) => {
               const Icon = item.icon;
               const href = item.kind === "module" ? `/app/${item.module}` : item.to;
-              const active = pathname === href;
+              const active =
+                item.kind === "module"
+                  ? pathname === href
+                  : item.to === "/app"
+                    ? pathname === "/app"
+                    : pathname.startsWith(item.to);
               const className = cn(
                 "group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150 relative",
                 active

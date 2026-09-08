@@ -6,6 +6,7 @@ import {
   ArrowRight,
   ArrowUpRight,
   Banknote,
+  Briefcase,
   CheckCircle2,
   Clock,
   Coins,
@@ -17,6 +18,7 @@ import {
   ShieldCheck,
   TrendingDown,
   TrendingUp,
+  Users,
   Wallet,
 } from "lucide-react";
 
@@ -25,6 +27,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { transactionsQueryOptions, workspaceCashSummaryQueryOptions } from "@/domain/financial";
+import { clientsQueryOptions } from "@/domain/clients";
+import { projectsQueryOptions } from "@/domain/projects";
 import { formatMoney } from "@/lib/money";
 
 export const Route = createFileRoute("/_authenticated/app/")({
@@ -49,9 +53,13 @@ function CommandCenter() {
 
   const cashSummaryQuery = useQuery(workspaceCashSummaryQueryOptions(workspace.id));
   const recentTransactionsQuery = useQuery(transactionsQueryOptions(workspace.id, { limit: 5 }));
+  const clientsQuery = useQuery(clientsQueryOptions(workspace.id, { status: "active" }));
+  const projectsQuery = useQuery(projectsQueryOptions(workspace.id, { status: "active" }));
 
   const cashSummary = cashSummaryQuery.data;
   const recentTransactions = recentTransactionsQuery.data ?? [];
+  const activeClients = clientsQuery.data ?? [];
+  const activeProjects = projectsQuery.data ?? [];
   const hasAccounts = (cashSummary?.totalAccounts ?? 0) > 0;
 
   // Calculate real Money In vs Money Out from posted transactions
@@ -213,6 +221,61 @@ function CommandCenter() {
         )}
       </section>
 
+      {/* Operations: Active Clients & Projects */}
+      <section aria-labelledby="operations-summary" className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Briefcase className="size-4 text-primary" />
+            <h2
+              id="operations-summary"
+              className="text-sm font-bold uppercase tracking-wider text-muted-foreground"
+            >
+              Operations & Engagements
+            </h2>
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Link
+            to="/app/clients"
+            className="panel p-5 bg-card/80 border border-border transition-all hover:border-primary/40 hover:shadow-md block min-w-0"
+          >
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span className="font-semibold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                <Users className="size-3.5 text-primary" />
+                Active Clients
+              </span>
+              <ArrowRight className="size-3 text-muted-foreground" />
+            </div>
+            <p className="mt-3 text-display text-2xl sm:text-3xl font-bold tracking-tight numeric text-foreground">
+              {activeClients.length}
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Organizations & partners with active relationships.
+            </p>
+          </Link>
+
+          <Link
+            to="/app/projects"
+            className="panel p-5 bg-card/80 border border-border transition-all hover:border-primary/40 hover:shadow-md block min-w-0"
+          >
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span className="font-semibold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                <Briefcase className="size-3.5 text-primary" />
+                Active Projects
+              </span>
+              <ArrowRight className="size-3 text-muted-foreground" />
+            </div>
+            <p className="mt-3 text-display text-2xl sm:text-3xl font-bold tracking-tight numeric text-foreground">
+              {activeProjects.length}
+            </p>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Active deliverables, retainers, and client initiatives.
+            </p>
+          </Link>
+        </div>
+      </section>
+
       {/* Two Column Grid: Recent Ledger Activity + Financial Core Status */}
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Left 2 Cols: Recent Authoritative Transactions */}
@@ -358,8 +421,9 @@ function CommandCenter() {
 
             <div className="rounded-lg bg-muted/40 p-3 text-[11px] text-muted-foreground space-y-1">
               <p className="font-semibold text-foreground">Next Downstream Rollouts:</p>
-              <p>• Phase 3: Clients & Project Profitability</p>
+              <p className="text-primary font-medium">✓ Phase 3: Clients & Projects</p>
               <p>• Phase 4: Invoices & Receivables Aging</p>
+              <p>• Phase 6: Project Profitability</p>
               <p>• Phase 7: Automated Tax Reserves</p>
             </div>
           </div>

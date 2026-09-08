@@ -21,6 +21,8 @@ import {
   workspaceSettingsQueryOptions,
 } from "@/domain/workspace";
 import { useAuth } from "@/lib/auth";
+import { MoneyInput } from "@/components/ui/money-input";
+import { parseMoneyInput } from "@/lib/money";
 
 export const Route = createFileRoute("/_authenticated/app/settings")({
   head: () => ({
@@ -120,7 +122,7 @@ function SettingsPage() {
   const [taxMode, setTaxMode] = useState("reserve_percent");
   const [taxPercent, setTaxPercent] = useState(0);
   const [paymentTerms, setPaymentTerms] = useState(14);
-  const [buffer, setBuffer] = useState(0);
+  const [buffer, setBuffer] = useState("0");
   const [invoicePrefix, setInvoicePrefix] = useState("INV-");
   const [invoiceNotes, setInvoiceNotes] = useState("");
 
@@ -130,7 +132,7 @@ function SettingsPage() {
     setTaxMode(s.tax_mode);
     setTaxPercent(Number(s.tax_reserve_percent));
     setPaymentTerms(s.default_payment_terms_days);
-    setBuffer(Number(s.operating_buffer));
+    setBuffer(String(s.operating_buffer ?? 0));
     setInvoicePrefix(s.invoice_number_prefix);
     setInvoiceNotes(s.invoice_notes ?? "");
   }, [settings.data]);
@@ -176,7 +178,7 @@ function SettingsPage() {
         tax_mode: taxMode,
         tax_reserve_percent: taxPercent,
         default_payment_terms_days: paymentTerms,
-        operating_buffer: buffer,
+        operating_buffer: parseFloat(parseMoneyInput(buffer)) || 0,
         invoice_number_prefix: invoicePrefix.trim(),
         invoice_notes: invoiceNotes.trim() || null,
       }),
@@ -385,13 +387,12 @@ function SettingsPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="s-buffer">Operating buffer ({workspace.currency})</Label>
-                <Input
+                <MoneyInput
                   id="s-buffer"
-                  type="number"
-                  min={0}
-                  step="0.01"
                   value={buffer}
-                  onChange={(e) => setBuffer(Number(e.target.value))}
+                  onChange={setBuffer}
+                  currency={workspace.currency}
+                  placeholder="0.00"
                 />
               </div>
               <div className="space-y-2">

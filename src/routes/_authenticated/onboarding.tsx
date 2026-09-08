@@ -15,6 +15,8 @@ import {
   upsertProfile,
 } from "@/domain/workspace";
 import { useAuth } from "@/lib/auth";
+import { MoneyInput } from "@/components/ui/money-input";
+import { parseMoneyInput } from "@/lib/money";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
   head: () => ({
@@ -92,7 +94,7 @@ function OnboardingPage() {
   const [taxMode, setTaxMode] = useState<string>("reserve_percent");
   const [taxPercent, setTaxPercent] = useState(20);
   const [paymentTerms, setPaymentTerms] = useState(14);
-  const [buffer, setBuffer] = useState(0);
+  const [buffer, setBuffer] = useState("0");
 
   const [error, setError] = useState<string | null>(null);
 
@@ -130,7 +132,7 @@ function OnboardingPage() {
         fiscalYearStartMonth: fiscalMonth,
         taxReservePercent: taxMode === "none" ? 0 : taxPercent,
         defaultPaymentTermsDays: paymentTerms,
-        operatingBuffer: buffer,
+        operatingBuffer: parseFloat(parseMoneyInput(buffer)) || 0,
       });
     },
     onSuccess: async () => {
@@ -154,7 +156,8 @@ function OnboardingPage() {
       return setError("Tax reserve must be between 0 and 100 percent.");
     if (paymentTerms < 0 || paymentTerms > 365)
       return setError("Payment terms must be between 0 and 365 days.");
-    if (buffer < 0) return setError("Operating buffer cannot be negative.");
+    const parsedBuffer = parseFloat(parseMoneyInput(buffer)) || 0;
+    if (parsedBuffer < 0) return setError("Operating buffer cannot be negative.");
     submitted.current = true;
     mutation.mutate();
   }
@@ -345,13 +348,12 @@ function OnboardingPage() {
 
             <div className="space-y-2">
               <Label htmlFor="f-buffer">Operating buffer ({currency})</Label>
-              <Input
+              <MoneyInput
                 id="f-buffer"
-                type="number"
-                min={0}
-                step="0.01"
                 value={buffer}
-                onChange={(e) => setBuffer(Number(e.target.value))}
+                onChange={setBuffer}
+                currency={currency}
+                placeholder="0.00"
                 aria-describedby="f-buffer-hint"
               />
               <p id="f-buffer-hint" className="text-xs text-muted-foreground">

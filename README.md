@@ -280,13 +280,13 @@ solo-finance-command/
 
 ### Environment Configuration
 
-| Variable                    | Description                                 | Required | Default / Format                  |
-| :-------------------------- | :------------------------------------------ | :------: | :-------------------------------- |
-| `VITE_SUPABASE_URL`         | Supabase project API gateway URL            | **Yes**  | `https://<ref>.supabase.co`       |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase public anonymous API key       | **Yes**  | `eyJhbGciOiJIUzI1NiIsInR5cCI6...` |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase privileged server key (SSR / Edge) | Optional | `eyJhbGciOiJIUzI1NiIsInR5cCI6...` |
-| `CRON_SECRET`               | Secret for authorized automated tasks       | Optional | `secret-cron-token`               |
-| `NODE_ENV`                  | Runtime execution environment               |    No    | `development` / `production`      |
+| Variable                        | Description                                 | Required | Default / Format                  |
+| :------------------------------ | :------------------------------------------ | :------: | :-------------------------------- |
+| `VITE_SUPABASE_URL`             | Supabase project API gateway URL            | **Yes**  | `https://<ref>.supabase.co`       |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase public anonymous API key           | **Yes**  | `eyJhbGciOiJIUzI1NiIsInR5cCI6...` |
+| `SUPABASE_SERVICE_ROLE_KEY`     | Supabase privileged server key (SSR / Edge) | Optional | `eyJhbGciOiJIUzI1NiIsInR5cCI6...` |
+| `CRON_SECRET`                   | Secret for authorized automated tasks       | Optional | `secret-cron-token`               |
+| `NODE_ENV`                      | Runtime execution environment               |    No    | `development` / `production`      |
 
 ---
 

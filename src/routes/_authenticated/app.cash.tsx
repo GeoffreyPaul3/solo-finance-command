@@ -81,7 +81,10 @@ import {
   type RecordIncomeInput,
   type RecordTransferInput,
 } from "@/domain/financial";
-import { CURRENCIES, formatMoney } from "@/lib/money";
+import { CURRENCIES, formatMoney, parseMoneyInput } from "@/lib/money";
+import { MoneyInput } from "@/components/ui/money-input";
+import { MoneyValue, MoneyValueBlock } from "@/components/ui/money-value";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app/cash")({
   head: () => ({
@@ -231,17 +234,18 @@ function CashPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {summary?.positions.length ? (
           summary.positions.map((pos) => (
-            <Card key={pos.currency} className="border-border/60 bg-card/60">
+            <Card
+              key={pos.currency}
+              className="border-border/60 bg-card/60 min-w-0 overflow-hidden"
+            >
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground truncate">
                   Liquid Cash ({pos.currency})
                 </CardTitle>
-                <Wallet className="size-4 text-primary" />
+                <Wallet className="size-4 text-primary shrink-0" />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold tracking-tight">
-                  {formatMoney(pos.totalBalance, pos.currency)}
-                </div>
+              <CardContent className="min-w-0">
+                <MoneyValueBlock value={pos.totalBalance} currency={pos.currency} size="xl" />
                 <p className="mt-1 text-xs text-muted-foreground">
                   Across {pos.activeAccounts} active account
                   {pos.activeAccounts === 1 ? "" : "s"}
@@ -284,39 +288,41 @@ function CashPage() {
               return (
                 <Card
                   key={acc.id}
-                  className={`flex flex-col justify-between transition-all ${
+                  className={`flex flex-col justify-between transition-all min-w-0 overflow-hidden ${
                     isArchived
                       ? "opacity-60 bg-muted/30 border-muted"
                       : "border-border hover:border-border/80"
                   }`}
                 >
-                  <CardHeader className="pb-3">
+                  <CardHeader className="pb-3 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <CardTitle className="text-base font-semibold">{acc.name}</CardTitle>
+                      <div className="min-w-0">
+                        <CardTitle className="text-base font-semibold truncate">
+                          {acc.name}
+                        </CardTitle>
                         <CardDescription className="text-xs mt-0.5">
                           {ACCOUNT_TYPE_LABELS[acc.type] ?? acc.type}
                         </CardDescription>
                       </div>
                       <Badge
                         variant={isArchived ? "secondary" : "default"}
-                        className="text-[10px] capitalize"
+                        className="text-[10px] capitalize shrink-0"
                       >
                         {acc.status}
                       </Badge>
                     </div>
                   </CardHeader>
-                  <CardContent className="space-y-3 pb-4">
-                    <div>
+                  <CardContent className="space-y-3 pb-4 min-w-0">
+                    <div className="min-w-0">
                       <span className="text-xs text-muted-foreground">
                         Current Authoritative Balance
                       </span>
-                      <div className="text-xl font-bold">
-                        {formatMoney(acc.current_balance, acc.currency)}
+                      <div className="mt-0.5 min-w-0">
+                        <MoneyValue value={acc.current_balance} currency={acc.currency} size="lg" />
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/50 pt-2">
+                    <div className="flex flex-wrap items-center justify-between gap-1 text-xs text-muted-foreground border-t border-border/50 pt-2">
                       <span>Opening: {formatMoney(acc.opening_balance, acc.currency)}</span>
                       <span>{acc.opening_balance_date}</span>
                     </div>
@@ -414,8 +420,8 @@ function CashPage() {
           </div>
         </div>
 
-        {/* Ledger Table */}
-        <div className="rounded-md border border-border bg-card">
+        {/* Desktop Ledger Table */}
+        <div className="hidden md:block rounded-md border border-border bg-card">
           <Table>
             <TableHeader>
               <TableRow>
@@ -439,7 +445,7 @@ function CashPage() {
                   const isAdjustment = tx.transaction_type === "adjustment";
 
                   let amountColor = "text-foreground";
-                  let amountPrefix = "";
+                  let amountPrefix: "+" | "-" | "±" | "" = "";
 
                   if (isIncome) {
                     amountColor = "text-emerald-500 font-semibold";
@@ -506,9 +512,14 @@ function CashPage() {
                           {TRANSACTION_TYPE_LABELS[tx.transaction_type] ?? tx.transaction_type}
                         </Badge>
                       </TableCell>
-                      <TableCell className={`text-right font-mono text-sm ${amountColor}`}>
-                        {amountPrefix}
-                        {formatMoney(tx.amount, tx.currency)}
+                      <TableCell className="text-right">
+                        <MoneyValue
+                          value={tx.amount}
+                          currency={tx.currency}
+                          size="sm"
+                          prefix={amountPrefix}
+                          className={amountColor}
+                        />
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge
@@ -543,6 +554,113 @@ function CashPage() {
               )}
             </TableBody>
           </Table>
+        </div>
+
+        {/* Mobile Ledger Cards */}
+        <div className="block md:hidden space-y-3">
+          {filteredTransactions.length > 0 ? (
+            filteredTransactions.map((tx) => {
+              const isReversed = tx.status === "reversed";
+              const isIncome = tx.transaction_type === "income";
+              const isExpense = tx.transaction_type === "expense";
+              const isTransfer = tx.transaction_type === "transfer";
+              const isAdjustment = tx.transaction_type === "adjustment";
+
+              let amountColor = "text-foreground";
+              let amountPrefix: "+" | "-" | "±" | "" = "";
+
+              if (isIncome) {
+                amountColor = "text-emerald-500 font-semibold";
+                amountPrefix = "+";
+              } else if (isExpense) {
+                amountColor = "text-rose-500 font-semibold";
+                amountPrefix = "-";
+              } else if (isTransfer) {
+                if (tx.transfer_role === "destination") {
+                  amountColor = "text-emerald-500 font-semibold";
+                  amountPrefix = "+";
+                } else {
+                  amountColor = "text-rose-500 font-semibold";
+                  amountPrefix = "-";
+                }
+              } else if (isAdjustment) {
+                amountColor = "text-indigo-400 font-semibold";
+                amountPrefix = "±";
+              }
+
+              return (
+                <Card
+                  key={tx.id}
+                  className={cn(
+                    "p-3.5 space-y-2.5 transition-all min-w-0 overflow-hidden",
+                    isReversed && "opacity-50 line-through bg-muted/20",
+                  )}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium leading-tight truncate">
+                        {tx.description}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                        <span>{tx.transaction_date}</span>
+                        {tx.reference && <span>• Ref: {tx.reference}</span>}
+                      </div>
+                    </div>
+                    <MoneyValue
+                      value={tx.amount}
+                      currency={tx.currency}
+                      size="md"
+                      prefix={amountPrefix}
+                      className={cn("shrink-0", amountColor)}
+                    />
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-border/40 text-xs">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-muted-foreground truncate">
+                        {tx.account?.name ?? "Account"}
+                      </span>
+                      {tx.category && (
+                        <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground shrink-0">
+                          <span
+                            className="size-1.5 rounded-full"
+                            style={{ backgroundColor: tx.category.color ?? "#6B7280" }}
+                          />
+                          {tx.category.name}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Badge variant="outline" className="text-[10px] capitalize">
+                        {TRANSACTION_TYPE_LABELS[tx.transaction_type] ?? tx.transaction_type}
+                      </Badge>
+                      <Badge
+                        variant={isReversed ? "destructive" : "secondary"}
+                        className="text-[10px]"
+                      >
+                        {tx.status}
+                      </Badge>
+                      {canMutate && !isReversed && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 text-muted-foreground hover:text-rose-500"
+                          onClick={() => setReversalTarget(tx)}
+                          title="Reverse Transaction"
+                        >
+                          <RotateCcw className="size-3" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              );
+            })
+          ) : (
+            <Card className="border-dashed p-6 text-center text-sm text-muted-foreground">
+              No transactions recorded for this filter.
+            </Card>
+          )}
         </div>
       </div>
 
@@ -658,7 +776,7 @@ function CreateAccountModal({
       name,
       type,
       currency,
-      openingBalance: parseFloat(openingBalance) || 0,
+      openingBalance: parseFloat(parseMoneyInput(openingBalance)) || 0,
       openingBalanceDate,
       description: description.trim() ? description : undefined,
     });
@@ -666,7 +784,7 @@ function CreateAccountModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create Financial Account</DialogTitle>
           <DialogDescription>
@@ -723,13 +841,11 @@ function CreateAccountModal({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="acc-balance">Opening Balance</Label>
-              <Input
+              <MoneyInput
                 id="acc-balance"
-                type="number"
-                step="0.01"
-                min="0"
                 value={openingBalance}
-                onChange={(e) => setOpeningBalance(e.target.value)}
+                onChange={setOpeningBalance}
+                currency={currency}
                 required
               />
             </div>
@@ -820,7 +936,7 @@ function RecordIncomeModal({
       toast.error("Please select an account");
       return;
     }
-    const val = parseFloat(amount);
+    const val = parseFloat(parseMoneyInput(amount));
     if (!val || val <= 0) {
       toast.error("Amount must be greater than 0");
       return;
@@ -839,7 +955,7 @@ function RecordIncomeModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-emerald-500">
             <ArrowDownLeft className="size-5" />
@@ -870,15 +986,13 @@ function RecordIncomeModal({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="inc-amount">Amount ({selectedAccount?.currency || "USD"})</Label>
-              <Input
+              <MoneyInput
                 id="inc-amount"
-                type="number"
-                step="0.01"
-                min="0.01"
-                placeholder="0.00"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={setAmount}
+                currency={selectedAccount?.currency}
                 required
+                placeholder="0.00"
               />
             </div>
 
@@ -1002,7 +1116,7 @@ function RecordExpenseModal({
       toast.error("Please select an account");
       return;
     }
-    const val = parseFloat(amount);
+    const val = parseFloat(parseMoneyInput(amount));
     if (!val || val <= 0) {
       toast.error("Amount must be greater than 0");
       return;
@@ -1021,7 +1135,7 @@ function RecordExpenseModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-rose-500">
             <ArrowUpRight className="size-5" />
@@ -1052,15 +1166,13 @@ function RecordExpenseModal({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="exp-amount">Amount ({selectedAccount?.currency || "USD"})</Label>
-              <Input
+              <MoneyInput
                 id="exp-amount"
-                type="number"
-                step="0.01"
-                min="0.01"
-                placeholder="0.00"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={setAmount}
+                currency={selectedAccount?.currency}
                 required
+                placeholder="0.00"
               />
             </div>
 
@@ -1191,7 +1303,7 @@ function RecordTransferModal({
       );
       return;
     }
-    const val = parseFloat(amount);
+    const val = parseFloat(parseMoneyInput(amount));
     if (!val || val <= 0) {
       toast.error("Amount must be greater than 0");
       return;
@@ -1210,7 +1322,7 @@ function RecordTransferModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-cyan-500">
             <ArrowLeftRight className="size-5" />
@@ -1267,15 +1379,13 @@ function RecordTransferModal({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="trf-amount">Amount ({sourceAccount?.currency || "USD"})</Label>
-              <Input
+              <MoneyInput
                 id="trf-amount"
-                type="number"
-                step="0.01"
-                min="0.01"
-                placeholder="0.00"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={setAmount}
+                currency={sourceAccount?.currency}
                 required
+                placeholder="0.00"
               />
             </div>
 
@@ -1375,7 +1485,7 @@ function RecordAdjustmentModal({
       toast.error("Please select an account");
       return;
     }
-    const val = parseFloat(amount);
+    const val = parseFloat(parseMoneyInput(amount));
     if (!val || val <= 0) {
       toast.error("Amount must be greater than 0");
       return;
@@ -1399,7 +1509,7 @@ function RecordAdjustmentModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-indigo-400">
             <Sliders className="size-5" />
@@ -1446,15 +1556,13 @@ function RecordAdjustmentModal({
 
             <div className="space-y-1.5">
               <Label htmlFor="adj-amount">Magnitude ({selectedAccount?.currency || "USD"})</Label>
-              <Input
+              <MoneyInput
                 id="adj-amount"
-                type="number"
-                step="0.01"
-                min="0.01"
-                placeholder="0.00"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={setAmount}
+                currency={selectedAccount?.currency}
                 required
+                placeholder="0.00"
               />
             </div>
           </div>

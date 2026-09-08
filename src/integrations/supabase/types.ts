@@ -324,6 +324,125 @@ export type Database = {
           },
         ];
       };
+      clients: {
+        Row: {
+          address: string | null;
+          company_name: string | null;
+          created_at: string;
+          created_by: string | null;
+          email: string | null;
+          id: string;
+          name: string;
+          notes: string | null;
+          phone: string | null;
+          status: Database["public"]["Enums"]["client_status"];
+          updated_at: string;
+          workspace_id: string;
+        };
+        Insert: {
+          address?: string | null;
+          company_name?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          email?: string | null;
+          id?: string;
+          name: string;
+          notes?: string | null;
+          phone?: string | null;
+          status?: Database["public"]["Enums"]["client_status"];
+          updated_at?: string;
+          workspace_id: string;
+        };
+        Update: {
+          address?: string | null;
+          company_name?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          email?: string | null;
+          id?: string;
+          name?: string;
+          notes?: string | null;
+          phone?: string | null;
+          status?: Database["public"]["Enums"]["client_status"];
+          updated_at?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "clients_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      projects: {
+        Row: {
+          budget: number | null;
+          budget_currency: string | null;
+          client_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          description: string | null;
+          end_date: string | null;
+          id: string;
+          name: string;
+          notes: string | null;
+          start_date: string | null;
+          status: Database["public"]["Enums"]["project_status"];
+          updated_at: string;
+          workspace_id: string;
+        };
+        Insert: {
+          budget?: number | null;
+          budget_currency?: string | null;
+          client_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          description?: string | null;
+          end_date?: string | null;
+          id?: string;
+          name: string;
+          notes?: string | null;
+          start_date?: string | null;
+          status?: Database["public"]["Enums"]["project_status"];
+          updated_at?: string;
+          workspace_id: string;
+        };
+        Update: {
+          budget?: number | null;
+          budget_currency?: string | null;
+          client_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          description?: string | null;
+          end_date?: string | null;
+          id?: string;
+          name?: string;
+          notes?: string | null;
+          start_date?: string | null;
+          status?: Database["public"]["Enums"]["project_status"];
+          updated_at?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "projects_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "projects_client_id_fkey";
+            columns: ["client_id"];
+            isOneToOne: false;
+            referencedRelation: "clients";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       financial_transactions: {
         Row: {
           account_id: string;
@@ -566,12 +685,14 @@ export type Database = {
     };
     Enums: {
       app_role: "owner" | "admin" | "finance" | "manager" | "viewer";
+      client_status: "active" | "archived";
       financial_account_status: "active" | "archived";
       financial_account_type:
         "bank" | "cash" | "mobile_money" | "payment_processor" | "digital_wallet" | "other";
       financial_category_type: "income" | "expense";
       financial_transaction_status: "posted" | "reversed";
       financial_transaction_type: "income" | "expense" | "transfer" | "adjustment";
+      project_status: "planning" | "active" | "on_hold" | "completed" | "archived";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -694,6 +815,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["owner", "admin", "finance", "manager", "viewer"],
+      client_status: ["active", "archived"],
       financial_account_status: ["active", "archived"],
       financial_account_type: [
         "bank",
@@ -706,6 +828,7 @@ export const Constants = {
       financial_category_type: ["income", "expense"],
       financial_transaction_status: ["posted", "reversed"],
       financial_transaction_type: ["income", "expense", "transfer", "adjustment"],
+      project_status: ["planning", "active", "on_hold", "completed", "archived"],
     },
   },
 } as const;

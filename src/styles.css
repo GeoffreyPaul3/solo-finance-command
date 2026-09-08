@@ -81,7 +81,7 @@
   /* Primary Brand: Deep Forest / Authoritative Financial Emerald */
   --primary: oklch(0.38 0.095 156);
   --primary-foreground: oklch(0.99 0.002 95);
-  
+
   /* Secondary & Muted */
   --secondary: oklch(0.96 0.006 150);
   --secondary-foreground: oklch(0.25 0.02 160);
@@ -95,7 +95,7 @@
   /* Financial Semantics */
   --destructive: oklch(0.56 0.19 25);
   --destructive-foreground: oklch(0.99 0 0);
-  --positive: oklch(0.50 0.125 152);
+  --positive: oklch(0.5 0.125 152);
   --positive-foreground: oklch(0.99 0 0);
   --warning: oklch(0.68 0.13 72);
   --warning-foreground: oklch(0.22 0.03 72);
@@ -107,7 +107,7 @@
 
   /* Charts */
   --chart-1: oklch(0.38 0.095 156);
-  --chart-2: oklch(0.50 0.125 152);
+  --chart-2: oklch(0.5 0.125 152);
   --chart-3: oklch(0.68 0.13 72);
   --chart-4: oklch(0.56 0.19 25);
   --chart-5: oklch(0.45 0.06 220);
@@ -151,7 +151,7 @@
   /* Financial Semantics */
   --destructive: oklch(0.65 0.17 25);
   --destructive-foreground: oklch(0.14 0.01 165);
-  --positive: oklch(0.70 0.135 152);
+  --positive: oklch(0.7 0.135 152);
   --positive-foreground: oklch(0.14 0.01 165);
   --warning: oklch(0.78 0.13 72);
   --warning-foreground: oklch(0.18 0.02 72);
@@ -205,6 +205,13 @@
   font-feature-settings: "tnum" 1;
 }
 
+@utility money-value {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
 @utility panel {
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -217,11 +224,16 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-panel);
-  transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition:
+    border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 
   &:hover {
     border-color: oklch(0.38 0.095 156 / 35%);
-    box-shadow: 0 4px 20px oklch(0.38 0.095 156 / 8%), 0 1px 3px oklch(0 0 0 / 5%);
+    box-shadow:
+      0 4px 20px oklch(0.38 0.095 156 / 8%),
+      0 1px 3px oklch(0 0 0 / 5%);
   }
 }
 
@@ -232,9 +244,9 @@
 }
 
 @utility badge-positive {
-  background-color: oklch(0.50 0.125 152 / 12%);
+  background-color: oklch(0.5 0.125 152 / 12%);
   color: var(--color-positive);
-  border: 1px solid oklch(0.50 0.125 152 / 24%);
+  border: 1px solid oklch(0.5 0.125 152 / 24%);
 }
 
 @utility badge-negative {
@@ -254,4 +266,3 @@
     scroll-behavior: auto !important;
   }
 }
-
