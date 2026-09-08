@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 
@@ -106,11 +107,12 @@ function AuthPage() {
     setError(null);
     setGooglePending(true);
     try {
-      const { error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: `${window.location.origin}/app` },
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
       });
-      if (oauthError) throw oauthError;
+      if (result.error) throw result.error;
+      if (result.redirected) return;
+      navigate({ to: "/app", replace: true });
     } catch (err) {
       setGooglePending(false);
       setError(describeAuthError((err as Error).message));
