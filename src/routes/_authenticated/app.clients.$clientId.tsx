@@ -15,6 +15,7 @@ import {
   MapPin,
   Phone,
   Plus,
+  Receipt,
   Users,
 } from "lucide-react";
 import { useState } from "react";
@@ -37,6 +38,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MoneyValue } from "@/components/ui/money-value";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
   archiveClient,
   clientQueryOptions,
   unarchiveClient,
@@ -44,6 +53,11 @@ import {
   type Client,
   type UpdateClientInput,
 } from "@/domain/clients";
+import {
+  clientInvoicesQueryOptions,
+  INVOICE_STATUS_COLORS,
+  INVOICE_STATUS_LABELS,
+} from "@/domain/invoices";
 import { PROJECT_STATUS_LABELS, type Project } from "@/domain/projects";
 import { roleAtLeast } from "@/domain/workspace";
 import { cn } from "@/lib/utils";
@@ -70,11 +84,15 @@ function ClientDetailPage() {
   const canManage = roleAtLeast(role, "manager");
 
   const clientQuery = useQuery(clientQueryOptions(workspace.id, clientId));
+  const invoicesQuery = useQuery(clientInvoicesQueryOptions(workspace.id, clientId));
+
   const client = clientQuery.data;
+  const invoices = invoicesQuery.data ?? [];
 
   const invalidateClient = () => {
     queryClient.invalidateQueries({ queryKey: ["client", workspace.id, clientId] });
     queryClient.invalidateQueries({ queryKey: ["clients", workspace.id] });
+    queryClient.invalidateQueries({ queryKey: ["invoices", "client", workspace.id, clientId] });
   };
 
   const archiveMutation = useMutation({
@@ -366,25 +384,166 @@ function ClientDetailPage() {
         )}
       </div>
 
-      {/* Phase 4 Architecture Readiness Card */}
-      <Card className="border-border/60 bg-muted/20">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-            <FileText className="size-4" />
-            Financial History & Invoicing
-          </CardTitle>
-          <CardDescription className="text-xs">
-            Architecture prepared for Phase 4: Invoicing + Payments
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            When Phase 4 is enabled, all issued invoices, recorded milestone payments, and
-            outstanding receivables associated with <strong>{client.name}</strong> will be
-            consolidated here in real time. No financial calculations are mocked.
-          </p>
-        </CardContent>
-      </Card>
+      {/* Client Invoices & Receivables Section */}
+      <div className="space-y-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
+              <Receipt className="size-5 text-primary" />
+              Invoices & Receivables
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Commercial billings, collected payments, and current outstanding balances for this
+              client.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="font-mono text-xs">
+              {invoices.length} {invoices.length === 1 ? "invoice" : "invoices"}
+            </Badge>
+            {canManage && (
+              <Button asChild size="sm" variant="outline" className="h-8 text-xs">
+                <Link to="/app/invoices">
+                  <Plus className="mr-1.5 size-3.5" />
+                  New Invoice
+                </Link>
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Client Receivables Overview Cards */}
+        {invoices.length > 0 && (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <Card className="p-3.5">
+              <span className="text-xs text-muted-foreground block">Total Invoiced</span>
+              <div className="mt-1 font-bold text-base">
+                <MoneyValue
+                  value={invoices.reduce((acc, i) => acc + Number(i.total), 0)}
+                  currency={invoices[0]?.currency ?? workspace.currency}
+                  size="md"
+                />
+              </div>
+            </Card>
+
+            <Card className="p-3.5">
+              <span className="text-xs text-muted-foreground block">Total Collected</span>
+              <div className="mt-1 font-bold text-base text-emerald-500">
+                <MoneyValue
+                  value={invoices.reduce((acc, i) => acc + Number(i.amount_paid), 0)}
+                  currency={invoices[0]?.currency ?? workspace.currency}
+                  size="md"
+                />
+              </div>
+            </Card>
+
+            <Card className="p-3.5">
+              <span className="text-xs text-muted-foreground block">Outstanding Balance</span>
+              <div className="mt-1 font-bold text-base text-amber-500">
+                <MoneyValue
+                  value={invoices.reduce((acc, i) => acc + Number(i.amount_due), 0)}
+                  currency={invoices[0]?.currency ?? workspace.currency}
+                  size="md"
+                />
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {invoices.length === 0 ? (
+          <Card className="border-dashed p-8 text-center">
+            <Receipt className="mx-auto size-8 text-muted-foreground/50" />
+            <h3 className="mt-2 text-sm font-semibold">No invoices issued to this client</h3>
+            <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
+              Create an invoice to bill {client.name} for completed milestones or hourly retainers.
+            </p>
+            {canManage && (
+              <div className="mt-4">
+                <Button asChild size="sm">
+                  <Link to="/app/invoices">
+                    <Plus className="mr-1.5 size-3.5" />
+                    Create Invoice
+                  </Link>
+                </Button>
+              </div>
+            )}
+          </Card>
+        ) : (
+          <div className="rounded-md border border-border bg-card overflow-hidden">
+            <Table>
+              <TableHeader className="bg-muted/40">
+                <TableRow>
+                  <TableHead className="w-[130px] font-semibold">Invoice #</TableHead>
+                  <TableHead className="w-[110px] font-semibold">Issue Date</TableHead>
+                  <TableHead className="w-[110px] font-semibold">Due Date</TableHead>
+                  <TableHead className="text-right font-semibold">Total</TableHead>
+                  <TableHead className="text-right font-semibold">Outstanding</TableHead>
+                  <TableHead className="w-[110px] text-center font-semibold">Status</TableHead>
+                  <TableHead className="w-[80px] text-right font-semibold">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {invoices.map((inv) => {
+                  const colors = INVOICE_STATUS_COLORS[inv.status];
+                  return (
+                    <TableRow key={inv.id} className="hover:bg-muted/30">
+                      <TableCell className="font-mono font-medium">
+                        <Link
+                          to="/app/invoices/$invoiceId"
+                          params={{ invoiceId: inv.id }}
+                          className="hover:underline text-primary"
+                        >
+                          {inv.invoice_number}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground font-mono">
+                        {inv.issue_date}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground font-mono">
+                        {inv.due_date}
+                      </TableCell>
+                      <TableCell className="text-right text-xs font-mono font-medium">
+                        <MoneyValue value={inv.total} currency={inv.currency} size="sm" />
+                      </TableCell>
+                      <TableCell className="text-right text-xs font-mono font-semibold">
+                        <MoneyValue
+                          value={inv.amount_due}
+                          currency={inv.currency}
+                          size="sm"
+                          className={
+                            inv.amount_due > 0 ? "text-amber-500" : "text-muted-foreground"
+                          }
+                        />
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "text-[10px] uppercase font-semibold",
+                            colors.bg,
+                            colors.text,
+                            colors.border,
+                          )}
+                        >
+                          {INVOICE_STATUS_LABELS[inv.status]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button asChild size="sm" variant="ghost" className="h-7 px-2">
+                          <Link to="/app/invoices/$invoiceId" params={{ invoiceId: inv.id }}>
+                            <ArrowRight className="size-3.5" />
+                          </Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
 
       {/* Edit Client Dialog */}
       <EditClientDialog

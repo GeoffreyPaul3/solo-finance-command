@@ -151,9 +151,9 @@ function unwrap<T>(result: { data: T | null; error: { message: string } | null }
 // ============================================================================
 
 export interface ProjectFilters {
-  status?: ProjectStatus | "all";
-  clientId?: string;
-  search?: string;
+  status?: (ProjectStatus | "all") | undefined;
+  clientId?: string | undefined;
+  search?: string | undefined;
 }
 
 export function projectsQueryOptions(workspaceId: string, filters: ProjectFilters = {}) {

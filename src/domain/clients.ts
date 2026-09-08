@@ -83,8 +83,8 @@ function unwrap<T>(result: { data: T | null; error: { message: string } | null }
 // ============================================================================
 
 export interface ClientFilters {
-  status?: ClientStatus | "all";
-  search?: string;
+  status?: (ClientStatus | "all") | undefined;
+  search?: string | undefined;
 }
 
 export function clientsQueryOptions(workspaceId: string, filters: ClientFilters = {}) {

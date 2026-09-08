@@ -443,6 +443,322 @@ export type Database = {
           },
         ];
       };
+      invoices: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          client_id: string;
+          project_id: string | null;
+          invoice_number: string;
+          status: Database["public"]["Enums"]["invoice_status"];
+          currency: string;
+          issue_date: string;
+          due_date: string;
+          subtotal: number;
+          discount_amount: number;
+          tax_amount: number;
+          total: number;
+          amount_paid: number;
+          amount_due: number;
+          notes: string | null;
+          payment_instructions: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          client_id: string;
+          project_id?: string | null;
+          invoice_number: string;
+          status?: Database["public"]["Enums"]["invoice_status"];
+          currency: string;
+          issue_date?: string;
+          due_date: string;
+          subtotal?: number;
+          discount_amount?: number;
+          tax_amount?: number;
+          total?: number;
+          amount_paid?: number;
+          amount_due?: number;
+          notes?: string | null;
+          payment_instructions?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          workspace_id?: string;
+          client_id?: string;
+          project_id?: string | null;
+          invoice_number?: string;
+          status?: Database["public"]["Enums"]["invoice_status"];
+          currency?: string;
+          issue_date?: string;
+          due_date?: string;
+          subtotal?: number;
+          discount_amount?: number;
+          tax_amount?: number;
+          total?: number;
+          amount_paid?: number;
+          amount_due?: number;
+          notes?: string | null;
+          payment_instructions?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "invoices_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "invoices_client_id_fkey";
+            columns: ["client_id"];
+            isOneToOne: false;
+            referencedRelation: "clients";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "invoices_project_id_fkey";
+            columns: ["project_id"];
+            isOneToOne: false;
+            referencedRelation: "projects";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      invoice_line_items: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          invoice_id: string;
+          description: string;
+          quantity: number;
+          unit_price: number;
+          line_total: number;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          invoice_id: string;
+          description: string;
+          quantity: number;
+          unit_price: number;
+          line_total: number;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          workspace_id?: string;
+          invoice_id?: string;
+          description?: string;
+          quantity?: number;
+          unit_price?: number;
+          line_total?: number;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "invoice_line_items_invoice_id_fkey";
+            columns: ["invoice_id"];
+            isOneToOne: false;
+            referencedRelation: "invoices";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "invoice_line_items_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      expenses: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          financial_transaction_id: string;
+          financial_account_id: string;
+          category_id: string | null;
+          client_id: string | null;
+          project_id: string | null;
+          amount: number;
+          currency: string;
+          expense_date: string;
+          description: string;
+          vendor: string | null;
+          notes: string | null;
+          reference: string | null;
+          status: Database["public"]["Enums"]["expense_status"];
+          idempotency_key: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          financial_transaction_id: string;
+          financial_account_id: string;
+          category_id?: string | null;
+          client_id?: string | null;
+          project_id?: string | null;
+          amount: number;
+          currency: string;
+          expense_date: string;
+          description: string;
+          vendor?: string | null;
+          notes?: string | null;
+          reference?: string | null;
+          status?: Database["public"]["Enums"]["expense_status"];
+          idempotency_key?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          workspace_id?: string;
+          financial_transaction_id?: string;
+          financial_account_id?: string;
+          category_id?: string | null;
+          client_id?: string | null;
+          project_id?: string | null;
+          amount?: number;
+          currency?: string;
+          expense_date?: string;
+          description?: string;
+          vendor?: string | null;
+          notes?: string | null;
+          reference?: string | null;
+          status?: Database["public"]["Enums"]["expense_status"];
+          idempotency_key?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "expenses_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "expenses_financial_transaction_id_fkey";
+            columns: ["financial_transaction_id"];
+            isOneToOne: true;
+            referencedRelation: "financial_transactions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "expenses_financial_account_id_fkey";
+            columns: ["financial_account_id"];
+            isOneToOne: false;
+            referencedRelation: "financial_accounts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      payments: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          invoice_id: string;
+          financial_transaction_id: string;
+          financial_account_id: string;
+          amount: number;
+          currency: string;
+          payment_date: string;
+          payment_method: Database["public"]["Enums"]["payment_method"];
+          reference: string | null;
+          notes: string | null;
+          status: Database["public"]["Enums"]["payment_status"];
+          idempotency_key: string | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          invoice_id: string;
+          financial_transaction_id: string;
+          financial_account_id: string;
+          amount: number;
+          currency: string;
+          payment_date: string;
+          payment_method?: Database["public"]["Enums"]["payment_method"];
+          reference?: string | null;
+          notes?: string | null;
+          status?: Database["public"]["Enums"]["payment_status"];
+          idempotency_key?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          workspace_id?: string;
+          invoice_id?: string;
+          financial_transaction_id?: string;
+          financial_account_id?: string;
+          amount?: number;
+          currency?: string;
+          payment_date?: string;
+          payment_method?: Database["public"]["Enums"]["payment_method"];
+          reference?: string | null;
+          notes?: string | null;
+          status?: Database["public"]["Enums"]["payment_status"];
+          idempotency_key?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "payments_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "payments_invoice_id_fkey";
+            columns: ["invoice_id"];
+            isOneToOne: false;
+            referencedRelation: "invoices";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "payments_financial_transaction_id_fkey";
+            columns: ["financial_transaction_id"];
+            isOneToOne: false;
+            referencedRelation: "financial_transactions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "payments_financial_account_id_fkey";
+            columns: ["financial_account_id"];
+            isOneToOne: false;
+            referencedRelation: "financial_accounts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       financial_transactions: {
         Row: {
           account_id: string;
@@ -672,6 +988,134 @@ export type Database = {
         Args: { _workspace_id: string };
         Returns: undefined;
       };
+      create_invoice: {
+        Args: {
+          _workspace_id: string;
+          _client_id: string;
+          _project_id?: string | null;
+          _currency?: string;
+          _issue_date?: string;
+          _due_date?: string | null;
+          _discount_amount?: number;
+          _tax_amount?: number;
+          _notes?: string | null;
+          _payment_instructions?: string | null;
+          _line_items?: Json;
+        };
+        Returns: string;
+      };
+      update_invoice: {
+        Args: {
+          _workspace_id: string;
+          _invoice_id: string;
+          _client_id?: string | null;
+          _project_id?: string | null;
+          _project_id_clear?: boolean;
+          _currency?: string | null;
+          _issue_date?: string | null;
+          _due_date?: string | null;
+          _discount_amount?: number | null;
+          _tax_amount?: number | null;
+          _notes?: string | null;
+          _payment_instructions?: string | null;
+          _line_items?: Json | null;
+        };
+        Returns: undefined;
+      };
+      send_invoice: {
+        Args: { _workspace_id: string; _invoice_id: string };
+        Returns: undefined;
+      };
+      cancel_invoice: {
+        Args: { _workspace_id: string; _invoice_id: string };
+        Returns: undefined;
+      };
+      record_invoice_payment: {
+        Args: {
+          _workspace_id: string;
+          _invoice_id: string;
+          _amount: number;
+          _payment_date: string;
+          _payment_method?: string;
+          _financial_account_id?: string | null;
+          _reference?: string | null;
+          _notes?: string | null;
+          _idempotency_key?: string | null;
+        };
+        Returns: string;
+      };
+      reverse_invoice_payment: {
+        Args: {
+          _workspace_id: string;
+          _payment_id: string;
+          _reversal_reason: string;
+        };
+        Returns: undefined;
+      };
+      get_workspace_receivables_summary: {
+        Args: { _workspace_id: string };
+        Returns: {
+          total_outstanding: number;
+          total_overdue: number;
+          invoices_this_month: number;
+          active_invoice_count: number;
+        }[];
+      };
+      record_expense_with_meta: {
+        Args: {
+          _workspace_id: string;
+          _account_id: string;
+          _amount: number;
+          _transaction_date: string;
+          _description: string;
+          _category_id?: string;
+          _vendor?: string | null;
+          _project_id?: string | null;
+          _client_id?: string | null;
+          _notes?: string | null;
+          _reference?: string | null;
+          _idempotency_key?: string | null;
+        };
+        Returns: string;
+      };
+      reverse_expense: {
+        Args: {
+          _workspace_id: string;
+          _expense_id: string;
+          _reversal_reason: string;
+        };
+        Returns: undefined;
+      };
+      get_command_center_summary: {
+        Args: {
+          _workspace_id: string;
+          _date_from?: string;
+          _date_to?: string;
+        };
+        Returns: {
+          currency: string;
+          total_revenue: number;
+          total_expenses: number;
+          net_cash: number;
+          cash_balance: number;
+          receivables_due: number;
+        }[];
+      };
+      get_profitability_summary: {
+        Args: {
+          _workspace_id: string;
+          _date_from?: string;
+          _date_to?: string;
+        };
+        Returns: {
+          currency: string;
+          total_revenue: number;
+          total_expenses: number;
+          net_profit: number;
+          invoice_count: number;
+          expense_count: number;
+        }[];
+      };
       write_audit_log: {
         Args: {
           _action: string;
@@ -690,8 +1134,13 @@ export type Database = {
       financial_account_type:
         "bank" | "cash" | "mobile_money" | "payment_processor" | "digital_wallet" | "other";
       financial_category_type: "income" | "expense";
+      expense_status: "posted" | "reversed";
       financial_transaction_status: "posted" | "reversed";
       financial_transaction_type: "income" | "expense" | "transfer" | "adjustment";
+      invoice_status: "draft" | "sent" | "partially_paid" | "paid" | "overdue" | "cancelled";
+      payment_method:
+        "cash" | "bank_transfer" | "mobile_money" | "card" | "payment_processor" | "other";
+      payment_status: "posted" | "reversed";
       project_status: "planning" | "active" | "on_hold" | "completed" | "archived";
     };
     CompositeTypes: {
@@ -826,8 +1275,19 @@ export const Constants = {
         "other",
       ],
       financial_category_type: ["income", "expense"],
+      expense_status: ["posted", "reversed"],
       financial_transaction_status: ["posted", "reversed"],
       financial_transaction_type: ["income", "expense", "transfer", "adjustment"],
+      invoice_status: ["draft", "sent", "partially_paid", "paid", "overdue", "cancelled"],
+      payment_method: [
+        "cash",
+        "bank_transfer",
+        "mobile_money",
+        "card",
+        "payment_processor",
+        "other",
+      ],
+      payment_status: ["posted", "reversed"],
       project_status: ["planning", "active", "on_hold", "completed", "archived"],
     },
   },

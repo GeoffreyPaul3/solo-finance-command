@@ -70,8 +70,8 @@ CREATE POLICY "clients_insert" ON public.clients
   FOR INSERT
   WITH CHECK (
     public.has_workspace_role(
-      ARRAY['owner','admin','finance','manager']::public.app_role[],
-      workspace_id
+      workspace_id,
+      ARRAY['owner','admin','finance','manager']::public.app_role[]
     )
   );
 
@@ -81,14 +81,14 @@ CREATE POLICY "clients_update" ON public.clients
   FOR UPDATE
   USING (
     public.has_workspace_role(
-      ARRAY['owner','admin','finance','manager']::public.app_role[],
-      workspace_id
+      workspace_id,
+      ARRAY['owner','admin','finance','manager']::public.app_role[]
     )
   )
   WITH CHECK (
     public.has_workspace_role(
-      ARRAY['owner','admin','finance','manager']::public.app_role[],
-      workspace_id
+      workspace_id,
+      ARRAY['owner','admin','finance','manager']::public.app_role[]
     )
   );
 
@@ -98,8 +98,8 @@ CREATE POLICY "clients_delete" ON public.clients
   FOR DELETE
   USING (
     public.has_workspace_role(
-      ARRAY['owner','admin']::public.app_role[],
-      workspace_id
+      workspace_id,
+      ARRAY['owner','admin']::public.app_role[]
     )
   );
 
@@ -191,8 +191,8 @@ CREATE POLICY "projects_insert" ON public.projects
   FOR INSERT
   WITH CHECK (
     public.has_workspace_role(
-      ARRAY['owner','admin','finance','manager']::public.app_role[],
-      workspace_id
+      workspace_id,
+      ARRAY['owner','admin','finance','manager']::public.app_role[]
     )
   );
 
@@ -202,14 +202,14 @@ CREATE POLICY "projects_update" ON public.projects
   FOR UPDATE
   USING (
     public.has_workspace_role(
-      ARRAY['owner','admin','finance','manager']::public.app_role[],
-      workspace_id
+      workspace_id,
+      ARRAY['owner','admin','finance','manager']::public.app_role[]
     )
   )
   WITH CHECK (
     public.has_workspace_role(
-      ARRAY['owner','admin','finance','manager']::public.app_role[],
-      workspace_id
+      workspace_id,
+      ARRAY['owner','admin','finance','manager']::public.app_role[]
     )
   );
 
@@ -219,8 +219,8 @@ CREATE POLICY "projects_delete" ON public.projects
   FOR DELETE
   USING (
     public.has_workspace_role(
-      ARRAY['owner','admin']::public.app_role[],
-      workspace_id
+      workspace_id,
+      ARRAY['owner','admin']::public.app_role[]
     )
   );
 

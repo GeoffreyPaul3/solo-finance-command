@@ -35,6 +35,7 @@ import { useWorkspace } from "@/components/app/workspace-context";
 import { ROLE_LABEL } from "@/domain/workspace";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import logo from "@/assets/solo.png"
 
 /** Modules that are not yet built. Route: /app/$module (placeholder page). */
 export const MODULES = {
@@ -58,7 +59,17 @@ export function isModuleKey(value: string): value is ModuleKey {
 type NavItem =
   | {
       kind: "route";
-      to: "/app" | "/app/settings" | "/app/cash" | "/app/clients" | "/app/projects";
+      to:
+        | "/app"
+        | "/app/settings"
+        | "/app/cash"
+        | "/app/clients"
+        | "/app/projects"
+        | "/app/invoices"
+        | "/app/payments"
+        | "/app/expenses"
+        | "/app/profitability"
+        | "/app/insights";
       label: string;
       icon: LucideIcon;
     }
@@ -78,19 +89,19 @@ const NAV: NavGroup[] = [
   {
     label: "Money",
     items: [
-      { kind: "module", label: "Invoices", icon: FileText, module: "invoices" },
-      { kind: "module", label: "Payments", icon: CreditCard, module: "payments" },
-      { kind: "module", label: "Expenses", icon: Receipt, module: "expenses" },
+      { kind: "route", label: "Invoices", icon: FileText, to: "/app/invoices" },
+      { kind: "route", label: "Payments", icon: CreditCard, to: "/app/payments" },
+      { kind: "route", label: "Expenses", icon: Receipt, to: "/app/expenses" },
       { kind: "route", label: "Cash & Accounts", icon: Wallet, to: "/app/cash" },
     ],
   },
   {
     label: "Understand",
     items: [
-      { kind: "module", label: "Profitability", icon: Gauge, module: "profitability" },
+      { kind: "route", label: "Profitability", icon: Gauge, to: "/app/profitability" },
       { kind: "module", label: "Taxes", icon: Calculator, module: "taxes" },
       { kind: "module", label: "Reports", icon: BarChart3, module: "reports" },
-      { kind: "module", label: "Insights", icon: Lightbulb, module: "insights" },
+      { kind: "route", label: "Insights", icon: Lightbulb, to: "/app/insights" },
     ],
   },
   {
@@ -233,16 +244,12 @@ export function AppShell({ children }: { children: ReactNode }) {
       <aside className="sticky top-0 hidden h-screen flex-col border-r border-border bg-sidebar px-4 py-5 lg:flex">
         <div className="flex items-center justify-between px-2 pb-4 border-b border-border/60">
           <Link to="/app" className="flex items-center gap-2.5 group">
-            <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xs shadow-xs">
-              S
-            </span>
+            <img src={logo} width={60} height={60} alt="Solo OS Logo" />
             <span className="text-display text-lg font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
               SoloOS
             </span>
           </Link>
-          <span className="rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-[10px] font-bold text-primary">
-            v2.0
-          </span>
+          
         </div>
 
         {/* Workspace pill */}

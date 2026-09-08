@@ -14,6 +14,8 @@ import {
   Loader2,
   Pause,
   Play,
+  Plus,
+  Receipt,
   Scale,
   Users,
 } from "lucide-react";
@@ -52,7 +54,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { clientsQueryOptions, type Client } from "@/domain/clients";
+import {
+  projectInvoicesQueryOptions,
+  INVOICE_STATUS_COLORS,
+  INVOICE_STATUS_LABELS,
+} from "@/domain/invoices";
 import {
   archiveProject,
   PROJECT_STATUS_LABELS,
@@ -90,14 +105,17 @@ function ProjectDetailPage() {
   const canManage = roleAtLeast(role, "manager");
 
   const projectQuery = useQuery(projectQueryOptions(workspace.id, projectId));
+  const invoicesQuery = useQuery(projectInvoicesQueryOptions(workspace.id, projectId));
   const clientsQuery = useQuery(clientsQueryOptions(workspace.id, { status: "active" }));
 
   const project = projectQuery.data;
+  const invoices = invoicesQuery.data ?? [];
   const clients = clientsQuery.data ?? [];
 
   const invalidateProject = () => {
     queryClient.invalidateQueries({ queryKey: ["project", workspace.id, projectId] });
     queryClient.invalidateQueries({ queryKey: ["projects", workspace.id] });
+    queryClient.invalidateQueries({ queryKey: ["invoices", "project", workspace.id, projectId] });
   };
 
   const statusMutation = useMutation({
@@ -349,34 +367,167 @@ function ProjectDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Phase 4 Financial Attribution Architecture Card */}
-      <Card className="border-border/60 bg-muted/20">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-            <FileText className="size-4" />
-            Financial Realization & Margin Tracking
-          </CardTitle>
-          <CardDescription className="text-xs">
-            Architecture prepared for Phase 4: Invoicing + Payments & Phase 6: Profitability
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            In subsequent phases, invoices billed to{" "}
-            <strong>{project.client?.name ?? "this project"}</strong> and direct project expenses
-            will be attributed to this project entity. This will calculate actual financial
-            realization against the{" "}
-            {project.budget !== null && project.budget_currency ? (
-              <span className="font-semibold text-foreground">
-                {project.budget_currency} {project.budget} budget
-              </span>
-            ) : (
-              "budget"
-            )}{" "}
-            without approximation or fake numbers.
-          </p>
-        </CardContent>
-      </Card>
+      {/* Project Invoices & Realization Section */}
+      <div className="space-y-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
+              <Receipt className="size-5 text-primary" />
+              Project Invoicing & Receivables
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Invoices attributed to this project deliverable, milestone receipts, and pending
+              balances.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="font-mono text-xs">
+              {invoices.length} {invoices.length === 1 ? "invoice" : "invoices"}
+            </Badge>
+            {canManage && (
+              <Button asChild size="sm" variant="outline" className="h-8 text-xs">
+                <Link to="/app/invoices">
+                  <Plus className="mr-1.5 size-3.5" />
+                  New Invoice
+                </Link>
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Project Financial Realization Metrics */}
+        {invoices.length > 0 && (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <Card className="p-3.5">
+              <span className="text-xs text-muted-foreground block">Total Invoiced</span>
+              <div className="mt-1 font-bold text-base">
+                <MoneyValue
+                  value={invoices.reduce((acc, i) => acc + Number(i.total), 0)}
+                  currency={invoices[0]?.currency ?? workspace.currency}
+                  size="md"
+                />
+              </div>
+            </Card>
+
+            <Card className="p-3.5">
+              <span className="text-xs text-muted-foreground block">Total Realized (Paid)</span>
+              <div className="mt-1 font-bold text-base text-emerald-500">
+                <MoneyValue
+                  value={invoices.reduce((acc, i) => acc + Number(i.amount_paid), 0)}
+                  currency={invoices[0]?.currency ?? workspace.currency}
+                  size="md"
+                />
+              </div>
+            </Card>
+
+            <Card className="p-3.5">
+              <span className="text-xs text-muted-foreground block">Outstanding Balance</span>
+              <div className="mt-1 font-bold text-base text-amber-500">
+                <MoneyValue
+                  value={invoices.reduce((acc, i) => acc + Number(i.amount_due), 0)}
+                  currency={invoices[0]?.currency ?? workspace.currency}
+                  size="md"
+                />
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {invoices.length === 0 ? (
+          <Card className="border-dashed p-8 text-center">
+            <Receipt className="mx-auto size-8 text-muted-foreground/50" />
+            <h3 className="mt-2 text-sm font-semibold">No invoices linked to this project yet</h3>
+            <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
+              Create an invoice for {project.client?.name ?? "this client"} and select this project
+              to track revenue against your project milestones and budget.
+            </p>
+            {canManage && (
+              <div className="mt-4">
+                <Button asChild size="sm">
+                  <Link to="/app/invoices">
+                    <Plus className="mr-1.5 size-3.5" />
+                    Create Invoice
+                  </Link>
+                </Button>
+              </div>
+            )}
+          </Card>
+        ) : (
+          <div className="rounded-md border border-border bg-card overflow-hidden">
+            <Table>
+              <TableHeader className="bg-muted/40">
+                <TableRow>
+                  <TableHead className="w-[130px] font-semibold">Invoice #</TableHead>
+                  <TableHead className="w-[110px] font-semibold">Issue Date</TableHead>
+                  <TableHead className="w-[110px] font-semibold">Due Date</TableHead>
+                  <TableHead className="text-right font-semibold">Total</TableHead>
+                  <TableHead className="text-right font-semibold">Outstanding</TableHead>
+                  <TableHead className="w-[110px] text-center font-semibold">Status</TableHead>
+                  <TableHead className="w-[80px] text-right font-semibold">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {invoices.map((inv) => {
+                  const colors = INVOICE_STATUS_COLORS[inv.status];
+                  return (
+                    <TableRow key={inv.id} className="hover:bg-muted/30">
+                      <TableCell className="font-mono font-medium">
+                        <Link
+                          to="/app/invoices/$invoiceId"
+                          params={{ invoiceId: inv.id }}
+                          className="hover:underline text-primary"
+                        >
+                          {inv.invoice_number}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground font-mono">
+                        {inv.issue_date}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground font-mono">
+                        {inv.due_date}
+                      </TableCell>
+                      <TableCell className="text-right text-xs font-mono font-medium">
+                        <MoneyValue value={inv.total} currency={inv.currency} size="sm" />
+                      </TableCell>
+                      <TableCell className="text-right text-xs font-mono font-semibold">
+                        <MoneyValue
+                          value={inv.amount_due}
+                          currency={inv.currency}
+                          size="sm"
+                          className={
+                            inv.amount_due > 0 ? "text-amber-500" : "text-muted-foreground"
+                          }
+                        />
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge
+                          variant="outline"
+                          className={cn(
+                            "text-[10px] uppercase font-semibold",
+                            colors.bg,
+                            colors.text,
+                            colors.border,
+                          )}
+                        >
+                          {INVOICE_STATUS_LABELS[inv.status]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button asChild size="sm" variant="ghost" className="h-7 px-2">
+                          <Link to="/app/invoices/$invoiceId" params={{ invoiceId: inv.id }}>
+                            <ArrowRight className="size-3.5" />
+                          </Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
 
       {/* Edit Project Dialog */}
       <EditProjectDialog

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import logo from "@/assets/solo.png"
 
 type Mode = "signin" | "signup";
 
@@ -90,7 +91,7 @@ function AuthPage() {
         });
         if (signUpError) throw signUpError;
         setNotice(
-          "Account created. If email confirmation is required, check your inbox to finish signing in.",
+          "Account created. Please sign in.",
         );
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
@@ -142,15 +143,11 @@ function AuthPage() {
     <div className="grid min-h-screen lg:grid-cols-[1.1fr_minmax(0,500px)]">
       <aside className="hidden flex-col justify-between border-r border-border/80 bg-gradient-to-b from-primary/10 via-background to-secondary/40 p-12 lg:flex">
         <Link to="/" className="flex items-center gap-2.5 group">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm shadow-xs">
-            S
-          </span>
+          <img src={logo} width={60} height={60} alt="Solo OS Logo" />
           <span className="text-display text-xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
             SoloOS
           </span>
-          <span className="rounded-full bg-primary/10 border border-primary/25 px-2 py-0.5 text-[10px] font-bold text-primary">
-            v2.0
-          </span>
+       
         </Link>
         <div className="space-y-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary">
