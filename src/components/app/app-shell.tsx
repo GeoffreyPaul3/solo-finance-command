@@ -7,6 +7,7 @@ import {
   Building2,
   Calculator,
   ChevronDown,
+  Clock,
   CreditCard,
   FileText,
   Gauge,
@@ -35,7 +36,7 @@ import { useWorkspace } from "@/components/app/workspace-context";
 import { ROLE_LABEL } from "@/domain/workspace";
 import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
-import logo from "@/assets/solo.png"
+import logo from "@/assets/solo.png";
 
 /** Modules that are not yet built. Route: /app/$module (placeholder page). */
 export const MODULES = {
@@ -68,8 +69,12 @@ type NavItem =
         | "/app/invoices"
         | "/app/payments"
         | "/app/expenses"
+        | "/app/obligations"
         | "/app/profitability"
-        | "/app/insights";
+        | "/app/taxes"
+        | "/app/reports"
+        | "/app/insights"
+        | "/app/ai-cfo";
       label: string;
       icon: LucideIcon;
     }
@@ -93,20 +98,21 @@ const NAV: NavGroup[] = [
       { kind: "route", label: "Payments", icon: CreditCard, to: "/app/payments" },
       { kind: "route", label: "Expenses", icon: Receipt, to: "/app/expenses" },
       { kind: "route", label: "Cash & Accounts", icon: Wallet, to: "/app/cash" },
+      { kind: "route", label: "Obligations", icon: Clock, to: "/app/obligations" },
     ],
   },
   {
     label: "Understand",
     items: [
       { kind: "route", label: "Profitability", icon: Gauge, to: "/app/profitability" },
-      { kind: "module", label: "Taxes", icon: Calculator, module: "taxes" },
-      { kind: "module", label: "Reports", icon: BarChart3, module: "reports" },
+      { kind: "route", label: "Taxes", icon: Calculator, to: "/app/taxes" },
+      { kind: "route", label: "Reports", icon: BarChart3, to: "/app/reports" },
       { kind: "route", label: "Insights", icon: Lightbulb, to: "/app/insights" },
     ],
   },
   {
     label: "Intelligence",
-    items: [{ kind: "module", label: "AI CFO", icon: Bot, module: "ai-cfo" }],
+    items: [{ kind: "route", label: "AI CFO", icon: Bot, to: "/app/ai-cfo" }],
   },
   {
     label: "System",
@@ -249,7 +255,6 @@ export function AppShell({ children }: { children: ReactNode }) {
               SoloOS
             </span>
           </Link>
-          
         </div>
 
         {/* Workspace pill */}

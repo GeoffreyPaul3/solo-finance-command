@@ -17,15 +17,19 @@ import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/ap
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
 import { Route as AuthenticatedAppIndexRouteImport } from './routes/_authenticated/app.index'
 import { Route as AuthenticatedAppModuleRouteImport } from './routes/_authenticated/app.$module'
+import { Route as AuthenticatedAppAiCfoRouteImport } from './routes/_authenticated/app.ai-cfo'
 import { Route as AuthenticatedAppCashRouteImport } from './routes/_authenticated/app.cash'
 import { Route as AuthenticatedAppClientsRouteImport } from './routes/_authenticated/app.clients'
 import { Route as AuthenticatedAppExpensesRouteImport } from './routes/_authenticated/app.expenses'
 import { Route as AuthenticatedAppInsightsRouteImport } from './routes/_authenticated/app.insights'
 import { Route as AuthenticatedAppInvoicesRouteImport } from './routes/_authenticated/app.invoices'
+import { Route as AuthenticatedAppObligationsRouteImport } from './routes/_authenticated/app.obligations'
 import { Route as AuthenticatedAppPaymentsRouteImport } from './routes/_authenticated/app.payments'
 import { Route as AuthenticatedAppProfitabilityRouteImport } from './routes/_authenticated/app.profitability'
 import { Route as AuthenticatedAppProjectsRouteImport } from './routes/_authenticated/app.projects'
+import { Route as AuthenticatedAppReportsRouteImport } from './routes/_authenticated/app.reports'
 import { Route as AuthenticatedAppSettingsRouteImport } from './routes/_authenticated/app.settings'
+import { Route as AuthenticatedAppTaxesRouteImport } from './routes/_authenticated/app.taxes'
 import { Route as AuthenticatedAppClientsClientIdRouteImport } from './routes/_authenticated/app.clients.$clientId'
 import { Route as AuthenticatedAppInvoicesInvoiceIdRouteImport } from './routes/_authenticated/app.invoices.$invoiceId'
 import { Route as AuthenticatedAppProjectsProjectIdRouteImport } from './routes/_authenticated/app.projects.$projectId'
@@ -69,6 +73,11 @@ const AuthenticatedAppModuleRoute = AuthenticatedAppModuleRouteImport.update({
   path: '/$module',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppAiCfoRoute = AuthenticatedAppAiCfoRouteImport.update({
+  id: '/ai-cfo',
+  path: '/ai-cfo',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const AuthenticatedAppCashRoute = AuthenticatedAppCashRouteImport.update({
   id: '/cash',
   path: '/cash',
@@ -97,6 +106,12 @@ const AuthenticatedAppInvoicesRoute =
     path: '/invoices',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppObligationsRoute =
+  AuthenticatedAppObligationsRouteImport.update({
+    id: '/obligations',
+    path: '/obligations',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppPaymentsRoute =
   AuthenticatedAppPaymentsRouteImport.update({
     id: '/payments',
@@ -115,12 +130,22 @@ const AuthenticatedAppProjectsRoute =
     path: '/projects',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppReportsRoute = AuthenticatedAppReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const AuthenticatedAppSettingsRoute =
   AuthenticatedAppSettingsRouteImport.update({
     id: '/settings',
     path: '/settings',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppTaxesRoute = AuthenticatedAppTaxesRouteImport.update({
+  id: '/taxes',
+  path: '/taxes',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const AuthenticatedAppClientsClientIdRoute =
   AuthenticatedAppClientsClientIdRouteImport.update({
     id: '/$clientId',
@@ -147,15 +172,19 @@ export interface FileRoutesByFullPath {
   '/app': typeof AuthenticatedAppRouteWithChildren
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/app/$module': typeof AuthenticatedAppModuleRoute
+  '/app/ai-cfo': typeof AuthenticatedAppAiCfoRoute
   '/app/cash': typeof AuthenticatedAppCashRoute
   '/app/clients': typeof AuthenticatedAppClientsRouteWithChildren
   '/app/expenses': typeof AuthenticatedAppExpensesRoute
   '/app/insights': typeof AuthenticatedAppInsightsRoute
   '/app/invoices': typeof AuthenticatedAppInvoicesRouteWithChildren
+  '/app/obligations': typeof AuthenticatedAppObligationsRoute
   '/app/payments': typeof AuthenticatedAppPaymentsRoute
   '/app/profitability': typeof AuthenticatedAppProfitabilityRoute
   '/app/projects': typeof AuthenticatedAppProjectsRouteWithChildren
+  '/app/reports': typeof AuthenticatedAppReportsRoute
   '/app/settings': typeof AuthenticatedAppSettingsRoute
+  '/app/taxes': typeof AuthenticatedAppTaxesRoute
   '/app/': typeof AuthenticatedAppIndexRoute
   '/app/clients/$clientId': typeof AuthenticatedAppClientsClientIdRoute
   '/app/invoices/$invoiceId': typeof AuthenticatedAppInvoicesInvoiceIdRoute
@@ -167,15 +196,19 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/app/$module': typeof AuthenticatedAppModuleRoute
+  '/app/ai-cfo': typeof AuthenticatedAppAiCfoRoute
   '/app/cash': typeof AuthenticatedAppCashRoute
   '/app/clients': typeof AuthenticatedAppClientsRouteWithChildren
   '/app/expenses': typeof AuthenticatedAppExpensesRoute
   '/app/insights': typeof AuthenticatedAppInsightsRoute
   '/app/invoices': typeof AuthenticatedAppInvoicesRouteWithChildren
+  '/app/obligations': typeof AuthenticatedAppObligationsRoute
   '/app/payments': typeof AuthenticatedAppPaymentsRoute
   '/app/profitability': typeof AuthenticatedAppProfitabilityRoute
   '/app/projects': typeof AuthenticatedAppProjectsRouteWithChildren
+  '/app/reports': typeof AuthenticatedAppReportsRoute
   '/app/settings': typeof AuthenticatedAppSettingsRoute
+  '/app/taxes': typeof AuthenticatedAppTaxesRoute
   '/app': typeof AuthenticatedAppIndexRoute
   '/app/clients/$clientId': typeof AuthenticatedAppClientsClientIdRoute
   '/app/invoices/$invoiceId': typeof AuthenticatedAppInvoicesInvoiceIdRoute
@@ -190,15 +223,19 @@ export interface FileRoutesById {
   '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/app/$module': typeof AuthenticatedAppModuleRoute
+  '/_authenticated/app/ai-cfo': typeof AuthenticatedAppAiCfoRoute
   '/_authenticated/app/cash': typeof AuthenticatedAppCashRoute
   '/_authenticated/app/clients': typeof AuthenticatedAppClientsRouteWithChildren
   '/_authenticated/app/expenses': typeof AuthenticatedAppExpensesRoute
   '/_authenticated/app/insights': typeof AuthenticatedAppInsightsRoute
   '/_authenticated/app/invoices': typeof AuthenticatedAppInvoicesRouteWithChildren
+  '/_authenticated/app/obligations': typeof AuthenticatedAppObligationsRoute
   '/_authenticated/app/payments': typeof AuthenticatedAppPaymentsRoute
   '/_authenticated/app/profitability': typeof AuthenticatedAppProfitabilityRoute
   '/_authenticated/app/projects': typeof AuthenticatedAppProjectsRouteWithChildren
+  '/_authenticated/app/reports': typeof AuthenticatedAppReportsRoute
   '/_authenticated/app/settings': typeof AuthenticatedAppSettingsRoute
+  '/_authenticated/app/taxes': typeof AuthenticatedAppTaxesRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
   '/_authenticated/app/clients/$clientId': typeof AuthenticatedAppClientsClientIdRoute
   '/_authenticated/app/invoices/$invoiceId': typeof AuthenticatedAppInvoicesInvoiceIdRoute
@@ -213,15 +250,19 @@ export interface FileRouteTypes {
     | '/app'
     | '/onboarding'
     | '/app/$module'
+    | '/app/ai-cfo'
     | '/app/cash'
     | '/app/clients'
     | '/app/expenses'
     | '/app/insights'
     | '/app/invoices'
+    | '/app/obligations'
     | '/app/payments'
     | '/app/profitability'
     | '/app/projects'
+    | '/app/reports'
     | '/app/settings'
+    | '/app/taxes'
     | '/app/'
     | '/app/clients/$clientId'
     | '/app/invoices/$invoiceId'
@@ -233,15 +274,19 @@ export interface FileRouteTypes {
     | '/settings'
     | '/onboarding'
     | '/app/$module'
+    | '/app/ai-cfo'
     | '/app/cash'
     | '/app/clients'
     | '/app/expenses'
     | '/app/insights'
     | '/app/invoices'
+    | '/app/obligations'
     | '/app/payments'
     | '/app/profitability'
     | '/app/projects'
+    | '/app/reports'
     | '/app/settings'
+    | '/app/taxes'
     | '/app'
     | '/app/clients/$clientId'
     | '/app/invoices/$invoiceId'
@@ -255,15 +300,19 @@ export interface FileRouteTypes {
     | '/_authenticated/app'
     | '/_authenticated/onboarding'
     | '/_authenticated/app/$module'
+    | '/_authenticated/app/ai-cfo'
     | '/_authenticated/app/cash'
     | '/_authenticated/app/clients'
     | '/_authenticated/app/expenses'
     | '/_authenticated/app/insights'
     | '/_authenticated/app/invoices'
+    | '/_authenticated/app/obligations'
     | '/_authenticated/app/payments'
     | '/_authenticated/app/profitability'
     | '/_authenticated/app/projects'
+    | '/_authenticated/app/reports'
     | '/_authenticated/app/settings'
+    | '/_authenticated/app/taxes'
     | '/_authenticated/app/'
     | '/_authenticated/app/clients/$clientId'
     | '/_authenticated/app/invoices/$invoiceId'
@@ -335,6 +384,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppModuleRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/ai-cfo': {
+      id: '/_authenticated/app/ai-cfo'
+      path: '/ai-cfo'
+      fullPath: '/app/ai-cfo'
+      preLoaderRoute: typeof AuthenticatedAppAiCfoRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/cash': {
       id: '/_authenticated/app/cash'
       path: '/cash'
@@ -370,6 +426,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppInvoicesRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/obligations': {
+      id: '/_authenticated/app/obligations'
+      path: '/obligations'
+      fullPath: '/app/obligations'
+      preLoaderRoute: typeof AuthenticatedAppObligationsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/payments': {
       id: '/_authenticated/app/payments'
       path: '/payments'
@@ -391,11 +454,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppProjectsRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/reports': {
+      id: '/_authenticated/app/reports'
+      path: '/reports'
+      fullPath: '/app/reports'
+      preLoaderRoute: typeof AuthenticatedAppReportsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/settings': {
       id: '/_authenticated/app/settings'
       path: '/settings'
       fullPath: '/app/settings'
       preLoaderRoute: typeof AuthenticatedAppSettingsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/taxes': {
+      id: '/_authenticated/app/taxes'
+      path: '/taxes'
+      fullPath: '/app/taxes'
+      preLoaderRoute: typeof AuthenticatedAppTaxesRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/app/clients/$clientId': {
@@ -468,29 +545,37 @@ const AuthenticatedAppProjectsRouteWithChildren =
 
 interface AuthenticatedAppRouteChildren {
   AuthenticatedAppModuleRoute: typeof AuthenticatedAppModuleRoute
+  AuthenticatedAppAiCfoRoute: typeof AuthenticatedAppAiCfoRoute
   AuthenticatedAppCashRoute: typeof AuthenticatedAppCashRoute
   AuthenticatedAppClientsRoute: typeof AuthenticatedAppClientsRouteWithChildren
   AuthenticatedAppExpensesRoute: typeof AuthenticatedAppExpensesRoute
   AuthenticatedAppInsightsRoute: typeof AuthenticatedAppInsightsRoute
   AuthenticatedAppInvoicesRoute: typeof AuthenticatedAppInvoicesRouteWithChildren
+  AuthenticatedAppObligationsRoute: typeof AuthenticatedAppObligationsRoute
   AuthenticatedAppPaymentsRoute: typeof AuthenticatedAppPaymentsRoute
   AuthenticatedAppProfitabilityRoute: typeof AuthenticatedAppProfitabilityRoute
   AuthenticatedAppProjectsRoute: typeof AuthenticatedAppProjectsRouteWithChildren
+  AuthenticatedAppReportsRoute: typeof AuthenticatedAppReportsRoute
   AuthenticatedAppSettingsRoute: typeof AuthenticatedAppSettingsRoute
+  AuthenticatedAppTaxesRoute: typeof AuthenticatedAppTaxesRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
 }
 
 const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppModuleRoute: AuthenticatedAppModuleRoute,
+  AuthenticatedAppAiCfoRoute: AuthenticatedAppAiCfoRoute,
   AuthenticatedAppCashRoute: AuthenticatedAppCashRoute,
   AuthenticatedAppClientsRoute: AuthenticatedAppClientsRouteWithChildren,
   AuthenticatedAppExpensesRoute: AuthenticatedAppExpensesRoute,
   AuthenticatedAppInsightsRoute: AuthenticatedAppInsightsRoute,
   AuthenticatedAppInvoicesRoute: AuthenticatedAppInvoicesRouteWithChildren,
+  AuthenticatedAppObligationsRoute: AuthenticatedAppObligationsRoute,
   AuthenticatedAppPaymentsRoute: AuthenticatedAppPaymentsRoute,
   AuthenticatedAppProfitabilityRoute: AuthenticatedAppProfitabilityRoute,
   AuthenticatedAppProjectsRoute: AuthenticatedAppProjectsRouteWithChildren,
+  AuthenticatedAppReportsRoute: AuthenticatedAppReportsRoute,
   AuthenticatedAppSettingsRoute: AuthenticatedAppSettingsRoute,
+  AuthenticatedAppTaxesRoute: AuthenticatedAppTaxesRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
 }
 

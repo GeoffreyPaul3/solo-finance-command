@@ -7,8 +7,12 @@ import {
   ArrowLeftRight,
   ArrowRight,
   ArrowUpRight,
+  Bot,
   Briefcase,
+  Calculator,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Clock,
   Coins,
   CreditCard,
@@ -19,12 +23,15 @@ import {
   Plus,
   Receipt,
   Scale,
+  ShieldAlert,
   ShieldCheck,
+  Sparkles,
   TrendingDown,
   TrendingUp,
   Users,
   Wallet,
 } from "lucide-react";
+import { useState } from "react";
 
 import { useWorkspace } from "@/components/app/workspace-context";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +49,9 @@ import {
 } from "@/domain/invoices";
 import { commandCenterSummaryQueryOptions } from "@/domain/profitability";
 import { insightsQueryOptions } from "@/domain/insights";
+import { safeToSpendQueryOptions } from "@/domain/cashflow";
+import { obligationsListQueryOptions } from "@/domain/obligations";
+import { taxSummaryQueryOptions } from "@/domain/tax-reserve";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
@@ -86,6 +96,17 @@ function CommandCenter() {
   const attentionItems = allInsights.filter(
     (i) => i.severity === "warning" || i.severity === "attention",
   );
+
+  const stsQuery = useQuery(safeToSpendQueryOptions(workspace.id));
+  const obligationsQuery = useQuery(
+    obligationsListQueryOptions(workspace.id, { status: "all_active" }),
+  );
+  const taxSummaryQuery = useQuery(taxSummaryQueryOptions(workspace.id));
+
+  const safeToSpendList = stsQuery.data ?? [];
+  const activeObligations = obligationsQuery.data ?? [];
+  const taxSummaries = taxSummaryQuery.data ?? [];
+  const [expandedStsCurrency, setExpandedStsCurrency] = useState<string | null>(null);
 
   const hasAccounts = (cashSummary?.totalAccounts ?? 0) > 0;
 
@@ -249,29 +270,132 @@ function CommandCenter() {
               </div>
             ))}
 
-            <div className="panel p-5 bg-primary/5 border border-primary/30 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold uppercase tracking-wider text-primary">
-                    Safe-To-Spend Status
-                  </span>
-                  <span className="rounded bg-primary/20 px-2 py-0.5 text-[10px] font-bold text-primary">
-                    Live Baseline
-                  </span>
+            {safeToSpendList.length > 0 ? (
+              safeToSpendList.map((sts) => {
+                const isExpanded = expandedStsCurrency === sts.currency;
+                const isHealthy = sts.currentSafeToSpend > 0;
+                return (
+                  <div
+                    key={`sts-${sts.currency}`}
+                    className={cn(
+                      "panel p-5 border transition-all flex flex-col justify-between",
+                      isHealthy
+                        ? "bg-emerald-500/[0.03] border-emerald-500/30 hover:border-emerald-500/50"
+                        : "bg-rose-500/[0.03] border-rose-500/30 hover:border-rose-500/50",
+                    )}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="font-semibold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                          <ShieldCheck className="size-3.5 text-primary" />
+                          {sts.currency} Safe-to-Spend
+                        </span>
+                        <Badge
+                          variant={isHealthy ? "default" : "destructive"}
+                          className="text-[10px] font-mono"
+                        >
+                          {isHealthy ? "Safe" : "Deficit"}
+                        </Badge>
+                      </div>
+
+                      <p
+                        className={cn(
+                          "mt-3 text-display text-2xl sm:text-3xl font-bold tracking-tight numeric",
+                          isHealthy
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-rose-600 dark:text-rose-400",
+                        )}
+                      >
+                        {formatMoney(sts.currentSafeToSpend, sts.currency)}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Projected (30d): {formatMoney(sts.projectedSafeToSpend, sts.currency)}
+                      </p>
+
+                      {isExpanded && (
+                        <div className="mt-3 border-t border-border/50 pt-2.5 space-y-1.5 text-xs text-muted-foreground">
+                          <div className="flex justify-between">
+                            <span>Liquid Cash</span>
+                            <span className="font-medium text-foreground">
+                              +{formatMoney(sts.liquidCash, sts.currency)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Tracked Tax Reserve</span>
+                            <span className="font-medium text-amber-600">
+                              −{formatMoney(sts.trackedTaxReserve, sts.currency)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Known Obligations (30d)</span>
+                            <span className="font-medium text-rose-500">
+                              −{formatMoney(sts.upcomingObligations30d, sts.currency)}
+                            </span>
+                          </div>
+                          {sts.isPrimaryCurrency && sts.operatingBuffer > 0 && (
+                            <div className="flex justify-between">
+                              <span>Operating Buffer</span>
+                              <span className="font-medium text-muted-foreground">
+                                −{formatMoney(sts.operatingBuffer, sts.currency)}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex justify-between pt-1 border-t border-border/40 font-semibold text-foreground">
+                            <span>Expected Collections (30d)</span>
+                            <span className="text-emerald-600">
+                              +{formatMoney(sts.expectedCollections30d, sts.currency)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-4 border-t border-border/50 pt-2 flex items-center justify-between text-[11px] text-muted-foreground">
+                      <button
+                        onClick={() => setExpandedStsCurrency(isExpanded ? null : sts.currency)}
+                        className="flex items-center gap-1 text-primary hover:underline font-medium"
+                      >
+                        {isExpanded ? (
+                          <>
+                            <ChevronUp className="size-3" /> Hide Breakdown
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="size-3" /> View Breakdown
+                          </>
+                        )}
+                      </button>
+                      <Link to="/app/cash" className="hover:text-foreground">
+                        Cashflow &rarr;
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="panel p-5 bg-primary/5 border border-primary/30 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold uppercase tracking-wider text-primary">
+                      Safe-To-Spend Status
+                    </span>
+                    <span className="rounded bg-primary/20 px-2 py-0.5 text-[10px] font-bold text-primary">
+                      Ready
+                    </span>
+                  </div>
+                  <p className="mt-3 text-sm text-foreground leading-relaxed">
+                    Set up accounts and obligations to compute real-time Safe-to-Spend.
+                  </p>
                 </div>
-                <p className="mt-3 text-sm text-foreground leading-relaxed">
-                  Liquid cash is currently unencumbered. Automatic tax withholding & recurring
-                  obligations attach in Phase 6.
-                </p>
+                <div className="mt-4 border-t border-primary/20 pt-2 flex items-center justify-between text-[11px] text-primary/90 font-medium">
+                  <span className="flex items-center gap-1">
+                    <Scale className="size-3.5" />
+                    Formula: Cash − Reserves = Safe
+                  </span>
+                  <span>Active</span>
+                </div>
               </div>
-              <div className="mt-4 border-t border-primary/20 pt-2 flex items-center justify-between text-[11px] text-primary/90 font-medium">
-                <span className="flex items-center gap-1">
-                  <Scale className="size-3.5" />
-                  Formula: Cash − Reserves = Safe
-                </span>
-                <span>Ready</span>
-              </div>
-            </div>
+            )}
           </div>
         ) : (
           <div className="panel p-6 text-sm text-muted-foreground flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-card/60">
@@ -299,6 +423,129 @@ function CommandCenter() {
             )}
           </div>
         )}
+      </section>
+
+      {/* 1.5. Financial Safety & Intelligence (Phases 6, 7, 8) */}
+      <section aria-labelledby="financial-safety" className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Scale className="size-4 text-primary" />
+            <h2
+              id="financial-safety"
+              className="text-sm font-bold uppercase tracking-wider text-muted-foreground"
+            >
+              Financial Safety & Intelligence
+            </h2>
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-3">
+          {/* Upcoming Obligations Strip */}
+          <Link
+            to="/app/obligations"
+            className="panel p-5 bg-card/80 border border-border transition-all hover:border-primary/40 hover:shadow-md block min-w-0"
+          >
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span className="font-semibold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                <Clock className="size-3.5 text-primary" />
+                Active Obligations
+              </span>
+              <ArrowRight className="size-3 text-muted-foreground" />
+            </div>
+            <p className="mt-3 text-display text-2xl font-bold tracking-tight numeric text-foreground">
+              {activeObligations.length}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {activeObligations.length > 0
+                ? `${formatMoney(
+                    activeObligations.reduce((acc, o) => acc + Number(o.amount), 0),
+                    workspace.currency ?? "USD",
+                  )} upcoming commitments`
+                : "No pending obligations recorded"}
+            </p>
+            <div className="mt-3 flex items-center gap-1.5 text-[11px] text-primary font-medium border-t border-border/50 pt-2">
+              <span>Manage Obligations</span>
+              <ArrowRight className="size-3" />
+            </div>
+          </Link>
+
+          {/* Tax Reserve Health */}
+          <Link
+            to="/app/taxes"
+            className="panel p-5 bg-card/80 border border-border transition-all hover:border-primary/40 hover:shadow-md block min-w-0"
+          >
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span className="font-semibold uppercase tracking-wider text-foreground flex items-center gap-1.5">
+                <Calculator className="size-3.5 text-primary" />
+                Tax Reserve Health
+              </span>
+              <ArrowRight className="size-3 text-muted-foreground" />
+            </div>
+            {taxSummaries.length > 0 ? (
+              <>
+                <p className="mt-3 text-display text-2xl font-bold tracking-tight numeric text-foreground">
+                  {formatMoney(
+                    taxSummaries[0]?.trackedTaxReserve ?? 0,
+                    taxSummaries[0]?.currency ?? "USD",
+                  )}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Target:{" "}
+                  {formatMoney(
+                    taxSummaries[0]?.targetTaxReserve ?? 0,
+                    taxSummaries[0]?.currency ?? "USD",
+                  )}{" "}
+                  {taxSummaries[0]?.shortfall && taxSummaries[0].shortfall > 0 ? (
+                    <span className="text-amber-600 font-semibold">
+                      (Shortfall: {formatMoney(taxSummaries[0].shortfall, taxSummaries[0].currency)}
+                      )
+                    </span>
+                  ) : (
+                    <span className="text-emerald-600 font-medium">(Funded)</span>
+                  )}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="mt-3 text-display text-2xl font-bold tracking-tight text-foreground">
+                  Ready
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Track tax reserve against YTD income
+                </p>
+              </>
+            )}
+            <div className="mt-3 flex items-center gap-1.5 text-[11px] text-primary font-medium border-t border-border/50 pt-2">
+              <span>View Tax Status</span>
+              <ArrowRight className="size-3" />
+            </div>
+          </Link>
+
+          {/* AI CFO Intelligence Brief */}
+          <Link
+            to="/app/ai-cfo"
+            className="panel p-5 bg-primary/5 border border-primary/30 transition-all hover:border-primary hover:shadow-md block min-w-0"
+          >
+            <div className="flex items-center justify-between text-xs text-primary">
+              <span className="font-semibold uppercase tracking-wider flex items-center gap-1.5">
+                <Bot className="size-4" />
+                AI CFO Brief
+              </span>
+              <Sparkles className="size-3.5" />
+            </div>
+            <p className="mt-3 text-sm font-semibold text-foreground">
+              Strategic Financial Intelligence
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+              Ground your business decisions in real cash positions, tax reserves, and runway
+              analysis.
+            </p>
+            <div className="mt-3 flex items-center gap-1.5 text-[11px] text-primary font-bold border-t border-primary/20 pt-2">
+              <span>Consult AI CFO</span>
+              <ArrowRight className="size-3" />
+            </div>
+          </Link>
+        </div>
       </section>
 
       {/* 2. This Period: Cash Performance (Revenue vs Expenses = Net Cash Movement) */}

@@ -859,6 +859,284 @@ export type Database = {
           },
         ];
       };
+      obligations: {
+        Row: {
+          amount: number;
+          category_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          due_date: string;
+          id: string;
+          notes: string | null;
+          priority: number;
+          recurring_expense_id: string | null;
+          settled_at: string | null;
+          settled_by_transaction_id: string | null;
+          status: Database["public"]["Enums"]["obligation_status"];
+          title: string;
+          updated_at: string;
+          vendor: string | null;
+          workspace_id: string;
+        };
+        Insert: {
+          amount: number;
+          category_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency: string;
+          due_date: string;
+          id?: string;
+          notes?: string | null;
+          priority?: number;
+          recurring_expense_id?: string | null;
+          settled_at?: string | null;
+          settled_by_transaction_id?: string | null;
+          status?: Database["public"]["Enums"]["obligation_status"];
+          title: string;
+          updated_at?: string;
+          vendor?: string | null;
+          workspace_id: string;
+        };
+        Update: {
+          amount?: number;
+          category_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          due_date?: string;
+          id?: string;
+          notes?: string | null;
+          priority?: number;
+          recurring_expense_id?: string | null;
+          settled_at?: string | null;
+          settled_by_transaction_id?: string | null;
+          status?: Database["public"]["Enums"]["obligation_status"];
+          title?: string;
+          updated_at?: string;
+          vendor?: string | null;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "obligations_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "obligations_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "financial_categories";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "obligations_recurring_expense_id_fkey";
+            columns: ["recurring_expense_id"];
+            isOneToOne: false;
+            referencedRelation: "recurring_expenses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      recurring_expenses: {
+        Row: {
+          amount: number;
+          category_id: string | null;
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          end_date: string | null;
+          frequency: Database["public"]["Enums"]["recurring_expense_frequency"];
+          id: string;
+          next_due_date: string | null;
+          notes: string | null;
+          start_date: string;
+          status: Database["public"]["Enums"]["recurring_expense_status"];
+          title: string;
+          updated_at: string;
+          vendor: string | null;
+          workspace_id: string;
+        };
+        Insert: {
+          amount: number;
+          category_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency: string;
+          end_date?: string | null;
+          frequency: Database["public"]["Enums"]["recurring_expense_frequency"];
+          id?: string;
+          next_due_date?: string | null;
+          notes?: string | null;
+          start_date: string;
+          status?: Database["public"]["Enums"]["recurring_expense_status"];
+          title: string;
+          updated_at?: string;
+          vendor?: string | null;
+          workspace_id: string;
+        };
+        Update: {
+          amount?: number;
+          category_id?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          end_date?: string | null;
+          frequency?: Database["public"]["Enums"]["recurring_expense_frequency"];
+          id?: string;
+          next_due_date?: string | null;
+          notes?: string | null;
+          start_date?: string;
+          status?: Database["public"]["Enums"]["recurring_expense_status"];
+          title?: string;
+          updated_at?: string;
+          vendor?: string | null;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "recurring_expenses_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "recurring_expenses_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "financial_categories";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      recurring_expense_occurrences: {
+        Row: {
+          created_at: string;
+          id: string;
+          obligation_id: string | null;
+          occurrence_date: string;
+          recurring_expense_id: string;
+          workspace_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          id?: string;
+          obligation_id?: string | null;
+          occurrence_date: string;
+          recurring_expense_id: string;
+          workspace_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          obligation_id?: string | null;
+          occurrence_date?: string;
+          recurring_expense_id?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "recurring_expense_occurrences_recurring_expense_id_fkey";
+            columns: ["recurring_expense_id"];
+            isOneToOne: false;
+            referencedRelation: "recurring_expenses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "recurring_expense_occurrences_obligation_id_fkey";
+            columns: ["obligation_id"];
+            isOneToOne: false;
+            referencedRelation: "obligations";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      tax_reserve_adjustments: {
+        Row: {
+          amount: number;
+          as_of_date: string;
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          id: string;
+          notes: string | null;
+          updated_at: string;
+          workspace_id: string;
+        };
+        Insert: {
+          amount: number;
+          as_of_date?: string;
+          created_at?: string;
+          created_by?: string | null;
+          currency: string;
+          id?: string;
+          notes?: string | null;
+          updated_at?: string;
+          workspace_id: string;
+        };
+        Update: {
+          amount?: number;
+          as_of_date?: string;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          id?: string;
+          notes?: string | null;
+          updated_at?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "tax_reserve_adjustments_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      ai_cfo_interactions: {
+        Row: {
+          context_snapshot: Json | null;
+          created_at: string;
+          id: string;
+          question: string;
+          response: Json;
+          user_id: string;
+          workspace_id: string;
+        };
+        Insert: {
+          context_snapshot?: Json | null;
+          created_at?: string;
+          id?: string;
+          question: string;
+          response: Json;
+          user_id: string;
+          workspace_id: string;
+        };
+        Update: {
+          context_snapshot?: Json | null;
+          created_at?: string;
+          id?: string;
+          question?: string;
+          response?: Json;
+          user_id?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ai_cfo_interactions_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -1126,6 +1404,257 @@ export type Database = {
         };
         Returns: undefined;
       };
+      cancel_obligation: {
+        Args: {
+          _obligation_id: string;
+          _workspace_id: string;
+        };
+        Returns: undefined;
+      };
+      complete_obligation: {
+        Args: {
+          _obligation_id: string;
+          _settled_by_transaction_id?: string;
+          _workspace_id: string;
+        };
+        Returns: undefined;
+      };
+      create_obligation: {
+        Args: {
+          _amount: number;
+          _category_id?: string;
+          _currency: string;
+          _due_date: string;
+          _notes?: string;
+          _priority?: number;
+          _recurring_expense_id?: string;
+          _title: string;
+          _vendor?: string;
+          _workspace_id: string;
+        };
+        Returns: string;
+      };
+      create_recurring_expense: {
+        Args: {
+          _amount: number;
+          _category_id?: string;
+          _currency: string;
+          _end_date?: string;
+          _frequency: Database["public"]["Enums"]["recurring_expense_frequency"];
+          _notes?: string;
+          _start_date: string;
+          _title: string;
+          _vendor?: string;
+          _workspace_id: string;
+        };
+        Returns: string;
+      };
+      generate_recurring_occurrences: {
+        Args: {
+          _as_of_date?: string;
+          _horizon_days?: number;
+          _workspace_id: string;
+        };
+        Returns: undefined;
+      };
+      get_cashflow_projection: {
+        Args: {
+          _horizon_days?: number;
+          _workspace_id: string;
+        };
+        Returns: {
+          currency: string;
+          expected_inflow: number;
+          expected_outflow: number;
+          net_change: number;
+          projected_balance: number;
+          projection_date: string;
+        }[];
+      };
+      get_cashflow_report: {
+        Args: {
+          _currency?: string;
+          _date_from: string;
+          _date_to: string;
+          _workspace_id: string;
+        };
+        Returns: {
+          cash_inflow: number;
+          cash_outflow: number;
+          closing_balance: number;
+          currency: string;
+          net_cashflow: number;
+          period_start: string;
+        }[];
+      };
+      get_command_center_v2_summary: {
+        Args: {
+          _date_from?: string;
+          _date_to?: string;
+          _workspace_id: string;
+        };
+        Returns: {
+          cash_balance: number;
+          currency: string;
+          current_sts: number;
+          is_primary_currency: boolean;
+          net_cash: number;
+          projected_sts: number;
+          receivables_due: number;
+          target_tax_reserve: number;
+          total_expenses: number;
+          total_revenue: number;
+          tracked_tax_reserve: number;
+          upcoming_obligations: number;
+        }[];
+      };
+      get_expense_report: {
+        Args: {
+          _currency?: string;
+          _date_from: string;
+          _date_to: string;
+          _workspace_id: string;
+        };
+        Returns: {
+          category_id: string;
+          category_name: string;
+          currency: string;
+          expense_count: number;
+          tax_deductible_amount: number;
+          total_amount: number;
+          vendor: string;
+        }[];
+      };
+      get_income_report: {
+        Args: {
+          _currency?: string;
+          _date_from: string;
+          _date_to: string;
+          _workspace_id: string;
+        };
+        Returns: {
+          client_id: string;
+          client_name: string;
+          currency: string;
+          gross_billed: number;
+          gross_collected: number;
+          invoice_count: number;
+          outstanding: number;
+          project_id: string;
+          project_name: string;
+        }[];
+      };
+      get_receivables_report: {
+        Args: {
+          _currency?: string;
+          _workspace_id: string;
+        };
+        Returns: {
+          aging_bucket: string;
+          amount_due: number;
+          amount_paid: number;
+          client_id: string;
+          client_name: string;
+          currency: string;
+          days_overdue: number;
+          due_date: string;
+          invoice_id: string;
+          invoice_number: string;
+          issue_date: string;
+          total_amount: number;
+        }[];
+      };
+      get_recent_ai_cfo_interactions: {
+        Args: {
+          _limit?: number;
+          _workspace_id: string;
+        };
+        Returns: {
+          context_snapshot: Json | null;
+          created_at: string;
+          id: string;
+          question: string;
+          response: Json;
+          user_id: string;
+        }[];
+      };
+      get_safe_to_spend: {
+        Args: {
+          _workspace_id: string;
+        };
+        Returns: {
+          currency: string;
+          current_safe_to_spend: number;
+          expected_collections_30d: number;
+          is_primary_currency: boolean;
+          liquid_cash: number;
+          operating_buffer: number;
+          projected_safe_to_spend: number;
+          target_tax_reserve: number;
+          tracked_tax_reserve: number;
+          upcoming_obligations_30d: number;
+        }[];
+      };
+      get_tax_summary: {
+        Args: {
+          _tax_year?: number;
+          _workspace_id: string;
+        };
+        Returns: {
+          currency: string;
+          expenses_ytd: number;
+          gross_income_ytd: number;
+          is_primary_currency: boolean;
+          net_taxable_income_ytd: number;
+          shortfall: number;
+          target_tax_reserve: number;
+          tax_reserve_rate: number;
+          tracked_tax_reserve: number;
+        }[];
+      };
+      log_ai_cfo_interaction: {
+        Args: {
+          _context_snapshot?: Json;
+          _question: string;
+          _response: Json;
+          _workspace_id: string;
+        };
+        Returns: string;
+      };
+      update_obligation: {
+        Args: {
+          _amount: number;
+          _category_id?: string;
+          _currency: string;
+          _due_date: string;
+          _notes?: string;
+          _obligation_id: string;
+          _priority?: number;
+          _recurring_expense_id?: string;
+          _title: string;
+          _vendor?: string;
+          _workspace_id: string;
+        };
+        Returns: undefined;
+      };
+      update_recurring_expense_status: {
+        Args: {
+          _recurring_expense_id: string;
+          _status: Database["public"]["Enums"]["recurring_expense_status"];
+          _workspace_id: string;
+        };
+        Returns: undefined;
+      };
+      upsert_tax_reserve_adjustment: {
+        Args: {
+          _amount: number;
+          _as_of_date?: string;
+          _currency: string;
+          _notes?: string;
+          _workspace_id: string;
+        };
+        Returns: undefined;
+      };
     };
     Enums: {
       app_role: "owner" | "admin" | "finance" | "manager" | "viewer";
@@ -1138,10 +1667,13 @@ export type Database = {
       financial_transaction_status: "posted" | "reversed";
       financial_transaction_type: "income" | "expense" | "transfer" | "adjustment";
       invoice_status: "draft" | "sent" | "partially_paid" | "paid" | "overdue" | "cancelled";
+      obligation_status: "upcoming" | "due" | "overdue" | "paid" | "cancelled";
       payment_method:
         "cash" | "bank_transfer" | "mobile_money" | "card" | "payment_processor" | "other";
       payment_status: "posted" | "reversed";
       project_status: "planning" | "active" | "on_hold" | "completed" | "archived";
+      recurring_expense_frequency: "weekly" | "monthly" | "quarterly" | "yearly";
+      recurring_expense_status: "active" | "paused" | "cancelled";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -1279,6 +1811,7 @@ export const Constants = {
       financial_transaction_status: ["posted", "reversed"],
       financial_transaction_type: ["income", "expense", "transfer", "adjustment"],
       invoice_status: ["draft", "sent", "partially_paid", "paid", "overdue", "cancelled"],
+      obligation_status: ["upcoming", "due", "overdue", "paid", "cancelled"],
       payment_method: [
         "cash",
         "bank_transfer",
@@ -1289,6 +1822,8 @@ export const Constants = {
       ],
       payment_status: ["posted", "reversed"],
       project_status: ["planning", "active", "on_hold", "completed", "archived"],
+      recurring_expense_frequency: ["weekly", "monthly", "quarterly", "yearly"],
+      recurring_expense_status: ["active", "paused", "cancelled"],
     },
   },
 } as const;

@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import logo from "@/assets/solo.png"
+import logo from "@/assets/solo.png";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -193,12 +193,12 @@ function Landing() {
       <header className="sticky top-0 z-30 border-b border-border/80 bg-background/85 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
           <div className="flex items-center ">
-              <Link to="/app" className="flex items-center gap-2.5 group">
-            <img src={logo} width={60} height={60} alt="Solo OS Logo" />
-            <span className="text-display text-lg font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
-              SoloOS
-            </span>
-          </Link>
+            <Link to="/app" className="flex items-center gap-2.5 group">
+              <img src={logo} width={60} height={60} alt="Solo OS Logo" />
+              <span className="text-display text-lg font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
+                SoloOS
+              </span>
+            </Link>
           </div>
 
           <nav className="flex items-center gap-3">
@@ -654,7 +654,7 @@ function Landing() {
       <footer className="border-t border-border bg-background py-8">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
-              <img src={logo} width={100} height={100} alt="Solo OS Logo" />
+            <img src={logo} width={100} height={100} alt="Solo OS Logo" />
             <span>— The Financial Operating System for Independent Professionals</span>
           </div>
           <div className="flex items-center gap-4">

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import logo from "@/assets/solo.png"
+import logo from "@/assets/solo.png";
 
 type Mode = "signin" | "signup";
 
@@ -90,9 +90,7 @@ function AuthPage() {
           },
         });
         if (signUpError) throw signUpError;
-        setNotice(
-          "Account created. Please sign in.",
-        );
+        setNotice("Account created. Please sign in.");
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email: email.trim(),
@@ -144,7 +142,6 @@ function AuthPage() {
       <aside className="hidden flex-col justify-between border-r border-border/80 bg-gradient-to-b from-primary/10 via-background to-secondary/40 p-12 lg:flex">
         <Link to="/" className="flex items-center gap-2.5 group">
           <img src={logo} width={100} height={100} alt="Solo OS Logo" />
-         
         </Link>
         <div className="space-y-6">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-semibold text-primary">
