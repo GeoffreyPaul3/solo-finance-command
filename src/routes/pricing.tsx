@@ -251,7 +251,7 @@ function PricingPage() {
             </div>
             <div className="flex flex-col items-center gap-2">
               <Check className="size-5 text-primary" />
-              <span>Immutable double-entry ledger</span>
+              <span>Database-enforced transactional ledger</span>
             </div>
             <div className="flex flex-col items-center gap-2">
               <Check className="size-5 text-primary" />

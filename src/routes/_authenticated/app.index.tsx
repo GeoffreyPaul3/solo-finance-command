@@ -8,39 +8,31 @@ import {
   ArrowRight,
   ArrowUpRight,
   Bot,
-  Briefcase,
   Calculator,
-  CheckCircle2,
   ChevronDown,
   ChevronUp,
   Clock,
-  Coins,
   CreditCard,
   FileText,
   Gauge,
   History,
   Lightbulb,
+  Minus,
   Plus,
   Receipt,
   Scale,
-  ShieldAlert,
   ShieldCheck,
-  Sparkles,
   TrendingDown,
   TrendingUp,
-  Users,
   Wallet,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useWorkspace } from "@/components/app/workspace-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { MoneyValue } from "@/components/ui/money-value";
+import { MoneyValueBlock } from "@/components/ui/money-value";
 import { transactionsQueryOptions, workspaceCashSummaryQueryOptions } from "@/domain/financial";
-import { clientsQueryOptions } from "@/domain/clients";
-import { projectsQueryOptions } from "@/domain/projects";
 import {
   invoicesQueryOptions,
   workspaceReceivablesSummaryQueryOptions,
@@ -62,7 +54,7 @@ export const Route = createFileRoute("/_authenticated/app/")({
       {
         name: "description",
         content:
-          "SoloOS financial command center: cash positions, collected revenue, expenses, receivables, and operational insights.",
+          "SoloOS Command Center: see your safe-to-spend, liquid cash, receivables, obligations and financial pulse at a glance.",
       },
       { name: "robots", content: "noindex" },
     ],
@@ -70,143 +62,807 @@ export const Route = createFileRoute("/_authenticated/app/")({
   component: CommandCenter,
 });
 
+/** Returns time-appropriate greeting */
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+/** Skeleton shimmer block */
+function Skeleton({ className }: { className?: string }) {
+  return <div className={cn("skeleton-pulse rounded", className)} />;
+}
+
 function CommandCenter() {
   const { workspace, profile, role } = useWorkspace();
   const firstName = profile?.full_name?.split(" ")[0];
   const canMutate = role === "owner" || role === "admin" || role === "finance";
+  const greeting = getGreeting();
 
-  // Authoritative Queries
+  // Authoritative queries — preserve existing data layer exactly
   const cashSummaryQuery = useQuery(workspaceCashSummaryQueryOptions(workspace.id));
-  const recentTransactionsQuery = useQuery(transactionsQueryOptions(workspace.id, { limit: 6 }));
-  const clientsQuery = useQuery(clientsQueryOptions(workspace.id, { status: "active" }));
-  const projectsQuery = useQuery(projectsQueryOptions(workspace.id, { status: "active" }));
+  const recentTransactionsQuery = useQuery(transactionsQueryOptions(workspace.id, { limit: 8 }));
   const receivablesQuery = useQuery(workspaceReceivablesSummaryQueryOptions(workspace.id));
   const recentInvoicesQuery = useQuery(invoicesQueryOptions(workspace.id));
   const performanceQuery = useQuery(commandCenterSummaryQueryOptions(workspace.id));
   const insightsQuery = useQuery(insightsQueryOptions(workspace.id));
-
-  const cashSummary = cashSummaryQuery.data;
-  const recentTransactions = recentTransactionsQuery.data ?? [];
-  const activeClients = clientsQuery.data ?? [];
-  const activeProjects = projectsQuery.data ?? [];
-  const receivables = receivablesQuery.data;
-  const recentInvoices = (recentInvoicesQuery.data ?? []).slice(0, 5);
-  const performanceMetrics = performanceQuery.data ?? [];
-  const allInsights = insightsQuery.data ?? [];
-  const attentionItems = allInsights.filter(
-    (i) => i.severity === "warning" || i.severity === "attention",
-  );
-
   const stsQuery = useQuery(safeToSpendQueryOptions(workspace.id));
   const obligationsQuery = useQuery(
     obligationsListQueryOptions(workspace.id, { status: "all_active" }),
   );
   const taxSummaryQuery = useQuery(taxSummaryQueryOptions(workspace.id));
 
+  const cashSummary = cashSummaryQuery.data;
+  const recentTransactions = recentTransactionsQuery.data ?? [];
+  const receivables = receivablesQuery.data;
+  const recentInvoices = (recentInvoicesQuery.data ?? []).slice(0, 6);
+  const performanceMetrics = performanceQuery.data ?? [];
+  const allInsights = insightsQuery.data ?? [];
   const safeToSpendList = stsQuery.data ?? [];
-  const activeObligations = obligationsQuery.data ?? [];
+  const rawObligations = obligationsQuery.data;
+  const activeObligations = useMemo(() => rawObligations ?? [], [rawObligations]);
   const taxSummaries = taxSummaryQuery.data ?? [];
-  const [expandedStsCurrency, setExpandedStsCurrency] = useState<string | null>(null);
 
+  const attentionItems = allInsights.filter(
+    (i) => i.severity === "warning" || i.severity === "attention",
+  );
   const hasAccounts = (cashSummary?.totalAccounts ?? 0) > 0;
 
+  const [expandedStsCurrency, setExpandedStsCurrency] = useState<string | null>(null);
+
+  // Upcoming obligations within 30 days for commitments section
+  const upcomingObligations = useMemo(() => {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() + 30);
+    return activeObligations
+      .filter((o) => o.due_date && new Date(o.due_date) <= cutoff)
+      .sort((a, b) => {
+        if (!a.due_date) return 1;
+        if (!b.due_date) return -1;
+        return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+      })
+      .slice(0, 5);
+  }, [activeObligations]);
+
+  const today = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
+
   return (
-    <div className="mx-auto max-w-6xl space-y-9 pb-16">
-      {/* Cockpit Header */}
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border/60 pb-6">
+    <div className="mx-auto max-w-[1200px] px-4 py-7 sm:px-8 sm:py-9 pb-20 space-y-10">
+      {/* ═══════════════════════════════════════════════════════
+          GREETING HEADER
+      ═══════════════════════════════════════════════════════ */}
+      <header className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {workspace.name}
-            </span>
-            <Badge
-              variant="outline"
-              className="text-[10px] font-mono border-primary/30 text-primary"
-            >
-              {role.toUpperCase()}
-            </Badge>
-          </div>
-          <h1 className="text-display mt-1.5 text-2xl font-bold tracking-tight sm:text-3xl text-foreground">
-            {firstName ? `Command Center · ${firstName}` : "Financial Command Center"}
+          <p className="text-[11px] font-medium uppercase tracking-widest text-muted-foreground/70">
+            {today}
+          </p>
+          <h1 className="text-display mt-1 text-2xl font-bold tracking-tight sm:text-3xl text-foreground">
+            {greeting}
+            {firstName ? `, ${firstName}.` : "."}
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Know what you earned. Know what you keep. Know what to do next.
+          <p className="mt-1 text-[13px] text-muted-foreground">
+            Here's where your business stands today.
           </p>
         </div>
 
         {canMutate && (
           <div className="flex flex-wrap items-center gap-2">
-            <Button asChild size="sm" variant="outline" className="gap-1.5 shadow-xs">
-              <Link to="/app/expenses">
-                <Receipt className="size-4 text-rose-500" />
-                <span>Record Expense</span>
-              </Link>
-            </Button>
-            <Button asChild size="sm" variant="outline" className="gap-1.5 shadow-xs">
+            <Button asChild size="sm" variant="outline" className="gap-1.5 h-9">
               <Link to="/app/invoices">
-                <FileText className="size-4 text-primary" />
-                <span>New Invoice</span>
+                <FileText className="size-3.5 text-primary" aria-hidden />
+                Create invoice
               </Link>
             </Button>
-            <Button asChild size="sm" className="gap-1.5 shadow-sm">
+            <Button asChild size="sm" className="gap-1.5 h-9">
               <Link to="/app/cash">
-                <Plus className="size-4" />
-                <span>Record Cash</span>
+                <Plus className="size-3.5" aria-hidden />
+                Record transaction
               </Link>
             </Button>
           </div>
         )}
       </header>
 
-      {/* Attention Required Strip (If any items need attention) */}
-      {attentionItems.length > 0 && (
-        <section aria-labelledby="attention-required" className="space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="size-4 text-destructive" />
-              <h2
-                id="attention-required"
-                className="text-sm font-bold uppercase tracking-wider text-muted-foreground"
+      {/* ═══════════════════════════════════════════════════════
+          HERO FINANCIAL PANEL
+          Answers: What do I have? What can I safely spend?
+      ═══════════════════════════════════════════════════════ */}
+      <section aria-labelledby="hero-financial">
+        <h2 id="hero-financial" className="sr-only">
+          Financial position
+        </h2>
+
+        {hasAccounts && safeToSpendList.length > 0 ? (
+          <div className="space-y-3">
+            {safeToSpendList.map((sts) => {
+              const isExpanded = expandedStsCurrency === sts.currency;
+              const isHealthy = sts.currentSafeToSpend >= 0;
+              // Matching cash position for this currency
+              const cashPos = cashSummary?.positions.find((p) => p.currency === sts.currency);
+
+              return (
+                <div
+                  key={sts.currency}
+                  className="rounded-xl border border-border bg-card overflow-hidden shadow-panel"
+                >
+                  {/* Three-column hero row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border/60">
+                    {/* ── Safe to Spend (dominant) ── */}
+                    <div
+                      className={cn(
+                        "sm:col-span-1 p-6 sm:p-7 flex flex-col",
+                        isHealthy ? "bg-primary/[0.03]" : "bg-destructive/[0.03]",
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <Scale
+                            className={cn(
+                              "size-3.5 shrink-0",
+                              isHealthy ? "text-primary" : "text-destructive",
+                            )}
+                            aria-hidden
+                          />
+                          <span className="section-label">Safe to Spend</span>
+                        </div>
+                        <span
+                          className={cn(
+                            "rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+                            isHealthy
+                              ? "bg-primary/10 text-primary"
+                              : "bg-destructive/10 text-destructive",
+                          )}
+                        >
+                          {isHealthy ? sts.currency : "Deficit"}
+                        </span>
+                      </div>
+
+                      <div className="mt-4 flex-1">
+                        <p
+                          className={cn(
+                            "text-financial-hero text-3xl sm:text-4xl font-bold numeric leading-none",
+                            isHealthy ? "text-foreground" : "text-destructive",
+                          )}
+                          aria-label={`Safe to Spend: ${formatMoney(sts.currentSafeToSpend, sts.currency)}`}
+                        >
+                          <span className="text-sm font-semibold text-muted-foreground mr-1.5">
+                            {sts.currency}
+                          </span>
+                          {Math.abs(sts.currentSafeToSpend).toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </p>
+                        <p className="mt-2 text-[12px] text-muted-foreground leading-relaxed max-w-[260px]">
+                          Available after tracked reserves, known obligations and operating buffer.
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={() => setExpandedStsCurrency(isExpanded ? null : sts.currency)}
+                        className="mt-4 flex items-center gap-1.5 text-[12px] font-medium text-primary hover:text-primary/80 transition-colors w-fit"
+                        aria-expanded={isExpanded}
+                        aria-controls={`sts-breakdown-${sts.currency}`}
+                      >
+                        {isExpanded ? (
+                          <>
+                            <ChevronUp className="size-3" aria-hidden />
+                            Hide breakdown
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="size-3" aria-hidden />
+                            View breakdown
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* ── Liquid Cash ── */}
+                    <div className="p-6 flex flex-col justify-between bg-card">
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-4">
+                          <Wallet className="size-3.5 text-muted-foreground/70" aria-hidden />
+                          <span className="section-label">Liquid Cash</span>
+                        </div>
+                        {cashPos ? (
+                          <>
+                            <p className="text-financial-hero text-2xl font-bold numeric text-foreground leading-none">
+                              <span className="text-xs font-semibold text-muted-foreground mr-1">
+                                {sts.currency}
+                              </span>
+                              {sts.liquidCash.toLocaleString(undefined, {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                            </p>
+                            <p className="mt-2 text-[11px] text-muted-foreground">
+                              {cashPos.activeAccounts} active account
+                              {cashPos.activeAccounts !== 1 ? "s" : ""}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-2xl font-bold text-muted-foreground">—</p>
+                        )}
+                      </div>
+                      <Button
+                        asChild
+                        variant="ghost"
+                        size="sm"
+                        className="w-fit mt-4 text-[11px] text-primary hover:text-primary h-7 px-0"
+                      >
+                        <Link to="/app/cash">
+                          View accounts <ArrowRight className="ml-1 size-3" aria-hidden />
+                        </Link>
+                      </Button>
+                    </div>
+
+                    {/* ── Committed ── */}
+                    <div className="p-6 flex flex-col justify-between bg-card">
+                      <div>
+                        <div className="flex items-center gap-1.5 mb-4">
+                          <Clock className="size-3.5 text-muted-foreground/70" aria-hidden />
+                          <span className="section-label">Committed</span>
+                        </div>
+                        <p className="text-financial-hero text-2xl font-bold numeric text-foreground leading-none">
+                          <span className="text-xs font-semibold text-muted-foreground mr-1">
+                            {sts.currency}
+                          </span>
+                          {sts.upcomingObligations30d.toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </p>
+                        <p className="mt-2 text-[11px] text-muted-foreground">
+                          {activeObligations.length} obligation
+                          {activeObligations.length !== 1 ? "s" : ""} in the next 30 days
+                        </p>
+                      </div>
+                      <Button
+                        asChild
+                        variant="ghost"
+                        size="sm"
+                        className="w-fit mt-4 text-[11px] text-primary hover:text-primary h-7 px-0"
+                      >
+                        <Link to="/app/obligations">
+                          View obligations <ArrowRight className="ml-1 size-3" aria-hidden />
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* ── STS Breakdown (toggled) ── */}
+                  {isExpanded && (
+                    <div
+                      id={`sts-breakdown-${sts.currency}`}
+                      className="border-t border-border/60 bg-muted/20 px-6 py-5"
+                      role="region"
+                      aria-label="Safe-to-Spend breakdown"
+                    >
+                      <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground/60 mb-4">
+                        How Safe-to-Spend is calculated
+                      </p>
+                      <div className="space-y-2 text-[13px] max-w-lg">
+                        <div className="flex items-center justify-between py-1.5 border-b border-border/40">
+                          <span className="flex items-center gap-2 text-muted-foreground">
+                            <Plus className="size-3 text-emerald-600" aria-hidden />
+                            Liquid Cash
+                          </span>
+                          <span className="font-mono font-semibold text-foreground numeric">
+                            {formatMoney(sts.liquidCash, sts.currency)}
+                          </span>
+                        </div>
+                        {sts.trackedTaxReserve > 0 && (
+                          <div className="flex items-center justify-between py-1.5 border-b border-border/40">
+                            <span className="flex items-center gap-2 text-muted-foreground">
+                              <Minus className="size-3 text-amber-500" aria-hidden />
+                              Tracked Tax Reserve
+                            </span>
+                            <span className="font-mono font-semibold text-amber-600 dark:text-amber-400 numeric">
+                              {formatMoney(sts.trackedTaxReserve, sts.currency)}
+                            </span>
+                          </div>
+                        )}
+                        {sts.upcomingObligations30d > 0 && (
+                          <div className="flex items-center justify-between py-1.5 border-b border-border/40">
+                            <span className="flex items-center gap-2 text-muted-foreground">
+                              <Minus className="size-3 text-rose-500" aria-hidden />
+                              Obligations (next 30 days)
+                            </span>
+                            <span className="font-mono font-semibold text-rose-600 dark:text-rose-400 numeric">
+                              {formatMoney(sts.upcomingObligations30d, sts.currency)}
+                            </span>
+                          </div>
+                        )}
+                        {sts.isPrimaryCurrency && sts.operatingBuffer > 0 && (
+                          <div className="flex items-center justify-between py-1.5 border-b border-border/40">
+                            <span className="flex items-center gap-2 text-muted-foreground">
+                              <Minus className="size-3 text-muted-foreground/60" aria-hidden />
+                              Operating Buffer
+                            </span>
+                            <span className="font-mono font-semibold text-muted-foreground numeric">
+                              {formatMoney(sts.operatingBuffer, sts.currency)}
+                            </span>
+                          </div>
+                        )}
+                        {sts.expectedCollections30d > 0 && (
+                          <div className="flex items-center justify-between py-1.5 border-b border-border/40">
+                            <span className="flex items-center gap-2 text-muted-foreground">
+                              <Plus className="size-3 text-emerald-500" aria-hidden />
+                              Expected Collections (30d)
+                            </span>
+                            <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400 numeric">
+                              {formatMoney(sts.expectedCollections30d, sts.currency)}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between pt-3">
+                          <span className="font-semibold text-foreground flex items-center gap-2">
+                            <Scale className="size-3.5 text-primary" aria-hidden />
+                            Safe to Spend
+                          </span>
+                          <span
+                            className={cn(
+                              "font-mono font-bold text-base numeric",
+                              isHealthy ? "text-primary" : "text-destructive",
+                            )}
+                          >
+                            {formatMoney(sts.currentSafeToSpend, sts.currency)}
+                          </span>
+                        </div>
+                        {sts.projectedSafeToSpend !== sts.currentSafeToSpend && (
+                          <p className="text-[11px] text-muted-foreground pt-1">
+                            Projected in 30 days:{" "}
+                            <span className="font-mono font-semibold">
+                              {formatMoney(sts.projectedSafeToSpend, sts.currency)}
+                            </span>{" "}
+                            <span className="text-muted-foreground/60">
+                              (includes expected collections)
+                            </span>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : hasAccounts ? (
+          /* Has accounts but no STS data yet — show liquid cash only */
+          <div className="rounded-xl border border-border bg-card p-6 sm:p-7">
+            <div className="flex items-center gap-1.5 mb-4">
+              <Scale className="size-3.5 text-primary" aria-hidden />
+              <span className="section-label">Financial Position</span>
+            </div>
+            {cashSummaryQuery.isPending ? (
+              <div className="space-y-3">
+                <Skeleton className="h-10 w-48" />
+                <Skeleton className="h-4 w-64" />
+              </div>
+            ) : (
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {cashSummary?.positions.map((pos) => (
+                  <div key={pos.currency}>
+                    <p className="section-label mb-2">{pos.currency} Cash</p>
+                    <p className="text-financial-hero text-3xl font-bold numeric text-foreground">
+                      {formatMoney(pos.totalBalance, pos.currency)}
+                    </p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      {pos.activeAccounts} account{pos.activeAccounts !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="mt-4 text-[12px] text-muted-foreground">
+              Set up obligations and a tax reserve to activate Safe-to-Spend.
+            </p>
+          </div>
+        ) : (
+          /* No accounts — onboarding empty state */
+          <div className="rounded-xl border border-border bg-card p-8 text-center">
+            <div className="mx-auto mb-4 flex size-14 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <Wallet className="size-7" aria-hidden />
+            </div>
+            <h2 className="text-display text-xl font-bold tracking-tight text-foreground">
+              Your financial picture starts here.
+            </h2>
+            <p className="mt-3 text-[13px] text-muted-foreground max-w-md mx-auto leading-relaxed">
+              Record your first financial account — a bank account, mobile money wallet, or cash
+              balance — and SoloOS will begin tracking your real position.
+            </p>
+            <p className="mt-3 text-[12px] text-muted-foreground/70 max-w-md mx-auto">
+              Once you have accounts, transactions, invoices and obligations, you'll see
+              Safe-to-Spend: the one number that tells you what you can actually spend today.
+            </p>
+            {canMutate && (
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                <Button asChild size="sm" className="gap-1.5">
+                  <Link to="/app/cash">
+                    <Plus className="size-4" aria-hidden />
+                    Add your first account
+                  </Link>
+                </Button>
+                <Button asChild size="sm" variant="outline" className="gap-1.5">
+                  <Link to="/app/invoices">
+                    <FileText className="size-4" aria-hidden />
+                    Create an invoice
+                  </Link>
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════
+          MONEY IN / COMMITTED — two-column
+          Answers: What is coming in? What is committed?
+      ═══════════════════════════════════════════════════════ */}
+      {hasAccounts && (
+        <section aria-labelledby="money-flow" className="grid gap-6 lg:grid-cols-2">
+          {/* Money coming in */}
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border/50">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="size-4 text-emerald-600 dark:text-emerald-400" aria-hidden />
+                <h2 id="money-in" className="text-[13px] font-semibold text-foreground">
+                  Money coming in
+                </h2>
+              </div>
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="text-[11px] text-primary h-7 px-2"
               >
-                Attention Required ({attentionItems.length})
+                <Link to="/app/invoices">
+                  View receivables <ArrowRight className="ml-1 size-3" aria-hidden />
+                </Link>
+              </Button>
+            </div>
+
+            {receivablesQuery.isPending ? (
+              <div className="p-5 space-y-3">
+                {[1, 2].map((n) => (
+                  <Skeleton key={n} className="h-5 w-full" />
+                ))}
+              </div>
+            ) : receivables ? (
+              <>
+                <div className="grid grid-cols-2 divide-x divide-border/50">
+                  <div className="p-5">
+                    <p className="section-label mb-2">Outstanding</p>
+                    <MoneyValueBlock
+                      value={receivables.total_outstanding}
+                      currency={workspace.currency ?? "USD"}
+                      size="lg"
+                      className="text-foreground"
+                    />
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      {receivables.active_invoice_count} active invoice
+                      {receivables.active_invoice_count !== 1 ? "s" : ""}
+                    </p>
+                  </div>
+                  <div className="p-5">
+                    <p className="section-label mb-2 text-destructive/80">Overdue</p>
+                    <MoneyValueBlock
+                      value={receivables.total_overdue}
+                      currency={workspace.currency ?? "USD"}
+                      size="lg"
+                      className={
+                        receivables.total_overdue > 0 ? "text-destructive" : "text-muted-foreground"
+                      }
+                    />
+                    <p className="mt-1 text-[11px] text-muted-foreground">Needs follow-up</p>
+                  </div>
+                </div>
+
+                {/* Recent invoices */}
+                {recentInvoices.length > 0 && (
+                  <div className="border-t border-border/50 divide-y divide-border/40">
+                    {recentInvoices.map((inv) => {
+                      const colors = INVOICE_STATUS_COLORS[inv.status];
+                      return (
+                        <div
+                          key={inv.id}
+                          className="flex items-center justify-between px-5 py-3 text-sm hover:bg-muted/30 transition-colors"
+                        >
+                          <div className="min-w-0">
+                            <Link
+                              to="/app/invoices/$invoiceId"
+                              params={{ invoiceId: inv.id }}
+                              className="font-mono text-[12px] font-semibold text-primary hover:underline"
+                            >
+                              {inv.invoice_number}
+                            </Link>
+                            <p className="text-[11px] text-muted-foreground truncate">
+                              {inv.client?.name ?? "Client"}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0 pl-3">
+                            <span className="font-mono text-[12px] font-semibold text-foreground numeric">
+                              {formatMoney(inv.total, inv.currency)}
+                            </span>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "text-[9px] uppercase font-bold tracking-wide h-5 px-1.5",
+                                colors.bg,
+                                colors.text,
+                                colors.border,
+                              )}
+                            >
+                              {INVOICE_STATUS_LABELS[inv.status]}
+                            </Badge>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {receivables.active_invoice_count === 0 && (
+                  <div className="p-5 text-center">
+                    <p className="text-[12px] text-muted-foreground">No outstanding invoices.</p>
+                    {canMutate && (
+                      <Button
+                        asChild
+                        variant="ghost"
+                        size="sm"
+                        className="mt-2 text-[12px] text-primary h-7"
+                      >
+                        <Link to="/app/invoices">
+                          <FileText className="mr-1.5 size-3.5" aria-hidden />
+                          Create an invoice
+                        </Link>
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="p-5 text-center">
+                <FileText className="size-8 mx-auto mb-2 text-muted-foreground/40" aria-hidden />
+                <p className="text-[12px] text-muted-foreground font-medium">No invoices yet</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Invoices help you track money clients owe you.
+                </p>
+                {canMutate && (
+                  <Button asChild size="sm" className="mt-3 gap-1.5">
+                    <Link to="/app/invoices">
+                      <Plus className="size-3.5" aria-hidden />
+                      Create your first invoice
+                    </Link>
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Committed outflows */}
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border/50">
+              <div className="flex items-center gap-2">
+                <TrendingDown className="size-4 text-muted-foreground" aria-hidden />
+                <h2 id="committed" className="text-[13px] font-semibold text-foreground">
+                  Committed
+                </h2>
+              </div>
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="text-[11px] text-primary h-7 px-2"
+              >
+                <Link to="/app/obligations">
+                  View obligations <ArrowRight className="ml-1 size-3" aria-hidden />
+                </Link>
+              </Button>
+            </div>
+
+            {obligationsQuery.isPending ? (
+              <div className="p-5 space-y-3">
+                {[1, 2, 3].map((n) => (
+                  <Skeleton key={n} className="h-5 w-full" />
+                ))}
+              </div>
+            ) : upcomingObligations.length > 0 ? (
+              <div className="divide-y divide-border/40">
+                {upcomingObligations.map((ob) => {
+                  const dueDate = ob.due_date ? new Date(ob.due_date) : null;
+                  const daysUntil = dueDate
+                    ? Math.ceil((dueDate.getTime() - Date.now()) / 86_400_000)
+                    : null;
+                  const isOverdue = daysUntil !== null && daysUntil < 0;
+                  const isDueSoon = daysUntil !== null && daysUntil >= 0 && daysUntil <= 7;
+
+                  return (
+                    <div
+                      key={ob.id}
+                      className="flex items-center justify-between px-5 py-3 hover:bg-muted/30 transition-colors"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-[13px] font-medium text-foreground truncate">
+                          {ob.title}
+                        </p>
+                        {dueDate && (
+                          <p
+                            className={cn(
+                              "text-[11px] mt-0.5",
+                              isOverdue
+                                ? "text-destructive font-medium"
+                                : isDueSoon
+                                  ? "text-amber-600 dark:text-amber-400 font-medium"
+                                  : "text-muted-foreground",
+                            )}
+                          >
+                            {isOverdue
+                              ? `Overdue by ${Math.abs(daysUntil!)} day${Math.abs(daysUntil!) !== 1 ? "s" : ""}`
+                              : daysUntil === 0
+                                ? "Due today"
+                                : `Due in ${daysUntil} day${daysUntil !== 1 ? "s" : ""}`}
+                          </p>
+                        )}
+                      </div>
+                      <span className="font-mono text-[12px] font-semibold text-foreground shrink-0 pl-3 numeric">
+                        {formatMoney(Number(ob.amount), workspace.currency ?? "USD")}
+                      </span>
+                    </div>
+                  );
+                })}
+                {activeObligations.length > upcomingObligations.length && (
+                  <div className="px-5 py-3">
+                    <Button
+                      asChild
+                      variant="ghost"
+                      size="sm"
+                      className="text-[11px] text-primary h-7 px-0"
+                    >
+                      <Link to="/app/obligations">
+                        +{activeObligations.length - upcomingObligations.length} more{" "}
+                        {activeObligations.length - upcomingObligations.length === 1
+                          ? "obligation"
+                          : "obligations"}
+                        <ArrowRight className="ml-1 size-3" aria-hidden />
+                      </Link>
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="p-5 text-center">
+                <Clock className="size-8 mx-auto mb-2 text-muted-foreground/40" aria-hidden />
+                <p className="text-[12px] text-muted-foreground font-medium">
+                  No upcoming obligations
+                </p>
+                <p className="mt-1 text-[11px] text-muted-foreground">
+                  Add obligations to track known upcoming payments.
+                </p>
+                {canMutate && (
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    className="mt-2 text-[12px] text-primary h-7"
+                  >
+                    <Link to="/app/obligations">Add obligation</Link>
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {/* Tax reserve health */}
+            {taxSummaries.length > 0 && (
+              <div className="border-t border-border/50 px-5 py-4 bg-muted/20">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Calculator className="size-3.5 text-muted-foreground/70" aria-hidden />
+                    <span className="section-label">Tax Reserve</span>
+                  </div>
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    className="text-[11px] text-primary h-6 px-0"
+                  >
+                    <Link to="/app/taxes">
+                      View <ArrowRight className="ml-1 size-3" aria-hidden />
+                    </Link>
+                  </Button>
+                </div>
+                {taxSummaries.slice(0, 1).map((ts) => {
+                  const hasShorfall = ts.shortfall && ts.shortfall > 0;
+                  return (
+                    <div
+                      key={ts.currency}
+                      className="mt-2 flex items-center justify-between text-[12px]"
+                    >
+                      <span className="text-muted-foreground">Tracked vs target</span>
+                      <span
+                        className={cn(
+                          "font-mono font-semibold",
+                          hasShorfall
+                            ? "text-amber-600 dark:text-amber-400"
+                            : "text-emerald-600 dark:text-emerald-400",
+                        )}
+                      >
+                        {formatMoney(ts.trackedTaxReserve, ts.currency)}
+                        {" / "}
+                        {formatMoney(ts.targetTaxReserve, ts.currency)}
+                        {hasShorfall && (
+                          <span className="ml-1.5 text-[10px] text-amber-500">(shortfall)</span>
+                        )}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════
+          FINANCIAL PULSE — "Worth knowing"
+          Answers: What needs my attention?
+      ═══════════════════════════════════════════════════════ */}
+      {attentionItems.length > 0 && (
+        <section aria-labelledby="financial-pulse">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Lightbulb className="size-4 text-amber-500" aria-hidden />
+              <h2 id="financial-pulse" className="text-[13px] font-semibold text-foreground">
+                Worth knowing
               </h2>
             </div>
-            <Button asChild size="sm" variant="ghost" className="text-xs text-primary">
+            <Button asChild variant="ghost" size="sm" className="text-[11px] text-primary h-7 px-2">
               <Link to="/app/insights">
-                View All Insights
-                <ArrowRight className="ml-1 size-3" />
+                All insights <ArrowRight className="ml-1 size-3" aria-hidden />
               </Link>
             </Button>
           </div>
-
           <div className="grid gap-3 sm:grid-cols-2">
             {attentionItems.slice(0, 4).map((item) => (
               <div
                 key={item.id}
                 className={cn(
-                  "panel p-4 flex items-start justify-between gap-3 border transition-colors",
+                  "rounded-xl border p-4 flex items-start justify-between gap-4 transition-colors",
                   item.severity === "warning"
-                    ? "border-destructive/40 bg-destructive/[0.03]"
-                    : "border-amber-500/40 bg-amber-500/[0.03]",
+                    ? "border-destructive/30 bg-destructive/[0.025]"
+                    : "border-amber-500/30 bg-amber-500/[0.025]",
                 )}
               >
-                <div className="space-y-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    {item.severity === "warning" ? (
-                      <AlertCircle className="size-4 text-destructive shrink-0" />
-                    ) : (
-                      <AlertTriangle className="size-4 text-amber-500 shrink-0" />
-                    )}
-                    <p className="font-semibold text-sm text-foreground truncate">{item.title}</p>
+                <div className="flex items-start gap-3 min-w-0">
+                  {item.severity === "warning" ? (
+                    <AlertCircle className="size-4 text-destructive shrink-0 mt-0.5" aria-hidden />
+                  ) : (
+                    <AlertTriangle className="size-4 text-amber-500 shrink-0 mt-0.5" aria-hidden />
+                  )}
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-semibold text-foreground leading-tight">
+                      {item.title}
+                    </p>
+                    <p className="mt-1 text-[11px] text-muted-foreground leading-relaxed line-clamp-2">
+                      {item.description}
+                    </p>
                   </div>
-                  <p className="text-xs text-muted-foreground line-clamp-2">{item.description}</p>
                 </div>
                 {item.action && (
-                  <Button asChild size="sm" variant="outline" className="shrink-0 text-xs h-7">
-                    <Link to={item.action.to}>
-                      {item.action.label}
-                      <ArrowRight className="ml-1 size-3" />
-                    </Link>
+                  <Button
+                    asChild
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0 text-[11px] h-7 px-2.5"
+                  >
+                    <Link to={item.action.to}>{item.action.label}</Link>
                   </Button>
                 )}
               </div>
@@ -215,865 +871,240 @@ function CommandCenter() {
         </section>
       )}
 
-      {/* 1. Liquid Cash Positions */}
-      <section aria-labelledby="cash-positions" className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Coins className="size-4 text-primary" />
-            <h2
-              id="cash-positions"
-              className="text-sm font-bold uppercase tracking-wider text-muted-foreground"
-            >
-              Liquid Cash Positions
-            </h2>
-          </div>
-          <Button
-            asChild
-            size="sm"
-            variant="ghost"
-            className="text-xs text-primary hover:text-primary"
-          >
-            <Link to="/app/cash">
-              Cash & Accounts
-              <ArrowRight className="ml-1 size-3" />
-            </Link>
-          </Button>
-        </div>
+      {/* ═══════════════════════════════════════════════════════
+          RECENT ACTIVITY + THIS MONTH
+          Supporting context
+      ═══════════════════════════════════════════════════════ */}
+      {hasAccounts && (
+        <section aria-labelledby="recent-supporting" className="grid gap-6 lg:grid-cols-3">
+          {/* Recent ledger activity — 2/3 */}
+          <div className="lg:col-span-2 rounded-xl border border-border bg-card overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border/50">
+              <div className="flex items-center gap-2">
+                <History className="size-4 text-muted-foreground/70" aria-hidden />
+                <h2 id="recent-activity" className="text-[13px] font-semibold text-foreground">
+                  Recent transactions
+                </h2>
+              </div>
+              {recentTransactions.length > 0 && (
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className="text-[11px] text-primary h-7 px-2"
+                >
+                  <Link to="/app/cash">
+                    Full ledger <ArrowRight className="ml-1 size-3" aria-hidden />
+                  </Link>
+                </Button>
+              )}
+            </div>
 
-        {hasAccounts && cashSummary?.positions.length ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {cashSummary.positions.map((pos) => (
-              <div
-                key={pos.currency}
-                className="panel p-5 bg-card/80 border border-border transition-all hover:border-primary/40 hover:shadow-md"
-              >
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span className="font-semibold uppercase tracking-wider text-foreground">
-                    {pos.currency} Cash Position
-                  </span>
-                  <span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-mono font-bold text-primary">
-                    Reconciled
-                  </span>
-                </div>
-                <p className="mt-3 text-display text-2xl sm:text-3xl font-bold tracking-tight numeric text-foreground">
-                  {formatMoney(pos.totalBalance, pos.currency)}
+            {recentTransactionsQuery.isPending ? (
+              <div className="p-5 space-y-3">
+                {[1, 2, 3, 4].map((n) => (
+                  <Skeleton key={n} className="h-5 w-full" />
+                ))}
+              </div>
+            ) : recentTransactions.length > 0 ? (
+              <div className="divide-y divide-border/40">
+                {recentTransactions.map((tx) => {
+                  const isIncome = tx.transaction_type === "income";
+                  const isExpense = tx.transaction_type === "expense";
+                  const isTransfer = tx.transaction_type === "transfer";
+
+                  return (
+                    <div
+                      key={tx.id}
+                      className="flex items-center justify-between px-5 py-3.5 hover:bg-muted/30 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className={cn(
+                            "flex size-7 shrink-0 items-center justify-center rounded-lg text-[11px]",
+                            isIncome && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+                            isExpense && "bg-rose-500/10 text-rose-600 dark:text-rose-400",
+                            isTransfer && "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+                            !isIncome &&
+                              !isExpense &&
+                              !isTransfer &&
+                              "bg-muted text-muted-foreground",
+                          )}
+                          aria-hidden
+                        >
+                          {isIncome && <ArrowDownLeft className="size-3.5" />}
+                          {isExpense && <ArrowUpRight className="size-3.5" />}
+                          {isTransfer && <ArrowLeftRight className="size-3.5" />}
+                          {!isIncome && !isExpense && !isTransfer && "↺"}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[13px] font-medium text-foreground truncate">
+                            {tx.description}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground truncate">
+                            {tx.category?.name ?? "General"}
+                            {tx.account?.name && ` · ${tx.account.name}`}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0 pl-3">
+                        <p
+                          className={cn(
+                            "font-mono text-[13px] font-semibold numeric",
+                            isIncome && "text-emerald-600 dark:text-emerald-400",
+                            isExpense && "text-rose-600 dark:text-rose-400",
+                            !isIncome && !isExpense && "text-foreground",
+                          )}
+                        >
+                          {isIncome ? "+" : isExpense ? "−" : ""}
+                          {formatMoney(tx.amount, tx.currency)}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground font-mono mt-0.5">
+                          {new Date(tx.transaction_date).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="p-8 text-center">
+                <History className="size-8 mx-auto mb-3 text-muted-foreground/30" aria-hidden />
+                <p className="text-[13px] font-medium text-foreground">No transactions yet</p>
+                <p className="mt-1 text-[11px] text-muted-foreground max-w-xs mx-auto">
+                  Record income, expenses or transfers to see your ledger activity here.
                 </p>
-                <div className="mt-3 flex items-center justify-between border-t border-border/50 pt-2 text-[11px] text-muted-foreground">
-                  <span>
-                    {pos.activeAccounts} active account{pos.activeAccounts === 1 ? "" : "s"}
-                  </span>
-                  <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
-                    <CheckCircle2 className="size-3" />
-                    Authoritative
-                  </span>
+                {canMutate && (
+                  <Button asChild size="sm" className="mt-4 gap-1.5">
+                    <Link to="/app/cash">
+                      <Plus className="size-3.5" aria-hidden />
+                      Record transaction
+                    </Link>
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* This month summary + quick actions — 1/3 */}
+          <div className="space-y-4">
+            {/* This month */}
+            <div className="rounded-xl border border-border bg-card overflow-hidden">
+              <div className="px-5 py-4 border-b border-border/50">
+                <div className="flex items-center gap-2">
+                  <Gauge className="size-4 text-muted-foreground/70" aria-hidden />
+                  <h2 className="text-[13px] font-semibold text-foreground">This month</h2>
                 </div>
               </div>
-            ))}
-
-            {safeToSpendList.length > 0 ? (
-              safeToSpendList.map((sts) => {
-                const isExpanded = expandedStsCurrency === sts.currency;
-                const isHealthy = sts.currentSafeToSpend > 0;
-                return (
-                  <div
-                    key={`sts-${sts.currency}`}
-                    className={cn(
-                      "panel p-5 border transition-all flex flex-col justify-between",
-                      isHealthy
-                        ? "bg-emerald-500/[0.03] border-emerald-500/30 hover:border-emerald-500/50"
-                        : "bg-rose-500/[0.03] border-rose-500/30 hover:border-rose-500/50",
-                    )}
-                  >
-                    <div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold uppercase tracking-wider text-foreground flex items-center gap-1.5">
-                          <ShieldCheck className="size-3.5 text-primary" />
-                          {sts.currency} Safe-to-Spend
-                        </span>
-                        <Badge
-                          variant={isHealthy ? "default" : "destructive"}
-                          className="text-[10px] font-mono"
-                        >
-                          {isHealthy ? "Safe" : "Deficit"}
-                        </Badge>
-                      </div>
-
-                      <p
-                        className={cn(
-                          "mt-3 text-display text-2xl sm:text-3xl font-bold tracking-tight numeric",
-                          isHealthy
-                            ? "text-emerald-600 dark:text-emerald-400"
-                            : "text-rose-600 dark:text-rose-400",
-                        )}
-                      >
-                        {formatMoney(sts.currentSafeToSpend, sts.currency)}
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Projected (30d): {formatMoney(sts.projectedSafeToSpend, sts.currency)}
-                      </p>
-
-                      {isExpanded && (
-                        <div className="mt-3 border-t border-border/50 pt-2.5 space-y-1.5 text-xs text-muted-foreground">
-                          <div className="flex justify-between">
-                            <span>Liquid Cash</span>
-                            <span className="font-medium text-foreground">
-                              +{formatMoney(sts.liquidCash, sts.currency)}
-                            </span>
+              {performanceQuery.isPending ? (
+                <div className="p-5 space-y-3">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                </div>
+              ) : performanceMetrics.length > 0 ? (
+                <div className="divide-y divide-border/40">
+                  {performanceMetrics.map((metric) => {
+                    const isPositive = metric.net_cash >= 0;
+                    return (
+                      <div key={metric.currency} className="px-5 py-4 space-y-3">
+                        <div>
+                          <p className="section-label mb-1.5">{metric.currency} Net Movement</p>
+                          <p
+                            className={cn(
+                              "font-mono text-xl font-bold numeric",
+                              isPositive
+                                ? "text-emerald-600 dark:text-emerald-400"
+                                : "text-rose-600 dark:text-rose-400",
+                            )}
+                          >
+                            {formatMoney(metric.net_cash, metric.currency)}
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-[11px] border-t border-border/40 pt-3">
+                          <div>
+                            <p className="text-muted-foreground mb-0.5">Collected</p>
+                            <p className="font-mono font-semibold text-foreground numeric">
+                              {formatMoney(metric.total_revenue, metric.currency)}
+                            </p>
                           </div>
-                          <div className="flex justify-between">
-                            <span>Tracked Tax Reserve</span>
-                            <span className="font-medium text-amber-600">
-                              −{formatMoney(sts.trackedTaxReserve, sts.currency)}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Known Obligations (30d)</span>
-                            <span className="font-medium text-rose-500">
-                              −{formatMoney(sts.upcomingObligations30d, sts.currency)}
-                            </span>
-                          </div>
-                          {sts.isPrimaryCurrency && sts.operatingBuffer > 0 && (
-                            <div className="flex justify-between">
-                              <span>Operating Buffer</span>
-                              <span className="font-medium text-muted-foreground">
-                                −{formatMoney(sts.operatingBuffer, sts.currency)}
-                              </span>
-                            </div>
-                          )}
-                          <div className="flex justify-between pt-1 border-t border-border/40 font-semibold text-foreground">
-                            <span>Expected Collections (30d)</span>
-                            <span className="text-emerald-600">
-                              +{formatMoney(sts.expectedCollections30d, sts.currency)}
-                            </span>
+                          <div>
+                            <p className="text-muted-foreground mb-0.5">Expenses</p>
+                            <p className="font-mono font-semibold text-rose-500 numeric">
+                              {formatMoney(metric.total_expenses, metric.currency)}
+                            </p>
                           </div>
                         </div>
-                      )}
-                    </div>
-
-                    <div className="mt-4 border-t border-border/50 pt-2 flex items-center justify-between text-[11px] text-muted-foreground">
-                      <button
-                        onClick={() => setExpandedStsCurrency(isExpanded ? null : sts.currency)}
-                        className="flex items-center gap-1 text-primary hover:underline font-medium"
-                      >
-                        {isExpanded ? (
-                          <>
-                            <ChevronUp className="size-3" /> Hide Breakdown
-                          </>
-                        ) : (
-                          <>
-                            <ChevronDown className="size-3" /> View Breakdown
-                          </>
-                        )}
-                      </button>
-                      <Link to="/app/cash" className="hover:text-foreground">
-                        Cashflow &rarr;
-                      </Link>
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="panel p-5 bg-primary/5 border border-primary/30 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold uppercase tracking-wider text-primary">
-                      Safe-To-Spend Status
-                    </span>
-                    <span className="rounded bg-primary/20 px-2 py-0.5 text-[10px] font-bold text-primary">
-                      Ready
-                    </span>
-                  </div>
-                  <p className="mt-3 text-sm text-foreground leading-relaxed">
-                    Set up accounts and obligations to compute real-time Safe-to-Spend.
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-5 text-center">
+                  <p className="text-[11px] text-muted-foreground">
+                    Record transactions to see this month's cash movement.
                   </p>
                 </div>
-                <div className="mt-4 border-t border-primary/20 pt-2 flex items-center justify-between text-[11px] text-primary/90 font-medium">
-                  <span className="flex items-center gap-1">
-                    <Scale className="size-3.5" />
-                    Formula: Cash − Reserves = Safe
-                  </span>
-                  <span>Active</span>
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="panel p-6 text-sm text-muted-foreground flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-card/60">
-            <div className="flex items-start gap-3.5">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Wallet className="size-5" />
-              </div>
-              <div>
-                <p className="font-bold text-foreground text-base">
-                  No financial accounts initialized
-                </p>
-                <p className="text-xs text-muted-foreground mt-1 max-w-xl leading-relaxed">
-                  SoloOS strictly reports verified records. Create your bank accounts, mobile money
-                  wallets, or cash reserves to activate authoritative ledger tracking.
-                </p>
-              </div>
+              )}
             </div>
+
+            {/* Quick actions */}
             {canMutate && (
-              <Button asChild size="sm" className="shrink-0 shadow-sm">
-                <Link to="/app/cash">
-                  <Plus className="mr-1.5 size-4" />
-                  Initialize Cash Accounts
-                </Link>
-              </Button>
-            )}
-          </div>
-        )}
-      </section>
-
-      {/* 1.5. Financial Safety & Intelligence (Phases 6, 7, 8) */}
-      <section aria-labelledby="financial-safety" className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Scale className="size-4 text-primary" />
-            <h2
-              id="financial-safety"
-              className="text-sm font-bold uppercase tracking-wider text-muted-foreground"
-            >
-              Financial Safety & Intelligence
-            </h2>
-          </div>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-3">
-          {/* Upcoming Obligations Strip */}
-          <Link
-            to="/app/obligations"
-            className="panel p-5 bg-card/80 border border-border transition-all hover:border-primary/40 hover:shadow-md block min-w-0"
-          >
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="font-semibold uppercase tracking-wider text-foreground flex items-center gap-1.5">
-                <Clock className="size-3.5 text-primary" />
-                Active Obligations
-              </span>
-              <ArrowRight className="size-3 text-muted-foreground" />
-            </div>
-            <p className="mt-3 text-display text-2xl font-bold tracking-tight numeric text-foreground">
-              {activeObligations.length}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {activeObligations.length > 0
-                ? `${formatMoney(
-                    activeObligations.reduce((acc, o) => acc + Number(o.amount), 0),
-                    workspace.currency ?? "USD",
-                  )} upcoming commitments`
-                : "No pending obligations recorded"}
-            </p>
-            <div className="mt-3 flex items-center gap-1.5 text-[11px] text-primary font-medium border-t border-border/50 pt-2">
-              <span>Manage Obligations</span>
-              <ArrowRight className="size-3" />
-            </div>
-          </Link>
-
-          {/* Tax Reserve Health */}
-          <Link
-            to="/app/taxes"
-            className="panel p-5 bg-card/80 border border-border transition-all hover:border-primary/40 hover:shadow-md block min-w-0"
-          >
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="font-semibold uppercase tracking-wider text-foreground flex items-center gap-1.5">
-                <Calculator className="size-3.5 text-primary" />
-                Tax Reserve Health
-              </span>
-              <ArrowRight className="size-3 text-muted-foreground" />
-            </div>
-            {taxSummaries.length > 0 ? (
-              <>
-                <p className="mt-3 text-display text-2xl font-bold tracking-tight numeric text-foreground">
-                  {formatMoney(
-                    taxSummaries[0]?.trackedTaxReserve ?? 0,
-                    taxSummaries[0]?.currency ?? "USD",
-                  )}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Target:{" "}
-                  {formatMoney(
-                    taxSummaries[0]?.targetTaxReserve ?? 0,
-                    taxSummaries[0]?.currency ?? "USD",
-                  )}{" "}
-                  {taxSummaries[0]?.shortfall && taxSummaries[0].shortfall > 0 ? (
-                    <span className="text-amber-600 font-semibold">
-                      (Shortfall: {formatMoney(taxSummaries[0].shortfall, taxSummaries[0].currency)}
-                      )
-                    </span>
-                  ) : (
-                    <span className="text-emerald-600 font-medium">(Funded)</span>
-                  )}
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="mt-3 text-display text-2xl font-bold tracking-tight text-foreground">
-                  Ready
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Track tax reserve against YTD income
-                </p>
-              </>
-            )}
-            <div className="mt-3 flex items-center gap-1.5 text-[11px] text-primary font-medium border-t border-border/50 pt-2">
-              <span>View Tax Status</span>
-              <ArrowRight className="size-3" />
-            </div>
-          </Link>
-
-          {/* AI CFO Intelligence Brief */}
-          <Link
-            to="/app/ai-cfo"
-            className="panel p-5 bg-primary/5 border border-primary/30 transition-all hover:border-primary hover:shadow-md block min-w-0"
-          >
-            <div className="flex items-center justify-between text-xs text-primary">
-              <span className="font-semibold uppercase tracking-wider flex items-center gap-1.5">
-                <Bot className="size-4" />
-                AI CFO Brief
-              </span>
-              <Sparkles className="size-3.5" />
-            </div>
-            <p className="mt-3 text-sm font-semibold text-foreground">
-              Strategic Financial Intelligence
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
-              Ground your business decisions in real cash positions, tax reserves, and runway
-              analysis.
-            </p>
-            <div className="mt-3 flex items-center gap-1.5 text-[11px] text-primary font-bold border-t border-primary/20 pt-2">
-              <span>Consult AI CFO</span>
-              <ArrowRight className="size-3" />
-            </div>
-          </Link>
-        </div>
-      </section>
-
-      {/* 2. This Period: Cash Performance (Revenue vs Expenses = Net Cash Movement) */}
-      <section aria-labelledby="period-performance" className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Gauge className="size-4 text-primary" />
-            <h2
-              id="period-performance"
-              className="text-sm font-bold uppercase tracking-wider text-muted-foreground"
-            >
-              This Month · Cash Movement
-            </h2>
-          </div>
-          <Button
-            asChild
-            size="sm"
-            variant="ghost"
-            className="text-xs text-primary hover:text-primary"
-          >
-            <Link to="/app/profitability">
-              Full Profitability
-              <ArrowRight className="ml-1 size-3" />
-            </Link>
-          </Button>
-        </div>
-
-        {performanceMetrics.length > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {performanceMetrics.map((metric) => {
-              const isPositive = metric.net_cash >= 0;
-              return (
-                <div
-                  key={metric.currency}
-                  className="panel p-5 bg-card/80 border border-border space-y-4"
-                >
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span className="font-semibold uppercase tracking-wider text-foreground">
-                      {metric.currency} Net Movement
-                    </span>
-                    <Badge
-                      variant={isPositive ? "default" : "destructive"}
-                      className="text-[10px] font-mono"
-                    >
-                      {isPositive ? "Surplus" : "Deficit"}
-                    </Badge>
-                  </div>
-
-                  <div>
-                    <p
-                      className={cn(
-                        "text-display text-2xl sm:text-3xl font-bold tracking-tight numeric",
-                        isPositive
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-rose-600 dark:text-rose-400",
-                      )}
-                    >
-                      {formatMoney(metric.net_cash, metric.currency)}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Net Cash Movement (Income minus Expenses)
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2 border-t border-border/50 pt-3 text-xs">
-                    <div>
-                      <span className="text-muted-foreground text-[11px] block">
-                        Collected Revenue
-                      </span>
-                      <span className="font-mono font-semibold text-foreground">
-                        {formatMoney(metric.total_revenue, metric.currency)}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground text-[11px] block">
-                        Expenses Posted
-                      </span>
-                      <span className="font-mono font-semibold text-rose-500">
-                        {formatMoney(metric.total_expenses, metric.currency)}
-                      </span>
-                    </div>
-                  </div>
+              <div className="rounded-xl border border-border bg-card overflow-hidden">
+                <div className="px-5 py-3.5 border-b border-border/50">
+                  <p className="text-[13px] font-semibold text-foreground">Quick actions</p>
                 </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="panel p-5 bg-card/40 border border-border text-xs text-muted-foreground text-center">
-            No posted cash movements recorded for the current month yet.
-          </div>
-        )}
-      </section>
-
-      {/* 3. Receivables & Commercial Operations */}
-      <section aria-labelledby="receivables-summary" className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Receipt className="size-4 text-primary" />
-            <h2
-              id="receivables-summary"
-              className="text-sm font-bold uppercase tracking-wider text-muted-foreground"
-            >
-              Receivables & Commercial Operations
-            </h2>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              asChild
-              size="sm"
-              variant="ghost"
-              className="text-xs text-primary hover:text-primary"
-            >
-              <Link to="/app/payments">
-                Payments
-                <CreditCard className="ml-1 size-3" />
-              </Link>
-            </Button>
-            <Button
-              asChild
-              size="sm"
-              variant="ghost"
-              className="text-xs text-primary hover:text-primary"
-            >
-              <Link to="/app/invoices">
-                All Invoices
-                <ArrowRight className="ml-1 size-3" />
-              </Link>
-            </Button>
-          </div>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Link
-            to="/app/invoices"
-            className="panel p-5 bg-card/80 border border-border transition-all hover:border-primary/40 hover:shadow-md block min-w-0"
-          >
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="font-semibold uppercase tracking-wider text-foreground flex items-center gap-1.5">
-                <Clock className="size-3.5 text-amber-500" />
-                Outstanding
-              </span>
-              <ArrowRight className="size-3 text-muted-foreground" />
-            </div>
-            <div className="mt-3">
-              <MoneyValue
-                value={receivables?.total_outstanding ?? 0}
-                currency={workspace.currency}
-                size="lg"
-                className="font-bold tracking-tight text-foreground"
-              />
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Pending client payments across all active invoices.
-            </p>
-          </Link>
-
-          <Link
-            to="/app/invoices"
-            className="panel p-5 bg-card/80 border border-border transition-all hover:border-primary/40 hover:shadow-md block min-w-0"
-          >
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="font-semibold uppercase tracking-wider text-foreground flex items-center gap-1.5">
-                <Clock className="size-3.5 text-rose-500" />
-                Overdue
-              </span>
-              <ArrowRight className="size-3 text-muted-foreground" />
-            </div>
-            <div className="mt-3">
-              <MoneyValue
-                value={receivables?.total_overdue ?? 0}
-                currency={workspace.currency}
-                size="lg"
-                className="font-bold tracking-tight text-rose-500"
-              />
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Invoices with past due dates requiring follow-up.
-            </p>
-          </Link>
-
-          <Link
-            to="/app/invoices"
-            className="panel p-5 bg-card/80 border border-border transition-all hover:border-primary/40 hover:shadow-md block min-w-0"
-          >
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="font-semibold uppercase tracking-wider text-foreground flex items-center gap-1.5">
-                <FileText className="size-3.5 text-primary" />
-                Active Invoices
-              </span>
-              <ArrowRight className="size-3 text-muted-foreground" />
-            </div>
-            <p className="mt-3 text-display text-2xl sm:text-3xl font-bold tracking-tight numeric text-foreground">
-              {receivables?.active_invoice_count ?? 0}
-            </p>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Total uncancelled commercial receivables.
-            </p>
-          </Link>
-
-          <Link
-            to="/app/invoices"
-            className="panel p-5 bg-card/80 border border-border transition-all hover:border-primary/40 hover:shadow-md block min-w-0"
-          >
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="font-semibold uppercase tracking-wider text-foreground flex items-center gap-1.5">
-                <TrendingUp className="size-3.5 text-emerald-500" />
-                This Month
-              </span>
-              <ArrowRight className="size-3 text-muted-foreground" />
-            </div>
-            <p className="mt-3 text-display text-2xl sm:text-3xl font-bold tracking-tight numeric text-foreground">
-              {receivables?.invoices_this_month ?? 0}
-            </p>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Invoices issued during the current month.
-            </p>
-          </Link>
-        </div>
-
-        {/* Recent Invoices strip */}
-        {recentInvoices.length > 0 && (
-          <div className="panel border border-border divide-y divide-border/60 bg-card overflow-hidden">
-            <div className="p-3 bg-muted/30 text-xs font-semibold uppercase tracking-wider text-muted-foreground flex justify-between">
-              <span>Recent Invoices</span>
-              <span>Amount / Status</span>
-            </div>
-            {recentInvoices.map((inv) => {
-              const colors = INVOICE_STATUS_COLORS[inv.status];
-              return (
-                <div
-                  key={inv.id}
-                  className="p-3.5 flex items-center justify-between text-sm hover:bg-muted/30 transition-colors"
-                >
-                  <div className="min-w-0 space-y-0.5">
+                <div className="p-3 space-y-1">
+                  {[
+                    {
+                      to: "/app/cash" as const,
+                      label: "Record income",
+                      icon: TrendingUp,
+                      color: "text-emerald-600",
+                    },
+                    {
+                      to: "/app/expenses" as const,
+                      label: "Record expense",
+                      icon: Receipt,
+                      color: "text-rose-500",
+                    },
+                    {
+                      to: "/app/invoices" as const,
+                      label: "Create invoice",
+                      icon: FileText,
+                      color: "text-primary",
+                    },
+                    {
+                      to: "/app/payments" as const,
+                      label: "Record payment",
+                      icon: CreditCard,
+                      color: "text-blue-500",
+                    },
+                    {
+                      to: "/app/ai-cfo" as const,
+                      label: "Ask AI CFO",
+                      icon: Bot,
+                      color: "text-violet-500",
+                    },
+                  ].map(({ to, label, icon: Icon, color }) => (
                     <Link
-                      to="/app/invoices/$invoiceId"
-                      params={{ invoiceId: inv.id }}
-                      className="font-mono font-semibold text-primary hover:underline"
+                      key={label}
+                      to={to}
+                      className="flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors group"
                     >
-                      {inv.invoice_number}
+                      <Icon className={cn("size-4 shrink-0", color)} aria-hidden />
+                      {label}
+                      <ArrowRight
+                        className="ml-auto size-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                        aria-hidden
+                      />
                     </Link>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {inv.client?.name ?? "Unknown Client"}
-                      {inv.project && ` · ${inv.project.name}`}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3 text-right">
-                    <div>
-                      <MoneyValue value={inv.total} currency={inv.currency} size="sm" />
-                      {inv.amount_due > 0 && (
-                        <p className="text-[11px] text-amber-500 font-medium">
-                          Due: {inv.currency} {inv.amount_due.toFixed(2)}
-                        </p>
-                      )}
-                    </div>
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "text-[10px] uppercase font-semibold",
-                        colors.bg,
-                        colors.text,
-                        colors.border,
-                      )}
-                    >
-                      {INVOICE_STATUS_LABELS[inv.status]}
-                    </Badge>
-                  </div>
+                  ))}
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      {/* 4. Operations & Engagements */}
-      <section aria-labelledby="operations-summary" className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Briefcase className="size-4 text-primary" />
-            <h2
-              id="operations-summary"
-              className="text-sm font-bold uppercase tracking-wider text-muted-foreground"
-            >
-              Operations & Engagements
-            </h2>
-          </div>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Link
-            to="/app/clients"
-            className="panel p-5 bg-card/80 border border-border transition-all hover:border-primary/40 hover:shadow-md block min-w-0"
-          >
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="font-semibold uppercase tracking-wider text-foreground flex items-center gap-1.5">
-                <Users className="size-3.5 text-primary" />
-                Active Clients
-              </span>
-              <ArrowRight className="size-3 text-muted-foreground" />
-            </div>
-            <p className="mt-3 text-display text-2xl sm:text-3xl font-bold tracking-tight numeric text-foreground">
-              {activeClients.length}
-            </p>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Organizations & partners with active commercial relationships.
-            </p>
-          </Link>
-
-          <Link
-            to="/app/projects"
-            className="panel p-5 bg-card/80 border border-border transition-all hover:border-primary/40 hover:shadow-md block min-w-0"
-          >
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="font-semibold uppercase tracking-wider text-foreground flex items-center gap-1.5">
-                <Briefcase className="size-3.5 text-primary" />
-                Active Projects
-              </span>
-              <ArrowRight className="size-3 text-muted-foreground" />
-            </div>
-            <p className="mt-3 text-display text-2xl sm:text-3xl font-bold tracking-tight numeric text-foreground">
-              {activeProjects.length}
-            </p>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Active deliverables, retainers, and client initiatives.
-            </p>
-          </Link>
-        </div>
-      </section>
-
-      {/* 5. Two Column Grid: Recent Ledger Activity + Financial Core Status */}
-      <div className="grid gap-8 lg:grid-cols-3">
-        {/* Left 2 Cols: Recent Authoritative Transactions */}
-        <section aria-labelledby="recent-activity" className="lg:col-span-2 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <History className="size-4 text-primary" />
-              <h2
-                id="recent-activity"
-                className="text-sm font-bold uppercase tracking-wider text-muted-foreground"
-              >
-                Recent Ledger Activity
-              </h2>
-            </div>
-            {recentTransactions.length > 0 && (
-              <Button asChild size="sm" variant="ghost" className="text-xs text-primary">
-                <Link to="/app/cash">
-                  Full Ledger ({recentTransactions.length})
-                  <ArrowRight className="ml-1 size-3" />
-                </Link>
-              </Button>
+              </div>
             )}
           </div>
-
-          {recentTransactions.length > 0 ? (
-            <div className="panel overflow-hidden border border-border divide-y divide-border/60 bg-card">
-              {recentTransactions.map((tx) => {
-                const isIncome = tx.transaction_type === "income";
-                const isExpense = tx.transaction_type === "expense";
-                const isTransfer = tx.transaction_type === "transfer";
-
-                return (
-                  <div
-                    key={tx.id}
-                    className="p-4 flex items-center justify-between text-sm hover:bg-muted/30 transition-colors"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        className={cn(
-                          "flex size-8 shrink-0 items-center justify-center rounded-lg",
-                          isIncome && "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-                          isExpense && "bg-rose-500/10 text-rose-600 dark:text-rose-400",
-                          isTransfer && "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-                          !isIncome &&
-                            !isExpense &&
-                            !isTransfer &&
-                            "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-                        )}
-                      >
-                        {isIncome && <ArrowDownLeft className="size-4" />}
-                        {isExpense && <ArrowUpRight className="size-4" />}
-                        {isTransfer && <ArrowLeftRight className="size-4" />}
-                        {!isIncome && !isExpense && !isTransfer && (
-                          <RotateCcwIcon className="size-4" />
-                        )}
-                      </div>
-
-                      <div className="min-w-0">
-                        <p className="font-semibold text-foreground truncate">{tx.description}</p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {tx.category ? tx.category.name : "General"} ·{" "}
-                          {tx.account?.name ?? "Account"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="text-right shrink-0 pl-3">
-                      <p
-                        className={cn(
-                          "font-mono font-bold",
-                          isIncome && "text-emerald-600 dark:text-emerald-400",
-                          isExpense && "text-rose-600 dark:text-rose-400",
-                          !isIncome && !isExpense && "text-foreground",
-                        )}
-                      >
-                        {isIncome ? "+" : isExpense ? "-" : ""}
-                        {formatMoney(tx.amount, tx.currency)}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground font-mono">
-                        {new Date(tx.transaction_date).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="panel p-6 text-center text-muted-foreground text-xs bg-card/40">
-              <History className="size-7 mx-auto mb-2 opacity-50" />
-              <p className="font-medium text-foreground text-sm">No transactions posted yet</p>
-              <p className="mt-0.5">
-                Post an opening balance, income, or expense to populate the authoritative ledger.
-              </p>
-            </div>
-          )}
         </section>
-
-        {/* Right 1 Col: Financial Core Status & Invariants */}
-        <section aria-labelledby="engine-status" className="space-y-3">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="size-4 text-primary" />
-            <h2
-              id="engine-status"
-              className="text-sm font-bold uppercase tracking-wider text-muted-foreground"
-            >
-              Operating Modules
-            </h2>
-          </div>
-
-          <div className="panel p-5 bg-card space-y-4 border border-border">
-            <div className="space-y-3 text-xs">
-              <div className="flex items-center justify-between pb-2 border-b border-border/60">
-                <span className="text-muted-foreground">Receivables & Invoicing</span>
-                <Badge
-                  variant="outline"
-                  className="text-[10px] text-emerald-600 border-emerald-500/30"
-                >
-                  Active
-                </Badge>
-              </div>
-
-              <div className="flex items-center justify-between pb-2 border-b border-border/60">
-                <span className="text-muted-foreground">Payment Settlement</span>
-                <Badge
-                  variant="outline"
-                  className="text-[10px] text-emerald-600 border-emerald-500/30"
-                >
-                  Active
-                </Badge>
-              </div>
-
-              <div className="flex items-center justify-between pb-2 border-b border-border/60">
-                <span className="text-muted-foreground">Expense Ledger</span>
-                <Badge
-                  variant="outline"
-                  className="text-[10px] text-emerald-600 border-emerald-500/30"
-                >
-                  Active
-                </Badge>
-              </div>
-
-              <div className="flex items-center justify-between pb-2 border-b border-border/60">
-                <span className="text-muted-foreground">Cash Profitability</span>
-                <Badge
-                  variant="outline"
-                  className="text-[10px] text-emerald-600 border-emerald-500/30"
-                >
-                  Active
-                </Badge>
-              </div>
-
-              <div className="flex items-center justify-between pb-2 border-b border-border/60">
-                <span className="text-muted-foreground">Deterministic Insights</span>
-                <Badge
-                  variant="outline"
-                  className="text-[10px] text-emerald-600 border-emerald-500/30"
-                >
-                  Active
-                </Badge>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Currency Isolation</span>
-                <span className="inline-flex items-center gap-1 font-semibold text-primary">
-                  <CheckCircle2 className="size-3" />
-                  Enforced
-                </span>
-              </div>
-            </div>
-
-            <div className="rounded-lg bg-muted/40 p-3 text-[11px] text-muted-foreground space-y-1">
-              <p className="font-semibold text-foreground">Roadmap Modules:</p>
-              <p>• Tax Withholding & Reserve Engine (Phase 6)</p>
-              <p>• Formal Financial Reporting Suite (Phase 7)</p>
-              <p>• AI CFO Autonomous Copilot (Phase 8)</p>
-            </div>
-          </div>
-        </section>
-      </div>
+      )}
     </div>
-  );
-}
-
-function RotateCcwIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-      <path d="M3 3v5h5" />
-    </svg>
   );
 }

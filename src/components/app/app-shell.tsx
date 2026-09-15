@@ -8,12 +8,12 @@ import {
   Building2,
   Calculator,
   ChevronDown,
-  Clock,
   CreditCard,
   FileText,
   Gauge,
   LayoutDashboard,
   Lightbulb,
+  LifeBuoy,
   Menu,
   Receipt,
   Settings as SettingsIcon,
@@ -41,85 +41,72 @@ import { useAuth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/solo.png";
 
-/** Modules that are not yet built. Route: /app/$module (placeholder page). */
-export const MODULES = {
-  invoices: { label: "Invoices", icon: FileText, phase: 4 },
-  payments: { label: "Payments", icon: CreditCard, phase: 4 },
-  expenses: { label: "Expenses", icon: Receipt, phase: 2 },
-  cash: { label: "Cash", icon: Wallet, phase: 7 },
-  profitability: { label: "Profitability", icon: Gauge, phase: 6 },
-  taxes: { label: "Taxes", icon: Calculator, phase: 7 },
-  reports: { label: "Reports", icon: BarChart3, phase: 8 },
-  insights: { label: "Insights", icon: Lightbulb, phase: 8 },
-  "ai-cfo": { label: "AI CFO", icon: Bot, phase: 9 },
-} as const;
-
-export type ModuleKey = keyof typeof MODULES;
-
-export function isModuleKey(value: string): value is ModuleKey {
-  return Object.prototype.hasOwnProperty.call(MODULES, value);
-}
-
-type NavItem =
-  | {
-      kind: "route";
-      to:
-        | "/app"
-        | "/app/settings"
-        | "/app/cash"
-        | "/app/clients"
-        | "/app/projects"
-        | "/app/invoices"
-        | "/app/payments"
-        | "/app/expenses"
-        | "/app/obligations"
-        | "/app/profitability"
-        | "/app/taxes"
-        | "/app/reports"
-        | "/app/insights"
-        | "/app/ai-cfo";
-      label: string;
-      icon: LucideIcon;
-    }
-  | { kind: "module"; module: ModuleKey; label: string; icon: LucideIcon };
+type NavItem = {
+  to:
+    | "/app"
+    | "/app/settings"
+    | "/app/cash"
+    | "/app/clients"
+    | "/app/projects"
+    | "/app/invoices"
+    | "/app/payments"
+    | "/app/expenses"
+    | "/app/obligations"
+    | "/app/profitability"
+    | "/app/taxes"
+    | "/app/reports"
+    | "/app/insights"
+    | "/app/ai-cfo";
+  label: string;
+  icon: LucideIcon;
+};
 
 type NavGroup = { label: string; items: NavItem[] };
 
+/**
+ * Navigation information architecture.
+ * Reflects the user's mental model of their financial world,
+ * not the database schema or build phases.
+ */
 const NAV: NavGroup[] = [
   {
-    label: "Run",
-    items: [
-      { kind: "route", label: "Command Center", icon: LayoutDashboard, to: "/app" },
-      { kind: "route", label: "Clients", icon: Users, to: "/app/clients" },
-      { kind: "route", label: "Projects", icon: Briefcase, to: "/app/projects" },
-    ],
+    label: "Command Center",
+    items: [{ label: "Dashboard", icon: LayoutDashboard, to: "/app" }],
   },
   {
     label: "Money",
     items: [
-      { kind: "route", label: "Invoices", icon: FileText, to: "/app/invoices" },
-      { kind: "route", label: "Payments", icon: CreditCard, to: "/app/payments" },
-      { kind: "route", label: "Expenses", icon: Receipt, to: "/app/expenses" },
-      { kind: "route", label: "Cash & Accounts", icon: Wallet, to: "/app/cash" },
-      { kind: "route", label: "Obligations", icon: Clock, to: "/app/obligations" },
+      { label: "Cash & Accounts", icon: Wallet, to: "/app/cash" },
+      { label: "Invoices", icon: FileText, to: "/app/invoices" },
+      { label: "Payments", icon: CreditCard, to: "/app/payments" },
+      { label: "Expenses", icon: Receipt, to: "/app/expenses" },
     ],
   },
   {
-    label: "Understand",
+    label: "Business",
     items: [
-      { kind: "route", label: "Profitability", icon: Gauge, to: "/app/profitability" },
-      { kind: "route", label: "Taxes", icon: Calculator, to: "/app/taxes" },
-      { kind: "route", label: "Reports", icon: BarChart3, to: "/app/reports" },
-      { kind: "route", label: "Insights", icon: Lightbulb, to: "/app/insights" },
+      { label: "Clients", icon: Users, to: "/app/clients" },
+      { label: "Projects", icon: Briefcase, to: "/app/projects" },
+    ],
+  },
+  {
+    label: "Planning",
+    items: [
+      { label: "Obligations", icon: Banknote, to: "/app/obligations" },
+      { label: "Tax Reserve", icon: Calculator, to: "/app/taxes" },
     ],
   },
   {
     label: "Intelligence",
-    items: [{ kind: "route", label: "AI CFO", icon: Bot, to: "/app/ai-cfo" }],
+    items: [
+      { label: "Profitability", icon: Gauge, to: "/app/profitability" },
+      { label: "Insights", icon: Lightbulb, to: "/app/insights" },
+      { label: "AI CFO", icon: Bot, to: "/app/ai-cfo" },
+    ],
   },
   {
-    label: "System",
-    items: [{ kind: "route", label: "Settings", icon: SettingsIcon, to: "/app/settings" }],
+    label: "Reporting",
+    items: [{ label: "Reports", icon: BarChart3, to: "/app/reports" }],
   },
 ];
 
@@ -127,57 +114,44 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <nav aria-label="Primary" className="flex flex-col gap-6 py-2">
+    <nav aria-label="Primary" className="flex flex-col gap-5 py-2">
       {NAV.map((group) => (
         <div key={group.label}>
-          <p className="px-3 text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground/80">
+          <p className="px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground/55 mb-1.5">
             {group.label}
           </p>
-          <ul className="mt-2 space-y-1">
+          <ul className="space-y-0.5">
             {group.items.map((item) => {
               const Icon = item.icon;
-              const href = item.kind === "module" ? `/app/${item.module}` : item.to;
               const active =
-                item.kind === "module"
-                  ? pathname === href
-                  : item.to === "/app"
-                    ? pathname === "/app"
-                    : pathname.startsWith(item.to);
+                item.to === "/app" ? pathname === "/app" : pathname.startsWith(item.to);
               const className = cn(
-                "group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150 relative",
+                "group flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-all duration-150",
                 active
-                  ? "bg-primary/10 text-primary border border-primary/20 shadow-xs"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
               );
 
               return (
                 <li key={item.label}>
-                  {item.kind === "module" ? (
-                    <Link
-                      to="/app/$module"
-                      params={{ module: item.module }}
-                      onClick={onNavigate}
-                      className={className}
-                    >
-                      <Icon
-                        className="size-4 shrink-0 transition-transform group-hover:scale-105"
+                  <Link to={item.to} onClick={onNavigate} className={className}>
+                    <Icon
+                      className={cn(
+                        "size-4 shrink-0 transition-transform duration-150",
+                        active
+                          ? "text-primary"
+                          : "text-muted-foreground/60 group-hover:text-foreground",
+                      )}
+                      aria-hidden
+                    />
+                    <span className="flex-1 truncate">{item.label}</span>
+                    {active && (
+                      <span
+                        className="ml-auto size-1.5 rounded-full bg-primary shrink-0"
                         aria-hidden
                       />
-                      <span className="flex-1">{item.label}</span>
-                      <span className="rounded bg-muted/80 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Soon
-                      </span>
-                    </Link>
-                  ) : (
-                    <Link to={item.to} onClick={onNavigate} className={className}>
-                      <Icon
-                        className="size-4 shrink-0 transition-transform group-hover:scale-105"
-                        aria-hidden
-                      />
-                      <span className="flex-1">{item.label}</span>
-                      {active && <span className="size-1.5 rounded-full bg-primary" aria-hidden />}
-                    </Link>
-                  )}
+                    )}
+                  </Link>
                 </li>
               );
             })}
@@ -192,6 +166,12 @@ function UserMenu() {
   const { workspace, role, profile } = useWorkspace();
   const { user, signOut } = useAuth();
   const name = profile?.full_name || user?.email || "Account";
+  const initials = name
+    .split(" ")
+    .slice(0, 2)
+    .map((n: string) => n[0])
+    .join("")
+    .toUpperCase();
   const { data: adminRole } = useQuery(platformAdminRoleQueryOptions(user?.id));
 
   return (
@@ -199,30 +179,34 @@ function UserMenu() {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="h-auto w-full justify-start gap-2.5 px-3 py-2.5 text-left border border-border/60 hover:border-border hover:bg-card/70 transition-all rounded-lg"
+          className="h-auto w-full justify-start gap-2.5 px-3 py-2.5 text-left hover:bg-muted/50 transition-colors rounded-lg"
+          aria-label="Account menu"
         >
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary text-xs font-bold text-primary-foreground shadow-xs">
-            {name.slice(0, 1).toUpperCase()}
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary text-[11px] font-bold text-primary-foreground">
+            {initials}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-semibold text-foreground">{name}</span>
-            <span className="block truncate text-xs text-muted-foreground">{workspace.name}</span>
+            <span className="block truncate text-[13px] font-semibold text-foreground leading-tight">
+              {profile?.full_name ?? name}
+            </span>
+            <span className="block truncate text-[11px] text-muted-foreground leading-tight mt-0.5">
+              {workspace.name}
+            </span>
           </span>
-          <ChevronDown className="size-3.5 text-muted-foreground shrink-0" aria-hidden />
+          <ChevronDown className="size-3 text-muted-foreground/50 shrink-0" aria-hidden />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-64 p-2 shadow-xl border border-border">
-        <DropdownMenuLabel className="space-y-1 px-2 py-1.5">
-          <p className="text-sm font-semibold">{profile?.full_name ?? "Your profile"}</p>
-          <p className="truncate text-xs font-normal text-muted-foreground">{user?.email}</p>
+      <DropdownMenuContent align="start" className="w-60 p-1.5 shadow-xl border border-border">
+        <DropdownMenuLabel className="space-y-0.5 px-2 py-2">
+          <p className="text-[13px] font-semibold">{profile?.full_name ?? "Your profile"}</p>
+          <p className="truncate text-[11px] font-normal text-muted-foreground">{user?.email}</p>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <div className="flex items-center justify-between px-2 py-1.5 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5 truncate">
-            <Building2 className="size-3.5" aria-hidden />
+        <div className="mx-2 mb-1 flex items-center justify-between rounded bg-muted/40 px-2 py-1.5 text-[11px] text-muted-foreground">
+          <span className="flex items-center gap-1.5 truncate min-w-0">
+            <Building2 className="size-3 shrink-0" aria-hidden />
             <span className="truncate">{workspace.name}</span>
           </span>
-          <span className="rounded bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] font-semibold uppercase">
+          <span className="ml-2 shrink-0 rounded bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
             {ROLE_LABEL[role]}
           </span>
         </div>
@@ -232,9 +216,9 @@ function UserMenu() {
             <DropdownMenuItem asChild>
               <Link
                 to="/admin"
-                className="cursor-pointer text-amber-500 focus:text-amber-500 font-medium"
+                className="cursor-pointer text-amber-600 dark:text-amber-400 focus:text-amber-600 dark:focus:text-amber-400 font-medium gap-2"
               >
-                <ShieldCheck className="size-4 mr-2" aria-hidden />
+                <ShieldCheck className="size-3.5" aria-hidden />
                 Platform Admin
               </Link>
             </DropdownMenuItem>
@@ -242,14 +226,15 @@ function UserMenu() {
           </>
         )}
         <DropdownMenuItem asChild>
-          <Link to="/app/settings" className="cursor-pointer">
-            <SettingsIcon className="size-4 mr-2" aria-hidden />
-            Workspace Settings
+          <Link to="/app/settings" className="cursor-pointer gap-2">
+            <SettingsIcon className="size-3.5" aria-hidden />
+            Settings
           </Link>
         </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem
           onSelect={() => void signOut()}
-          className="cursor-pointer text-destructive focus:text-destructive"
+          className="cursor-pointer text-destructive focus:text-destructive gap-2"
         >
           Sign out
         </DropdownMenuItem>
@@ -263,118 +248,151 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { workspace } = useWorkspace();
 
   return (
-    <div className="min-h-screen bg-background lg:grid lg:grid-cols-[260px_1fr]">
-      {/* Desktop Sidebar */}
-      <aside className="sticky top-0 hidden h-screen flex-col border-r border-border bg-sidebar px-4 py-5 lg:flex">
-        <div className="flex items-center justify-between px-2 pb-4 border-b border-border/60">
-          <Link to="/app" className="flex items-center gap-2.5 group">
-            <img src={logo} width={60} height={60} alt="Solo OS Logo" />
-            <span className="text-display text-lg font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
+    <div className="min-h-screen bg-background lg:grid lg:grid-cols-[240px_1fr]">
+      {/* ── Desktop Sidebar ── */}
+      <aside
+        className="sticky top-0 hidden h-screen flex-col border-r border-border/60 bg-sidebar lg:flex"
+        aria-label="Application navigation"
+      >
+        {/* Logo */}
+        <div className="flex items-center gap-2.5 px-5 py-4 border-b border-border/40">
+          <Link
+            to="/app"
+            className="flex items-center gap-2 group min-w-0"
+            aria-label="SoloOS Dashboard"
+          >
+            <img src={logo} width={26} height={26} alt="SoloOS" className="shrink-0" />
+            <span className="text-display text-[15px] font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
               SoloOS
             </span>
           </Link>
-        </div>
-
-        {/* Workspace pill */}
-        <div className="mt-3 px-2 py-2 rounded-lg bg-muted/30 border border-border/40 flex items-center justify-between">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="size-2 rounded-full bg-emerald-500 shrink-0" />
-            <span className="truncate text-xs font-medium text-foreground">{workspace.name}</span>
+          <div className="ml-auto flex items-center gap-1 shrink-0">
+            <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden />
+            <span className="text-[10px] font-mono font-medium text-muted-foreground/60">Live</span>
           </div>
-          <span className="text-[10px] uppercase font-mono text-muted-foreground shrink-0">
-            Live
-          </span>
         </div>
 
-        <div className="mt-3 flex-1 overflow-y-auto pr-1">
+        {/* Workspace context */}
+        <div className="px-5 py-2.5 border-b border-border/30">
+          <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/50 mb-0.5">
+            Workspace
+          </p>
+          <p className="text-[13px] font-medium text-foreground truncate">{workspace.name}</p>
+        </div>
+
+        {/* Nav */}
+        <div className="flex-1 overflow-y-auto px-3 py-4 scrollbar-thin">
           <NavLinks />
         </div>
 
-        <div className="border-t border-border/60 pt-3">
-          <UserMenu />
+        {/* Footer */}
+        <div className="border-t border-border/40 px-3 pt-2.5 pb-4 space-y-0.5">
+          <Link
+            to="/app/settings"
+            className="flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+          >
+            <SettingsIcon className="size-3.5 shrink-0" aria-hidden />
+            Settings
+          </Link>
+          <a
+            href="/support"
+            className="flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+          >
+            <LifeBuoy className="size-3.5 shrink-0" aria-hidden />
+            Support
+          </a>
+          <div className="pt-2">
+            <UserMenu />
+          </div>
         </div>
       </aside>
 
-      {/* Mobile Top Header */}
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border bg-background/95 px-4 py-3 backdrop-blur-md lg:hidden">
+      {/* ── Mobile Top Header ── */}
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border/60 bg-background/95 px-4 py-3 backdrop-blur-md lg:hidden">
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
-            <Button variant="outline" size="icon" aria-label="Open navigation">
+            <Button variant="ghost" size="icon" aria-label="Open navigation" className="size-9">
               <Menu className="size-4" aria-hidden />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-[280px] overflow-y-auto p-4">
-            <div className="flex items-center gap-2 px-2 pb-4 border-b border-border/60">
-              <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xs">
-                S
-              </span>
-              <SheetTitle className="text-display text-lg font-bold">SoloOS</SheetTitle>
+          <SheetContent side="left" className="w-[272px] overflow-y-auto p-0">
+            {/* Mobile sheet header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
+              <div className="flex items-center gap-2">
+                <img src={logo} width={22} height={22} alt="SoloOS" />
+                <SheetTitle className="text-display text-[15px] font-bold">SoloOS</SheetTitle>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden />
+                <span className="text-[10px] font-mono text-muted-foreground/70">Live</span>
+              </div>
             </div>
-            <div className="mt-4">
+            <div className="px-5 py-2.5 border-b border-border/30 bg-muted/20">
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/50">
+                Workspace
+              </p>
+              <p className="text-[13px] font-medium text-foreground mt-0.5 truncate">
+                {workspace.name}
+              </p>
+            </div>
+            <div className="px-3 py-4">
               <NavLinks onNavigate={() => setOpen(false)} />
             </div>
-            <div className="mt-6 border-t border-border pt-4">
-              <UserMenu />
+            <div className="border-t border-border/40 px-3 pt-2.5 pb-4 space-y-0.5">
+              <a
+                href="/support"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+              >
+                <LifeBuoy className="size-3.5 shrink-0" aria-hidden />
+                Support
+              </a>
+              <div className="pt-1">
+                <UserMenu />
+              </div>
             </div>
           </SheetContent>
         </Sheet>
+
+        {/* Mobile logo */}
         <div className="flex items-center gap-2">
-          <span className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold text-xs">
-            S
-          </span>
-          <span className="text-display text-base font-bold">SoloOS</span>
+          <img src={logo} width={20} height={20} alt="SoloOS" />
+          <span className="text-display text-[15px] font-bold">SoloOS</span>
         </div>
+
+        {/* Mobile quick link */}
         <Link
           to="/app/settings"
           aria-label="Settings"
-          className="flex size-9 items-center justify-center rounded-md border border-border bg-card"
+          className="flex size-9 items-center justify-center rounded-md border border-border/60 bg-card text-muted-foreground hover:text-foreground transition-colors"
         >
           <SettingsIcon className="size-4" aria-hidden />
         </Link>
       </header>
 
-      {/* Main Content Area */}
-      <main className="min-w-0 px-4 py-6 sm:px-8 lg:px-12 lg:py-10">{children}</main>
+      {/* ── Main Content ── */}
+      <main className="min-w-0">{children}</main>
     </div>
   );
 }
 
+export const MODULES: Record<string, { label: string; icon: LucideIcon; phase: number }> = {};
+export type ModuleKey = string;
+
+export function isModuleKey(value: string): value is ModuleKey {
+  return Object.prototype.hasOwnProperty.call(MODULES, value);
+}
+
 export function ModulePlaceholder({ moduleKey }: { moduleKey: ModuleKey }) {
-  const mod = MODULES[moduleKey];
-  const Icon = mod.icon;
   return (
     <div className="mx-auto max-w-2xl py-8">
-      <div className="panel p-8 bg-card border border-border shadow-sm">
-        <div className="flex items-center justify-between">
-          <span className="flex size-11 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Icon className="size-5" aria-hidden />
-          </span>
-          <span className="rounded-full bg-muted border border-border px-2.5 py-0.5 text-[11px] font-mono font-bold uppercase tracking-wider text-muted-foreground">
-            Phase {mod.phase} Upcoming
-          </span>
-        </div>
-        <h1 className="text-display mt-6 text-2xl font-bold tracking-tight text-foreground">
-          {mod.label}
+      <div className="rounded-xl p-8 bg-card border border-border shadow-sm">
+        <h1 className="text-display text-2xl font-bold tracking-tight text-foreground">
+          {moduleKey}
         </h1>
         <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-          {mod.label} is scheduled for rollout in Phase {mod.phase}. SoloOS strictly derives metrics
-          from actual transactional records and will never display fabricated or speculative
-          numbers.
+          This module is configured in SoloOS.
         </p>
-        <div className="mt-8 flex flex-wrap items-center gap-3 border-t border-border/60 pt-6">
-          <Button asChild variant="outline" size="sm">
-            <Link to="/app">
-              <Banknote className="mr-1.5 size-4" aria-hidden />
-              Command Center
-            </Link>
-          </Button>
-          <Button asChild size="sm">
-            <Link to="/app/cash">
-              <Wallet className="mr-1.5 size-4" aria-hidden />
-              Live Cash Accounts
-            </Link>
-          </Button>
-        </div>
       </div>
     </div>
   );
