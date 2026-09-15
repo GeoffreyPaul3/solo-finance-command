@@ -5,6 +5,7 @@ import {
   BarChart3,
   Clock,
   Download,
+  FileText,
   Loader2,
   Receipt,
   TrendingUp,
@@ -12,6 +13,8 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+
+import { generateReportPdf } from "@/lib/pdf/report-pdf";
 
 import { useWorkspace } from "@/components/app/workspace-context";
 import { Badge } from "@/components/ui/badge";
@@ -177,6 +180,206 @@ function ReportsPage() {
     }
   }
 
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+
+  async function handleExportPdf() {
+    setIsExportingPdf(true);
+    try {
+      if (reportType === "income") {
+        const incomeData = incomeQuery.data ?? [];
+        const totals = calculateIncomeReportTotals(incomeData);
+        await generateReportPdf(
+          {
+            title: "Income by Client & Project Report",
+            workspaceName: workspace.name,
+            logoUrl: workspace.logo_url,
+            periodLabel: `${dateFrom} to ${dateTo}`,
+            currency: currency === "all" ? "All Currencies" : currency,
+            metrics: [
+              {
+                label: "Total Billed",
+                value: formatMoney(totals.totalBilled, currency === "all" ? "USD" : currency),
+              },
+              {
+                label: "Total Collected",
+                value: formatMoney(totals.totalCollected, currency === "all" ? "USD" : currency),
+              },
+              {
+                label: "Total Outstanding",
+                value: formatMoney(totals.totalOutstanding, currency === "all" ? "USD" : currency),
+              },
+              { label: "Total Invoices", value: String(totals.invoiceCount) },
+            ],
+            tables: [
+              {
+                title: "Income Breakdown",
+                headers: [
+                  "Client",
+                  "Project",
+                  "Currency",
+                  "Invoices",
+                  "Billed",
+                  "Collected",
+                  "Due",
+                ],
+                rows: incomeData.map((r) => [
+                  r.clientName,
+                  r.projectName || "—",
+                  r.currency,
+                  r.invoiceCount,
+                  formatMoney(r.grossBilled, r.currency),
+                  formatMoney(r.grossCollected, r.currency),
+                  formatMoney(r.outstanding, r.currency),
+                ]),
+              },
+            ],
+          },
+          `income-report-${dateFrom}-to-${dateTo}.pdf`,
+        );
+      } else if (reportType === "expenses") {
+        const expenseData = expenseQuery.data ?? [];
+        const totals = calculateExpenseReportTotals(expenseData);
+        await generateReportPdf(
+          {
+            title: "Expenses by Category Report",
+            workspaceName: workspace.name,
+            logoUrl: workspace.logo_url,
+            periodLabel: `${dateFrom} to ${dateTo}`,
+            currency: currency === "all" ? "All Currencies" : currency,
+            metrics: [
+              {
+                label: "Total Spent",
+                value: formatMoney(totals.totalAmount, currency === "all" ? "USD" : currency),
+              },
+              {
+                label: "Tax Deductible",
+                value: formatMoney(totals.totalDeductible, currency === "all" ? "USD" : currency),
+              },
+              { label: "Total Expenses", value: String(totals.expenseCount) },
+            ],
+            tables: [
+              {
+                title: "Expense Breakdown",
+                headers: [
+                  "Category",
+                  "Vendor",
+                  "Currency",
+                  "Count",
+                  "Total Spent",
+                  "Tax Deductible",
+                ],
+                rows: expenseData.map((r) => [
+                  r.categoryName,
+                  r.vendor || "—",
+                  r.currency,
+                  r.expenseCount,
+                  formatMoney(r.totalAmount, r.currency),
+                  formatMoney(r.taxDeductibleAmount, r.currency),
+                ]),
+              },
+            ],
+          },
+          `expense-report-${dateFrom}-to-${dateTo}.pdf`,
+        );
+      } else if (reportType === "cashflow") {
+        const cashflowData = cashflowQuery.data ?? [];
+        await generateReportPdf(
+          {
+            title: "Cashflow Statement Report",
+            workspaceName: workspace.name,
+            logoUrl: workspace.logo_url,
+            periodLabel: `${dateFrom} to ${dateTo}`,
+            currency: currency === "all" ? "All Currencies" : currency,
+            metrics: [],
+            tables: [
+              {
+                title: "Cashflow Activity",
+                headers: ["Period", "Currency", "Inflow", "Outflow", "Net", "Closing Balance"],
+                rows: cashflowData.map((r) => [
+                  r.periodStart,
+                  r.currency,
+                  formatMoney(r.cashInflow, r.currency),
+                  formatMoney(r.cashOutflow, r.currency),
+                  formatMoney(r.netCashflow, r.currency),
+                  formatMoney(r.closingBalance, r.currency),
+                ]),
+              },
+            ],
+          },
+          `cashflow-report-${dateFrom}-to-${dateTo}.pdf`,
+        );
+      } else {
+        const agingData = receivablesQuery.data ?? [];
+        const buckets = calculateReceivablesAgingBuckets(agingData);
+        await generateReportPdf(
+          {
+            title: "Receivables Aging Report",
+            workspaceName: workspace.name,
+            logoUrl: workspace.logo_url,
+            periodLabel: `As of ${new Date().toLocaleDateString()}`,
+            currency: currency === "all" ? "All Currencies" : currency,
+            metrics: [
+              {
+                label: "Current",
+                value: formatMoney(buckets.current, currency === "all" ? "USD" : currency),
+              },
+              {
+                label: "1-30 Days",
+                value: formatMoney(buckets.bucket1_30, currency === "all" ? "USD" : currency),
+              },
+              {
+                label: "31-60 Days",
+                value: formatMoney(buckets.bucket31_60, currency === "all" ? "USD" : currency),
+              },
+              {
+                label: "61-90 Days",
+                value: formatMoney(buckets.bucket61_90, currency === "all" ? "USD" : currency),
+              },
+              {
+                label: "90+ Days",
+                value: formatMoney(buckets.bucket90_plus, currency === "all" ? "USD" : currency),
+              },
+              {
+                label: "Total Due",
+                value: formatMoney(buckets.totalDue, currency === "all" ? "USD" : currency),
+              },
+            ],
+            tables: [
+              {
+                title: "Receivables Aging Breakdown",
+                headers: [
+                  "Invoice",
+                  "Client",
+                  "Currency",
+                  "Due Date",
+                  "Days",
+                  "Amount Due",
+                  "Bucket",
+                ],
+                rows: agingData.map((r) => [
+                  r.invoiceNumber,
+                  r.clientName,
+                  r.currency,
+                  r.dueDate,
+                  r.daysOverdue > 0 ? `${r.daysOverdue}d` : "Current",
+                  formatMoney(r.amountDue, r.currency),
+                  r.agingBucket,
+                ]),
+              },
+            ],
+          },
+          `receivables-aging-${new Date().toISOString().slice(0, 10)}.pdf`,
+        );
+      }
+      toast.success("PDF report generated and downloaded");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to generate PDF report");
+    } finally {
+      setIsExportingPdf(false);
+    }
+  }
+
   const showDateRange = reportType !== "receivables";
 
   return (
@@ -198,16 +401,32 @@ function ReportsPage() {
           </p>
         </div>
 
-        <Button
-          id="export-report-csv"
-          variant="outline"
-          className="gap-2 self-start"
-          onClick={handleExport}
-          disabled={isLoading}
-        >
-          <Download className="size-4" />
-          Export CSV
-        </Button>
+        <div className="flex items-center gap-2 self-start">
+          <Button
+            id="export-report-pdf"
+            variant="default"
+            className="gap-2"
+            onClick={handleExportPdf}
+            disabled={isLoading || isExportingPdf}
+          >
+            {isExportingPdf ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <FileText className="size-4" />
+            )}
+            Export PDF
+          </Button>
+          <Button
+            id="export-report-csv"
+            variant="outline"
+            className="gap-2"
+            onClick={handleExport}
+            disabled={isLoading}
+          >
+            <Download className="size-4" />
+            Export CSV
+          </Button>
+        </div>
       </header>
 
       {/* Filters */}

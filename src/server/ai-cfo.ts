@@ -43,6 +43,7 @@ export const askAiCfoServerFn = createServerFn({ method: "POST" })
         isAvailable: true,
       };
     } catch (err: unknown) {
+      console.error("[AI CFO Error]:", err);
       const errorMsg =
         err instanceof Error
           ? err.message

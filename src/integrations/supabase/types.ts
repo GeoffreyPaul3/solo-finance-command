@@ -188,6 +188,7 @@ export type Database = {
           currency: string;
           fiscal_year_start_month: number;
           id: string;
+          logo_url: string | null;
           name: string;
           plan: string;
           status: string;
@@ -202,6 +203,7 @@ export type Database = {
           currency?: string;
           fiscal_year_start_month?: number;
           id?: string;
+          logo_url?: string | null;
           name: string;
           plan?: string;
           status?: string;
@@ -216,6 +218,7 @@ export type Database = {
           currency?: string;
           fiscal_year_start_month?: number;
           id?: string;
+          logo_url?: string | null;
           name?: string;
           plan?: string;
           status?: string;
@@ -1137,11 +1140,372 @@ export type Database = {
           },
         ];
       };
+      platform_admin_roles: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          role: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          role: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          role?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
+      subscription_plans: {
+        Row: {
+          created_at: string;
+          description: string;
+          features: Json;
+          id: string;
+          is_active: boolean;
+          name: string;
+        };
+        Insert: {
+          created_at?: string;
+          description: string;
+          features?: Json;
+          id: string;
+          is_active?: boolean;
+          name: string;
+        };
+        Update: {
+          created_at?: string;
+          description?: string;
+          features?: Json;
+          id?: string;
+          is_active?: boolean;
+          name?: string;
+        };
+        Relationships: [];
+      };
+      subscription_prices: {
+        Row: {
+          amount_cents: number;
+          billing_interval: string;
+          created_at: string;
+          currency: string;
+          id: string;
+          is_active: boolean;
+          plan_id: string;
+        };
+        Insert: {
+          amount_cents: number;
+          billing_interval: string;
+          created_at?: string;
+          currency: string;
+          id?: string;
+          is_active?: boolean;
+          plan_id: string;
+        };
+        Update: {
+          amount_cents?: number;
+          billing_interval?: string;
+          created_at?: string;
+          currency?: string;
+          id?: string;
+          is_active?: boolean;
+          plan_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "subscription_prices_plan_id_fkey";
+            columns: ["plan_id"];
+            isOneToOne: false;
+            referencedRelation: "subscription_plans";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean;
+          canceled_at: string | null;
+          created_at: string;
+          currency: string;
+          current_period_end: string;
+          current_period_start: string;
+          id: string;
+          plan_id: string;
+          status: string;
+          updated_at: string;
+          workspace_id: string;
+        };
+        Insert: {
+          cancel_at_period_end?: boolean;
+          canceled_at?: string | null;
+          created_at?: string;
+          currency: string;
+          current_period_end: string;
+          current_period_start: string;
+          id?: string;
+          plan_id: string;
+          status: string;
+          updated_at?: string;
+          workspace_id: string;
+        };
+        Update: {
+          cancel_at_period_end?: boolean;
+          canceled_at?: string | null;
+          created_at?: string;
+          currency?: string;
+          current_period_end?: string;
+          current_period_start?: string;
+          id?: string;
+          plan_id?: string;
+          status?: string;
+          updated_at?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey";
+            columns: ["plan_id"];
+            isOneToOne: false;
+            referencedRelation: "subscription_plans";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "subscriptions_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: true;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      subscription_payments: {
+        Row: {
+          created_at: string;
+          expected_amount_cents: number;
+          expected_currency: string;
+          failure_reason: string | null;
+          id: string;
+          metadata: Json;
+          plan_id: string;
+          provider: string;
+          provider_ref: string | null;
+          status: string;
+          subscription_id: string | null;
+          tx_ref: string;
+          updated_at: string;
+          verified_amount_cents: number | null;
+          verified_at: string | null;
+          verified_currency: string | null;
+          workspace_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          expected_amount_cents: number;
+          expected_currency: string;
+          failure_reason?: string | null;
+          id?: string;
+          metadata?: Json;
+          plan_id: string;
+          provider?: string;
+          provider_ref?: string | null;
+          status?: string;
+          subscription_id?: string | null;
+          tx_ref: string;
+          updated_at?: string;
+          verified_amount_cents?: number | null;
+          verified_at?: string | null;
+          verified_currency?: string | null;
+          workspace_id: string;
+        };
+        Update: {
+          created_at?: string;
+          expected_amount_cents?: number;
+          expected_currency?: string;
+          failure_reason?: string | null;
+          id?: string;
+          metadata?: Json;
+          plan_id?: string;
+          provider?: string;
+          provider_ref?: string | null;
+          status?: string;
+          subscription_id?: string | null;
+          tx_ref?: string;
+          updated_at?: string;
+          verified_amount_cents?: number | null;
+          verified_at?: string | null;
+          verified_currency?: string | null;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "subscription_payments_plan_id_fkey";
+            columns: ["plan_id"];
+            isOneToOne: false;
+            referencedRelation: "subscription_plans";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "subscription_payments_subscription_id_fkey";
+            columns: ["subscription_id"];
+            isOneToOne: false;
+            referencedRelation: "subscriptions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "subscription_payments_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      workspace_invitations: {
+        Row: {
+          accepted_at: string | null;
+          created_at: string;
+          email: string;
+          expires_at: string;
+          id: string;
+          invited_by: string;
+          role: Database["public"]["Enums"]["app_role"];
+          status: string;
+          token: string;
+          workspace_id: string;
+        };
+        Insert: {
+          accepted_at?: string | null;
+          created_at?: string;
+          email: string;
+          expires_at: string;
+          id?: string;
+          invited_by: string;
+          role?: Database["public"]["Enums"]["app_role"];
+          status?: string;
+          token: string;
+          workspace_id: string;
+        };
+        Update: {
+          accepted_at?: string | null;
+          created_at?: string;
+          email?: string;
+          expires_at?: string;
+          id?: string;
+          invited_by?: string;
+          role?: Database["public"]["Enums"]["app_role"];
+          status?: string;
+          token?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "workspace_invitations_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      support_requests: {
+        Row: {
+          category: string;
+          created_at: string;
+          email: string;
+          id: string;
+          message: string;
+          name: string;
+          status: string;
+          subject: string;
+          user_id: string | null;
+          workspace_id: string | null;
+        };
+        Insert: {
+          category?: string;
+          created_at?: string;
+          email: string;
+          id?: string;
+          message: string;
+          name: string;
+          status?: string;
+          subject: string;
+          user_id?: string | null;
+          workspace_id?: string | null;
+        };
+        Update: {
+          category?: string;
+          created_at?: string;
+          email?: string;
+          id?: string;
+          message?: string;
+          name?: string;
+          status?: string;
+          subject?: string;
+          user_id?: string | null;
+          workspace_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "support_requests_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      email_events: {
+        Row: {
+          created_at: string;
+          error_message: string | null;
+          id: string;
+          idempotency_key: string;
+          provider_message_id: string | null;
+          recipient: string;
+          status: string;
+          template: string;
+        };
+        Insert: {
+          created_at?: string;
+          error_message?: string | null;
+          id?: string;
+          idempotency_key: string;
+          provider_message_id?: string | null;
+          recipient: string;
+          status: string;
+          template: string;
+        };
+        Update: {
+          created_at?: string;
+          error_message?: string | null;
+          id?: string;
+          idempotency_key?: string;
+          provider_message_id?: string | null;
+          recipient?: string;
+          status?: string;
+          template?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
+      is_platform_admin: {
+        Args: {
+          check_user_id: string;
+        };
+        Returns: boolean;
+      };
       archive_financial_account: {
         Args: {
           _account_id: string;

@@ -172,6 +172,7 @@ export type ProfileInput = {
   fullName: string;
   phone?: string | null;
   profession?: string | null;
+  avatarUrl?: string | null;
   markOnboarded?: boolean;
 };
 
@@ -186,6 +187,7 @@ export async function upsertProfile(input: ProfileInput): Promise<Profile> {
           full_name: input.fullName.trim(),
           phone: input.phone?.trim() || null,
           profession: input.profession || null,
+          ...(input.avatarUrl !== undefined ? { avatar_url: input.avatarUrl } : {}),
           ...(input.markOnboarded ? { onboarded_at: new Date().toISOString() } : {}),
         },
         { onConflict: "id" },
@@ -200,7 +202,13 @@ export async function updateWorkspace(
   patch: Partial<
     Pick<
       Workspace,
-      "name" | "business_type" | "country" | "timezone" | "currency" | "fiscal_year_start_month"
+      | "name"
+      | "business_type"
+      | "country"
+      | "timezone"
+      | "currency"
+      | "fiscal_year_start_month"
+      | "logo_url"
     >
   >,
 ): Promise<Workspace> {
@@ -216,6 +224,24 @@ export async function updateWorkspace(
   });
   return workspace;
 }
+
+export type WorkspaceInvitation = Database["public"]["Tables"]["workspace_invitations"]["Row"];
+
+export const workspaceInvitationsQueryOptions = (workspaceId: string | undefined) =>
+  queryOptions({
+    queryKey: ["workspace_invitations", workspaceId],
+    enabled: Boolean(workspaceId),
+    queryFn: async (): Promise<WorkspaceInvitation[]> => {
+      if (!workspaceId) return [];
+      const { data, error } = await supabase
+        .from("workspace_invitations")
+        .select("*")
+        .eq("workspace_id", workspaceId)
+        .order("created_at", { ascending: false });
+      if (error) throw new Error(error.message);
+      return data ?? [];
+    },
+  });
 
 export async function updateWorkspaceSettings(
   workspaceId: string,

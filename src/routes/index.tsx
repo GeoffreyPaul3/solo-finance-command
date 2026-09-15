@@ -201,7 +201,13 @@ function Landing() {
             </Link>
           </div>
 
-          <nav className="flex items-center gap-3">
+          <nav className="flex items-center gap-1 sm:gap-3">
+            <Button asChild variant="ghost" size="sm" className="font-medium hidden sm:inline-flex">
+              <Link to="/pricing">Pricing</Link>
+            </Button>
+            <Button asChild variant="ghost" size="sm" className="font-medium hidden sm:inline-flex">
+              <Link to="/support">Support</Link>
+            </Button>
             <Button asChild variant="ghost" size="sm" className="font-medium">
               <Link to="/auth" search={{ mode: "signin" }}>
                 Sign in

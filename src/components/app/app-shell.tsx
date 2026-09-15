@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   BarChart3,
@@ -16,6 +17,7 @@ import {
   Menu,
   Receipt,
   Settings as SettingsIcon,
+  ShieldCheck,
   Users,
   Wallet,
   type LucideIcon,
@@ -23,6 +25,7 @@ import {
 import { useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import { platformAdminRoleQueryOptions } from "@/domain/admin";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -189,6 +192,7 @@ function UserMenu() {
   const { workspace, role, profile } = useWorkspace();
   const { user, signOut } = useAuth();
   const name = profile?.full_name || user?.email || "Account";
+  const { data: adminRole } = useQuery(platformAdminRoleQueryOptions(user?.id));
 
   return (
     <DropdownMenu>
@@ -223,6 +227,20 @@ function UserMenu() {
           </span>
         </div>
         <DropdownMenuSeparator />
+        {adminRole && (
+          <>
+            <DropdownMenuItem asChild>
+              <Link
+                to="/admin"
+                className="cursor-pointer text-amber-500 focus:text-amber-500 font-medium"
+              >
+                <ShieldCheck className="size-4 mr-2" aria-hidden />
+                Platform Admin
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
         <DropdownMenuItem asChild>
           <Link to="/app/settings" className="cursor-pointer">
             <SettingsIcon className="size-4 mr-2" aria-hidden />

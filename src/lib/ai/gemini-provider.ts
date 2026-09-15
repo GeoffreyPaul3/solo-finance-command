@@ -7,7 +7,17 @@ export class GeminiAiProvider implements AiProvider {
     if (typeof process === "undefined" || !process.env) {
       return null;
     }
-    return process.env["GEMINI_API_KEY"] || process.env["GOOGLE_AI_API_KEY"] || null;
+    let key = process.env["GEMINI_API_KEY"] || process.env["GOOGLE_AI_API_KEY"];
+    const nodeProcess = process as unknown as { loadEnvFile?: () => void };
+    if (!key && typeof nodeProcess.loadEnvFile === "function") {
+      try {
+        nodeProcess.loadEnvFile();
+        key = process.env["GEMINI_API_KEY"] || process.env["GOOGLE_AI_API_KEY"];
+      } catch {
+        // Ignore if .env is missing or already loaded
+      }
+    }
+    return key || null;
   }
 
   private getModel(): string {
@@ -15,7 +25,7 @@ export class GeminiAiProvider implements AiProvider {
       const customModel = process.env["GEMINI_MODEL"];
       if (customModel) return customModel;
     }
-    return "gemini-1.5-flash";
+    return "gemini-2.5-flash";
   }
 
   isConfigured(): boolean {
