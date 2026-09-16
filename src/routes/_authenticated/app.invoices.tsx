@@ -1,23 +1,39 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useChildMatches, useNavigate } from "@tanstack/react-router";
 import {
   AlertCircle,
   ArrowRight,
+  Ban,
   Calendar,
   CheckCircle2,
   Clock,
+  Eye,
   FileText,
   Loader2,
+  MoreHorizontal,
   Plus,
   Receipt,
   Search,
+  Send,
   Trash2,
   TrendingUp,
+  Wallet,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { RecordPaymentDialog } from "@/components/app/record-payment-dialog";
 import { useWorkspace } from "@/components/app/workspace-context";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,6 +45,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MoneyInput } from "@/components/ui/money-input";
@@ -51,14 +74,18 @@ import {
 import { TablePagination } from "@/components/ui/table-pagination";
 import { Textarea } from "@/components/ui/textarea";
 import { clientsQueryOptions } from "@/domain/clients";
+import { accountsQueryOptions } from "@/domain/financial";
 import {
+  cancelInvoice,
   createInvoice,
   invoicesQueryOptions,
+  sendInvoice,
   workspaceReceivablesSummaryQueryOptions,
   INVOICE_STATUS_COLORS,
   INVOICE_STATUS_LABELS,
   type CreateInvoiceInput,
   type InvoiceStatus,
+  type InvoiceWithRelations,
   type LineItemInput,
 } from "@/domain/invoices";
 import { projectsQueryOptions } from "@/domain/projects";
@@ -74,12 +101,23 @@ export const Route = createFileRoute("/_authenticated/app/invoices")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: InvoicesPage,
+  component: InvoicesLayout,
 });
+
+function InvoicesLayout() {
+  const childMatches = useChildMatches();
+  // If a child route (e.g. $invoiceId) is active, render it via Outlet.
+  // Otherwise render the list page directly.
+  if (childMatches.length > 0) {
+    return <Outlet />;
+  }
+  return <InvoicesPage />;
+}
 
 function InvoicesPage() {
   const { workspace, role } = useWorkspace();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<InvoiceStatus | "all">("all");
@@ -87,6 +125,12 @@ function InvoicesPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
+  const [cancelTarget, setCancelTarget] = useState<InvoiceWithRelations | null>(null);
+  const [paymentTarget, setPaymentTarget] = useState<InvoiceWithRelations | null>(null);
+  const [sendingId, setSendingId] = useState<string | null>(null);
+
+  const accountsQuery = useQuery(accountsQueryOptions(workspace.id));
+  const accounts = accountsQuery.data ?? [];
 
   const canManage = roleAtLeast(role, "manager");
 
@@ -111,6 +155,29 @@ function InvoicesPage() {
     queryClient.invalidateQueries({ queryKey: ["invoices", workspace.id] });
     queryClient.invalidateQueries({ queryKey: ["receivables-summary", workspace.id] });
   };
+
+  const cancelMutation = useMutation({
+    mutationFn: (inv: InvoiceWithRelations) => cancelInvoice(workspace.id, inv.id),
+    onSuccess: () => {
+      toast.success("Invoice cancelled.");
+      invalidateInvoices();
+      setCancelTarget(null);
+    },
+    onError: (err: Error) => toast.error(err.message || "Failed to cancel invoice."),
+  });
+
+  const sendMutation = useMutation({
+    mutationFn: async (inv: InvoiceWithRelations) => {
+      setSendingId(inv.id);
+      return sendInvoice(workspace.id, inv.id);
+    },
+    onSuccess: () => {
+      toast.success("Invoice sent to client.");
+      invalidateInvoices();
+    },
+    onError: (err: Error) => toast.error(err.message || "Failed to send invoice."),
+    onSettled: () => setSendingId(null),
+  });
 
   return (
     <div className="space-y-6 pb-12">
@@ -362,11 +429,66 @@ function InvoicesPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" asChild className="h-8 px-2">
-                          <Link to="/app/invoices/$invoiceId" params={{ invoiceId: inv.id }}>
-                            <ArrowRight className="size-4" />
-                          </Link>
-                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              aria-label={`Actions for ${inv.invoice_number}`}
+                            >
+                              {sendingId === inv.id ? (
+                                <Loader2 className="size-4 animate-spin" />
+                              ) : (
+                                <MoreHorizontal className="size-4" />
+                              )}
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-52">
+                            <DropdownMenuItem asChild>
+                              <Link
+                                to="/app/invoices/$invoiceId"
+                                params={{ invoiceId: inv.id }}
+                                className="flex items-center gap-2 cursor-pointer"
+                              >
+                                <Eye className="size-4" />
+                                View Details
+                              </Link>
+                            </DropdownMenuItem>
+                            {canManage && inv.status !== "cancelled" && (
+                              <>
+                                <DropdownMenuSeparator />
+                                {(inv.status === "draft" || inv.status === "sent" || inv.status === "overdue") && (
+                                  <DropdownMenuItem
+                                    onClick={() => sendMutation.mutate(inv)}
+                                    disabled={sendMutation.isPending}
+                                    className="flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <Send className="size-4" />
+                                    Send to Client
+                                  </DropdownMenuItem>
+                                )}
+                                {(inv.status === "sent" || inv.status === "partially_paid" || inv.status === "overdue") && (
+                                  <DropdownMenuItem
+                                    onClick={() => setPaymentTarget(inv)}
+                                    className="flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <Wallet className="size-4" />
+                                    Record Payment
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => setCancelTarget(inv)}
+                                  className="flex items-center gap-2 text-destructive focus:text-destructive cursor-pointer"
+                                >
+                                  <Ban className="size-4" />
+                                  Cancel Invoice
+                                </DropdownMenuItem>
+                              </>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </TableCell>
                     </TableRow>
                   );
@@ -457,6 +579,56 @@ function InvoicesPage() {
         workspaceId={workspace.id}
         defaultCurrency={workspace.currency}
       />
+
+      {/* Cancel Invoice Confirmation */}
+      <AlertDialog
+        open={cancelTarget !== null}
+        onOpenChange={(open) => { if (!open) setCancelTarget(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel Invoice?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>
+                  Are you sure you want to cancel invoice{" "}
+                  <strong className="text-foreground">{cancelTarget?.invoice_number}</strong>?
+                </p>
+                <p>
+                  This will mark the invoice as cancelled. Existing payment records are preserved.
+                  This action cannot be undone.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelMutation.isPending}>Keep Invoice</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => { if (cancelTarget) cancelMutation.mutate(cancelTarget); }}
+              disabled={cancelMutation.isPending}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {cancelMutation.isPending && <Loader2 className="mr-1.5 size-4 animate-spin" />}
+              Cancel Invoice
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Record Payment Dialog */}
+      {paymentTarget && (
+        <RecordPaymentDialog
+          isOpen={paymentTarget !== null}
+          onClose={() => setPaymentTarget(null)}
+          onSuccess={() => {
+            setPaymentTarget(null);
+            invalidateInvoices();
+          }}
+          invoice={paymentTarget}
+          accounts={accounts}
+          workspaceId={workspace.id}
+        />
+      )}
     </div>
   );
 }

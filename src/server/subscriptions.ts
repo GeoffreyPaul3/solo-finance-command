@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { sendEmailSafely } from "@/lib/email/send";
 import { renderSubscriptionEmail } from "@/lib/email/templates";
 import { payChangu } from "@/lib/payments/paychangu";
@@ -15,6 +16,7 @@ const createCheckoutSchema = z.object({
   customerName: z.string().optional(),
   returnUrl: z.string().url(),
   callbackUrl: z.string().url().optional(),
+  authToken: z.string().optional(),
 });
 
 function ensureNodeEnvLoaded() {
@@ -30,7 +32,15 @@ function ensureNodeEnvLoaded() {
   }
 }
 
-async function getCurrentUserId(): Promise<string | null> {
+async function getAuthenticatedUserId(authToken?: string): Promise<string | null> {
+  if (authToken) {
+    try {
+      const { data } = await supabaseAdmin.auth.getUser(authToken);
+      if (data?.user) return data.user.id;
+    } catch {
+      // Ignore invalid auth token errors
+    }
+  }
   const { data } = await supabase.auth.getUser();
   if (data?.user) return data.user.id;
   const { data: sessionData } = await supabase.auth.getSession();
@@ -40,7 +50,7 @@ async function getCurrentUserId(): Promise<string | null> {
 
 async function verifyWorkspaceMember(userId: string | null, workspaceId: string) {
   if (!userId) return;
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("workspace_members")
     .select("role")
     .eq("user_id", userId)
@@ -57,7 +67,7 @@ export const createCheckoutServerFn = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     ensureNodeEnvLoaded();
 
-    const userId = await getCurrentUserId();
+    const userId = await getAuthenticatedUserId(data.authToken);
     await verifyWorkspaceMember(userId, data.workspaceId);
 
     const priceInfo = CANONICAL_PRICES[data.planId][data.currency];
@@ -69,7 +79,8 @@ export const createCheckoutServerFn = createServerFn({ method: "POST" })
     const txRef = `so_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
     // Architectural Rule #4: Create internal pending payment record BEFORE PayChangu
-    const { error: insertErr } = await supabase.from("subscription_payments").insert({
+    // Uses admin client to bypass RLS — this is a trusted server-side operation.
+    const { error: insertErr } = await supabaseAdmin.from("subscription_payments").insert({
       workspace_id: data.workspaceId,
       plan_id: data.planId,
       tx_ref: txRef,
@@ -120,7 +131,7 @@ export const createCheckoutServerFn = createServerFn({ method: "POST" })
     } catch (err: unknown) {
       console.error("[Checkout] PayChangu initiation failure:", err);
       // Mark internal payment record as failed so there is no stale pending attempt
-      await supabase
+      await supabaseAdmin
         .from("subscription_payments")
         .update({
           status: "failed",
@@ -137,17 +148,18 @@ export const createCheckoutServerFn = createServerFn({ method: "POST" })
 const verifyPaymentSchema = z.object({
   txRef: z.string().min(1),
   workspaceId: z.string().uuid(),
+  authToken: z.string().optional(),
 });
 
 export const verifyPaymentServerFn = createServerFn({ method: "POST" })
   .validator((data: z.infer<typeof verifyPaymentSchema>) => verifyPaymentSchema.parse(data))
   .handler(async ({ data }) => {
     // Security Rule #1: Verify caller is authenticated and a workspace member
-    const userId = await getCurrentUserId();
+    const userId = await getAuthenticatedUserId(data.authToken);
     await verifyWorkspaceMember(userId, data.workspaceId);
 
     // 1. Fetch internal pending payment record
-    const { data: payment, error: fetchErr } = await supabase
+    const { data: payment, error: fetchErr } = await supabaseAdmin
       .from("subscription_payments")
       .select("*")
       .eq("tx_ref", data.txRef)
@@ -186,7 +198,7 @@ export const verifyPaymentServerFn = createServerFn({ method: "POST" })
       const periodEnd = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30-day period
 
       // 3. Atomically activate subscription
-      const { data: subData, error: subErr } = await supabase
+      const { data: subData, error: subErr } = await supabaseAdmin
         .from("subscriptions")
         .upsert(
           {
@@ -209,7 +221,7 @@ export const verifyPaymentServerFn = createServerFn({ method: "POST" })
       }
 
       // Update payment record with verification details
-      await supabase
+      await supabaseAdmin
         .from("subscription_payments")
         .update({
           status: "successful",
@@ -222,13 +234,13 @@ export const verifyPaymentServerFn = createServerFn({ method: "POST" })
         .eq("id", payment.id);
 
       // Update workspace plan column
-      await supabase
+      await supabaseAdmin
         .from("workspaces")
         .update({ plan: payment.plan_id })
         .eq("id", data.workspaceId);
 
       // 4. Send subscription confirmation email (safe, failures don't block success)
-      const { data: ws } = await supabase
+      const { data: ws } = await supabaseAdmin
         .from("workspaces")
         .select("name")
         .eq("id", data.workspaceId)
@@ -265,7 +277,7 @@ export const verifyPaymentServerFn = createServerFn({ method: "POST" })
     }
 
     // If mismatch or failure
-    await supabase
+    await supabaseAdmin
       .from("subscription_payments")
       .update({
         status: verification.status === "mismatch" ? "mismatch" : "failed",
@@ -284,14 +296,19 @@ export const verifyPaymentServerFn = createServerFn({ method: "POST" })
     };
   });
 
+const cancelSubscriptionSchema = z.object({
+  workspaceId: z.string().uuid(),
+  authToken: z.string().optional(),
+});
+
 export const cancelSubscriptionServerFn = createServerFn({ method: "POST" })
-  .validator((data: { workspaceId: string }) => data)
+  .validator((data: z.infer<typeof cancelSubscriptionSchema>) => cancelSubscriptionSchema.parse(data))
   .handler(async ({ data }) => {
     // Security Rule #1: Verify caller is authenticated and a workspace member (owner/admin)
-    const userId = await getCurrentUserId();
+    const userId = await getAuthenticatedUserId(data.authToken);
     await verifyWorkspaceMember(userId, data.workspaceId);
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from("subscriptions")
       .update({
         cancel_at_period_end: true,

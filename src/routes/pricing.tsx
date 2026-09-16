@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import logo from "@/assets/solo.png";
+import { useAuth } from "@/lib/auth";
 import {
   CANONICAL_PRICES,
   PLAN_DETAILS,
@@ -70,6 +71,7 @@ const FAQ_ITEMS = [
 ];
 
 function PricingPage() {
+  const { user } = useAuth();
   const [currency, setCurrency] = useState<PricingCurrency>("MWK");
 
   return (
@@ -90,16 +92,26 @@ function PricingPage() {
             <Button asChild variant="ghost" size="sm">
               <Link to="/support">Support</Link>
             </Button>
-            <Button asChild variant="ghost" size="sm">
-              <Link to="/auth" search={{ mode: "signin" }}>
-                Sign in
-              </Link>
-            </Button>
-            <Button asChild size="sm" className="gap-1.5">
-              <Link to="/auth" search={{ mode: "signup" }}>
-                Get Started <ChevronRight className="size-3.5" />
-              </Link>
-            </Button>
+            {user ? (
+              <Button asChild size="sm" className="gap-1.5">
+                <Link to="/app">
+                  Dashboard <ChevronRight className="size-3.5" />
+                </Link>
+              </Button>
+            ) : (
+              <>
+                <Button asChild variant="ghost" size="sm">
+                  <Link to="/auth" search={{ mode: "signin" }}>
+                    Sign in
+                  </Link>
+                </Button>
+                <Button asChild size="sm" className="gap-1.5">
+                  <Link to="/auth" search={{ mode: "signup" }}>
+                    Get Started <ChevronRight className="size-3.5" />
+                  </Link>
+                </Button>
+              </>
+            )}
           </nav>
         </div>
       </header>
@@ -230,10 +242,24 @@ function PricingPage() {
                     variant={planId === "free" ? "outline" : "default"}
                     size="lg"
                   >
-                    <Link to="/auth" search={{ mode: "signup" }}>
-                      {planId === "free" ? "Start for Free" : `Upgrade to ${plan.name}`}
-                      <ArrowRight className="size-4" />
-                    </Link>
+                    {user ? (
+                      planId === "free" ? (
+                        <Link to="/app">
+                          Go to Dashboard
+                          <ArrowRight className="size-4" />
+                        </Link>
+                      ) : (
+                        <Link to="/app/settings" search={{ tab: "billing" }}>
+                          {`Upgrade to ${plan.name}`}
+                          <ArrowRight className="size-4" />
+                        </Link>
+                      )
+                    ) : (
+                      <Link to="/auth" search={{ mode: "signup" }}>
+                        {planId === "free" ? "Start for Free" : `Upgrade to ${plan.name}`}
+                        <ArrowRight className="size-4" />
+                      </Link>
+                    )}
                   </Button>
                 </CardContent>
               </Card>

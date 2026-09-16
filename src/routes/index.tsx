@@ -227,10 +227,8 @@ function LandingPage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5">
           <div className="flex items-center">
             <Link to="/" className="flex items-center gap-2.5 group">
-              <img src={logo} width={36} height={36} alt="SoloOS" className="rounded-md" />
-              <span className="text-display text-lg font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
-                SoloOS
-              </span>
+              <img src={logo} width={70} height={36} alt="SoloOS" className="rounded-md" />
+              
             </Link>
           </div>
 
@@ -1128,8 +1126,8 @@ function LandingPage() {
           <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 pb-12 border-b border-border/60 text-xs">
             <div>
               <div className="flex items-center gap-2.5 mb-3">
-                <img src={logo} width={28} height={28} alt="SoloOS" className="rounded" />
-                <span className="text-display text-base font-bold text-foreground">SoloOS</span>
+                <img src={logo} width={80} height={28} alt="SoloOS" className="rounded" />
+                
               </div>
               <p className="text-muted-foreground leading-relaxed">
                 The financial operating system for independent professionals. Know what you earned,

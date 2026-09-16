@@ -7,6 +7,7 @@ import { z } from "zod";
 import { useWorkspace } from "@/components/app/workspace-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
 import { verifyPaymentServerFn } from "@/server/subscriptions";
 
 const verifySearchSchema = z.object({
@@ -47,10 +48,13 @@ function BillingVerifyPage() {
       }
 
       try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const authToken = sessionData.session?.access_token;
         const res = await verifyPaymentServerFn({
           data: {
             txRef,
             workspaceId: workspace.id,
+            authToken,
           },
         });
 
@@ -115,7 +119,7 @@ function BillingVerifyPage() {
 
           <div className="flex justify-center gap-3 pt-2">
             <Button asChild variant="default">
-              <Link to="/app/settings">Go to Billing Settings</Link>
+              <Link to="/app/settings" search={{ tab: "billing" }}>Go to Billing Settings</Link>
             </Button>
             <Button asChild variant="outline">
               <Link to="/app">Dashboard</Link>

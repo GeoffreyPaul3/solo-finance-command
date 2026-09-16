@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import {
   Building2,
   Check,
@@ -77,6 +77,12 @@ export const Route = createFileRoute("/_authenticated/app/settings")({
       { name: "robots", content: "noindex" },
     ],
   }),
+  validateSearch: (search: Record<string, unknown>): { tab?: string | undefined } => {
+    const tab = search["tab"];
+    return {
+      tab: typeof tab === "string" ? tab : undefined,
+    };
+  },
   component: SettingsPage,
 });
 
@@ -104,6 +110,9 @@ function SettingsPage() {
   const { workspace, role, profile } = useWorkspace();
   const { user, signOut } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { tab } = useSearch({ from: "/_authenticated/app/settings" });
+  const activeTab = tab ?? "workspace";
 
   const settings = useQuery(workspaceSettingsQueryOptions(workspace.id));
   const members = useQuery(workspaceMembersQueryOptions(workspace.id));
@@ -388,6 +397,8 @@ function SettingsPage() {
     setIsCheckingOut(targetPlan);
     try {
       const returnUrl = `${window.location.origin}/app/billing/verify`;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const authToken = sessionData.session?.access_token;
       const res = await createCheckoutServerFn({
         data: {
           workspaceId: workspace.id,
@@ -396,6 +407,7 @@ function SettingsPage() {
           customerEmail: user?.email || "customer@example.com",
           customerName: profile?.full_name || undefined,
           returnUrl,
+          authToken,
         },
       });
 
@@ -429,7 +441,9 @@ function SettingsPage() {
     }
     setIsCancelingSub(true);
     try {
-      await cancelSubscriptionServerFn({ data: { workspaceId: workspace.id } });
+      const { data: sessionData } = await supabase.auth.getSession();
+      const authToken = sessionData.session?.access_token;
+      await cancelSubscriptionServerFn({ data: { workspaceId: workspace.id, authToken } });
       await queryClient.invalidateQueries({ queryKey: ["workspace_subscription"] });
       toast.success("Subscription set to cancel at end of billing cycle");
     } catch (err: unknown) {
@@ -477,7 +491,13 @@ function SettingsPage() {
         </p>
       </header>
 
-      <Tabs defaultValue="workspace" className="space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={(tab) =>
+          void navigate({ to: "/app/settings", search: { tab }, replace: true })
+        }
+        className="space-y-6"
+      >
         <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 h-auto p-1 bg-muted/60">
           <TabsTrigger value="workspace" className="gap-2 py-2 text-xs sm:text-sm">
             <Building2 className="size-4" />

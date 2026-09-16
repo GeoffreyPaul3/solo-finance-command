@@ -319,7 +319,7 @@ function TermsPage() {
                     </div>
                     <div className="rounded-md border border-border bg-card p-3">
                       <p className="font-bold text-foreground">Pro Plan</p>
-                      <p className="text-foreground font-mono mt-1">MWK 35,000/mo · $20/mo</p>
+                      <p className="text-foreground font-mono mt-1">MWK 21,000/mo · $12/mo</p>
                       <p className="text-[11px] text-muted-foreground mt-2">
                         Multi-seat collaboration, multi-workspace tools, priority processing.
                       </p>

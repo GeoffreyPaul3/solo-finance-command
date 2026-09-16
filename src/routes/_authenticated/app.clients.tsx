@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useChildMatches } from "@tanstack/react-router";
 import {
   Archive,
   ArchiveRestore,
@@ -84,8 +84,18 @@ export const Route = createFileRoute("/_authenticated/app/clients")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: ClientsPage,
+  component: ClientsLayout,
 });
+
+function ClientsLayout() {
+  const childMatches = useChildMatches();
+  // If a child route (e.g. $clientId) is active, render it via Outlet.
+  // Otherwise render the list page directly.
+  if (childMatches.length > 0) {
+    return <Outlet />;
+  }
+  return <ClientsPage />;
+}
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 type PageSize = (typeof PAGE_SIZE_OPTIONS)[number];

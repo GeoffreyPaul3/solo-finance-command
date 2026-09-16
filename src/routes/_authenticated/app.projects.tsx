@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useChildMatches } from "@tanstack/react-router";
 import {
   Archive,
   ArchiveRestore,
@@ -95,8 +95,18 @@ export const Route = createFileRoute("/_authenticated/app/projects")({
       { name: "robots", content: "noindex" },
     ],
   }),
-  component: ProjectsPage,
+  component: ProjectsLayout,
 });
+
+function ProjectsLayout() {
+  const childMatches = useChildMatches();
+  // If a child route (e.g. $projectId) is active, render it via Outlet.
+  // Otherwise render the list page directly.
+  if (childMatches.length > 0) {
+    return <Outlet />;
+  }
+  return <ProjectsPage />;
+}
 
 function ProjectsPage() {
   const { workspace, role } = useWorkspace();

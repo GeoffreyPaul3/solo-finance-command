@@ -272,7 +272,7 @@ function UserMenu() {
           </>
         )}
         <DropdownMenuItem asChild>
-          <Link to="/app/settings" className="cursor-pointer gap-2">
+          <Link to="/app/settings" search={{}} className="cursor-pointer gap-2">
             <SettingsIcon className="size-3.5" aria-hidden />
             Settings
           </Link>
@@ -332,6 +332,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="border-t border-border/40 px-3 pt-2.5 pb-4 space-y-0.5">
           <Link
             to="/app/settings"
+            search={{}}
             className="flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
           >
             <SettingsIcon className="size-3.5 shrink-0" aria-hidden />
@@ -403,6 +404,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Mobile quick link */}
         <Link
           to="/app/settings"
+          search={{}}
           aria-label="Settings"
           className="flex size-9 items-center justify-center rounded-md border border-border/60 bg-card text-muted-foreground hover:text-foreground transition-colors"
         >
