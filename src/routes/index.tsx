@@ -222,7 +222,6 @@ function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/20 selection:text-primary">
-
       {/* ── Main Navigation ── */}
       <header className="sticky top-0 z-30 border-b border-border/80 bg-background/85 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5">
@@ -344,7 +343,6 @@ function LandingPage() {
                   soloos.app/app — Command Center
                 </span>
               </div>
-
             </div>
 
             {/* Architecture Concept Panel */}
@@ -787,9 +785,9 @@ function LandingPage() {
                 Your numbers are always accurate.
               </h2>
               <p className="mt-3 text-muted-foreground text-sm sm:text-base leading-relaxed">
-                Spreadsheets drift. SoloOS keeps your balances correct at all times — every
-                movement is recorded precisely, every workspace is fully private, and nothing
-                can silently go wrong.
+                Spreadsheets drift. SoloOS keeps your balances correct at all times — every movement
+                is recorded precisely, every workspace is fully private, and nothing can silently go
+                wrong.
               </p>
             </div>
 
@@ -798,10 +796,12 @@ function LandingPage() {
                 <div className="flex size-8 items-center justify-center rounded-md bg-primary/10 text-primary mb-3">
                   <ShieldCheck className="size-4" />
                 </div>
-                <h3 className="font-semibold text-foreground text-base">Complete Workspace Privacy</h3>
+                <h3 className="font-semibold text-foreground text-base">
+                  Complete Workspace Privacy
+                </h3>
                 <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-                  Your workspace is fully isolated. No other user or workspace can ever see
-                  your financial records, clients, or transactions.
+                  Your workspace is fully isolated. No other user or workspace can ever see your
+                  financial records, clients, or transactions.
                 </p>
               </div>
 
@@ -809,10 +809,12 @@ function LandingPage() {
                 <div className="flex size-8 items-center justify-center rounded-md bg-primary/10 text-primary mb-3">
                   <Layers className="size-4" />
                 </div>
-                <h3 className="font-semibold text-foreground text-base">Always-Accurate Balances</h3>
+                <h3 className="font-semibold text-foreground text-base">
+                  Always-Accurate Balances
+                </h3>
                 <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-                  Every transfer, payment, and entry is recorded precisely. Balances never
-                  drift, round incorrectly, or silently lose a cent — all with a full audit trail.
+                  Every transfer, payment, and entry is recorded precisely. Balances never drift,
+                  round incorrectly, or silently lose a cent — all with a full audit trail.
                 </p>
               </div>
 
@@ -820,7 +822,9 @@ function LandingPage() {
                 <div className="flex size-8 items-center justify-center rounded-md bg-primary/10 text-primary mb-3">
                   <Lock className="size-4" />
                 </div>
-                <h3 className="font-semibold text-foreground text-base">AI That Advises, Never Acts</h3>
+                <h3 className="font-semibold text-foreground text-base">
+                  AI That Advises, Never Acts
+                </h3>
                 <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
                   Your AI CFO reads your financial context to give you insight. It cannot move
                   money, change records, or make decisions — only you can.

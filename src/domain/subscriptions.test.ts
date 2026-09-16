@@ -20,6 +20,8 @@ describe("Subscription Entitlements Engine", () => {
     expect(entitlements.maxClients).toBe(5);
     expect(entitlements.maxInvoicesPerMonth).toBe(10);
     expect(entitlements.hasMultiCurrency).toBe(false);
+    expect(entitlements.canAccessAnalytics).toBe(false);
+    expect(entitlements.canAccessAudit).toBe(false);
     expect(entitlements.isPaidPlan).toBe(false);
   });
 
@@ -44,6 +46,8 @@ describe("Subscription Entitlements Engine", () => {
     expect(entitlements.maxClients).toBe(Infinity);
     expect(entitlements.maxInvoicesPerMonth).toBe(Infinity);
     expect(entitlements.hasMultiCurrency).toBe(true);
+    expect(entitlements.canAccessAnalytics).toBe(true);
+    expect(entitlements.canAccessAudit).toBe(false);
     expect(entitlements.isPaidPlan).toBe(true);
     expect(entitlements.isInGracePeriod).toBe(false);
   });
@@ -67,6 +71,8 @@ describe("Subscription Entitlements Engine", () => {
     expect(entitlements.canExportPdfReports).toBe(true);
     expect(entitlements.canManageMultipleWorkspaces).toBe(true);
     expect(entitlements.canInviteUnlimitedTeam).toBe(true);
+    expect(entitlements.canAccessAnalytics).toBe(true);
+    expect(entitlements.canAccessAudit).toBe(true);
     expect(entitlements.maxTeamMembers).toBe(Infinity);
     expect(entitlements.hasAdvancedTaxScenarios).toBe(true);
     expect(entitlements.isPaidPlan).toBe(true);

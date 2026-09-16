@@ -3,6 +3,7 @@ import { Link, Outlet, createFileRoute, useRouterState } from "@tanstack/react-r
 import {
   ArrowLeft,
   BadgeAlert,
+  BarChart3,
   CreditCard,
   DollarSign,
   HelpCircle,
@@ -34,12 +35,14 @@ interface NavItem {
 
 const ADMIN_NAV: NavItem[] = [
   { label: "Overview", to: "/admin", icon: LayoutDashboard },
+  { label: "Analytics", to: "/admin/analytics", icon: BarChart3 },
   { label: "Users", to: "/admin/users", icon: Users },
   { label: "Workspaces", to: "/admin/workspaces", icon: Shield },
   { label: "Subscriptions", to: "/admin/subscriptions", icon: CreditCard },
   { label: "Revenue", to: "/admin/revenue", icon: DollarSign },
   { label: "Payments", to: "/admin/payments", icon: Receipt },
   { label: "Support", to: "/admin/support", icon: HelpCircle },
+  { label: "Audit Log", to: "/admin/audit", icon: ShieldCheck },
 ];
 
 function AdminLayout() {

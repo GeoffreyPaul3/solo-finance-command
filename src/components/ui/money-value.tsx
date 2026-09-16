@@ -45,6 +45,9 @@ export function MoneyValue({
   prefixClassName,
 }: MoneyValueProps) {
   const amount = toDisplayNumber(value);
+  // Rule #9: Never display leading minus like −MWK 2,000,000.00.
+  // Display positive magnitude and use semantic styling/color to communicate direction.
+  const absAmount = Math.abs(amount);
 
   let formatted: string;
   try {
@@ -53,10 +56,10 @@ export function MoneyValue({
       currency,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(amount);
+    }).format(absAmount);
   } catch {
     // Fallback for unsupported currency codes (e.g. MWK on some locales)
-    formatted = `${currency} ${amount.toLocaleString(undefined, {
+    formatted = `${currency} ${absAmount.toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;
@@ -94,6 +97,7 @@ export function MoneyValueBlock({
   className,
 }: Omit<MoneyValueProps, "prefix" | "prefixClassName">) {
   const amount = toDisplayNumber(value);
+  const absAmount = Math.abs(amount);
 
   let amountStr: string;
   let currencyStr = currency;
@@ -105,7 +109,7 @@ export function MoneyValueBlock({
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
       currencyDisplay: "code",
-    }).formatToParts(amount);
+    }).formatToParts(absAmount);
 
     currencyStr = parts.find((p) => p.type === "currency")?.value ?? currency;
     amountStr = parts
@@ -115,7 +119,7 @@ export function MoneyValueBlock({
       .join("")
       .trim();
   } catch {
-    amountStr = amount.toLocaleString(undefined, {
+    amountStr = absAmount.toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });

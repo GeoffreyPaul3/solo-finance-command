@@ -18,6 +18,7 @@ import {
   Receipt,
   Settings as SettingsIcon,
   ShieldCheck,
+  TrendingUp,
   Users,
   Wallet,
   type LucideIcon,
@@ -56,7 +57,9 @@ type NavItem = {
     | "/app/taxes"
     | "/app/reports"
     | "/app/insights"
-    | "/app/ai-cfo";
+    | "/app/ai-cfo"
+    | "/app/analytics"
+    | "/app/audit";
   label: string;
   icon: LucideIcon;
 };
@@ -101,12 +104,16 @@ const NAV: NavGroup[] = [
     items: [
       { label: "Profitability", icon: Gauge, to: "/app/profitability" },
       { label: "Insights", icon: Lightbulb, to: "/app/insights" },
+      { label: "Analytics", icon: TrendingUp, to: "/app/analytics" },
       { label: "AI CFO", icon: Bot, to: "/app/ai-cfo" },
     ],
   },
   {
     label: "Reporting",
-    items: [{ label: "Reports", icon: BarChart3, to: "/app/reports" }],
+    items: [
+      { label: "Reports", icon: BarChart3, to: "/app/reports" },
+      { label: "Audit Trail", icon: ShieldCheck, to: "/app/audit" },
+    ],
   },
 ];
 
@@ -266,10 +273,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               SoloOS
             </span>
           </Link>
-          <div className="ml-auto flex items-center gap-1 shrink-0">
-            <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden />
-            <span className="text-[10px] font-mono font-medium text-muted-foreground/60">Live</span>
-          </div>
+          <div className="ml-auto flex items-center gap-1 shrink-0"></div>
         </div>
 
         {/* Workspace context */}
@@ -322,10 +326,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <img src={logo} width={22} height={22} alt="SoloOS" />
                 <SheetTitle className="text-display text-[15px] font-bold">SoloOS</SheetTitle>
               </div>
-              <div className="flex items-center gap-1">
-                <span className="size-1.5 rounded-full bg-emerald-500" aria-hidden />
-                <span className="text-[10px] font-mono text-muted-foreground/70">Live</span>
-              </div>
+              <div className="flex items-center gap-1"></div>
             </div>
             <div className="px-5 py-2.5 border-b border-border/30 bg-muted/20">
               <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/50">

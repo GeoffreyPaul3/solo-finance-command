@@ -8,6 +8,7 @@ import {
   CreditCard,
   Edit2,
   Loader2,
+  Mail,
   Plus,
   Printer,
   RotateCcw,
@@ -22,6 +23,7 @@ import { useWorkspace } from "@/components/app/workspace-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { sendInvoiceEmailServerFn } from "@/server/invoices";
 import {
   Dialog,
   DialogContent,
@@ -105,6 +107,12 @@ function InvoiceDetailPage() {
     null,
   );
 
+  type InvoiceTemplate = "modern" | "minimal" | "professional" | "premium";
+  const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate>("modern");
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [emailRecipient, setEmailRecipient] = useState("");
+  const [emailCustomNote, setEmailCustomNote] = useState("");
+
   const canManage = roleAtLeast(role, "manager");
 
   const invoiceQuery = useQuery(invoiceQueryOptions(workspace.id, invoiceId));
@@ -131,6 +139,31 @@ function InvoiceDetailPage() {
     },
     onError: (err: Error) => {
       toast.error(err.message || "Failed to send invoice");
+    },
+  });
+
+  const emailMutation = useMutation({
+    mutationFn: async () => {
+      const recipient = emailRecipient.trim() || invoice?.client?.email;
+      if (!recipient) throw new Error("Recipient email address is required");
+      return await sendInvoiceEmailServerFn({
+        data: {
+          workspaceId: workspace.id,
+          invoiceId,
+          recipientEmail: recipient,
+          clientName: invoice?.client?.name || "Valued Client",
+          customMessage: emailCustomNote.trim() || undefined,
+        },
+      });
+    },
+    onSuccess: (res) => {
+      toast.success(`Invoice emailed successfully to ${res.recipient}`);
+      setIsEmailDialogOpen(false);
+      setEmailCustomNote("");
+      invalidateData();
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Failed to send invoice email");
     },
   });
 
@@ -235,6 +268,19 @@ function InvoiceDetailPage() {
             Print / PDF
           </Button>
 
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setEmailRecipient(invoice.client?.email ?? "");
+              setIsEmailDialogOpen(true);
+            }}
+            className="h-9"
+          >
+            <Mail className="mr-1.5 size-4" />
+            Email
+          </Button>
+
           {canSend && (
             <Button
               size="sm"
@@ -283,8 +329,54 @@ function InvoiceDetailPage() {
         </div>
       </div>
 
+      {/* Template Selector Bar (Hidden during print) */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border border-border/70 rounded-lg px-3.5 py-2 bg-muted/20 print:hidden">
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+            Template:
+          </span>
+          <div className="flex items-center gap-1">
+            {(
+              [
+                { id: "modern", label: "Modern" },
+                { id: "minimal", label: "Minimal" },
+                { id: "professional", label: "Professional" },
+                { id: "premium", label: "Premium" },
+              ] as const
+            ).map((tmpl) => (
+              <Button
+                key={tmpl.id}
+                variant={selectedTemplate === tmpl.id ? "default" : "ghost"}
+                size="sm"
+                className="h-7 text-xs px-2.5"
+                onClick={() => setSelectedTemplate(tmpl.id)}
+              >
+                {tmpl.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+        <span className="text-xs text-muted-foreground hidden sm:inline">
+          Live styling for export &amp; client presentation
+        </span>
+      </div>
+
       {/* Main Printable Invoice Card */}
-      <Card className="border shadow-sm p-6 sm:p-8 space-y-8 bg-card text-foreground print:shadow-none print:border-none print:p-0">
+      <Card
+        className={cn(
+          "shadow-sm space-y-8 text-foreground print:shadow-none print:border-none print:p-0 transition-all duration-150 relative",
+          selectedTemplate === "modern" && "bg-card border border-border/80 p-6 sm:p-8 rounded-xl",
+          selectedTemplate === "minimal" &&
+            "bg-background border border-border/40 p-8 sm:p-12 shadow-none rounded-none",
+          selectedTemplate === "professional" &&
+            "bg-card border-2 border-border p-6 sm:p-8 rounded-md",
+          selectedTemplate === "premium" &&
+            "bg-card border border-amber-500/30 p-6 sm:p-8 rounded-xl shadow-md overflow-hidden",
+        )}
+      >
+        {selectedTemplate === "premium" && (
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-500 via-primary to-emerald-500" />
+        )}
         {/* Invoice Header: Issuer and Client */}
         <div className="flex flex-col gap-6 sm:flex-row sm:justify-between border-b border-border pb-6">
           <div>
@@ -651,6 +743,83 @@ function InvoiceDetailPage() {
             >
               {cancelMutation.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
               Confirm Cancellation
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Send Email Dialog */}
+      <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="size-4 text-primary" />
+              <span>Email Invoice {invoice.invoice_number}</span>
+            </DialogTitle>
+            <DialogDescription>
+              Dispatch this invoice directly to your client via your configured email provider.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Recipient Email</Label>
+              <Input
+                type="email"
+                placeholder="client@company.com"
+                value={emailRecipient}
+                onChange={(e) => setEmailRecipient(e.target.value)}
+                className="text-sm"
+              />
+              {invoice.client?.email && (
+                <p className="text-[11px] text-muted-foreground">
+                  Default from client profile: {invoice.client.email}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Recipient Name</Label>
+              <Input
+                readOnly
+                value={invoice.client?.name || "Client"}
+                className="text-sm bg-muted/40 cursor-not-allowed"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Personal Note (Optional)</Label>
+              <Textarea
+                placeholder="Add instructions, payment details, or a greeting..."
+                value={emailCustomNote}
+                onChange={(e) => setEmailCustomNote(e.target.value)}
+                rows={3}
+                className="text-xs resize-none"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setIsEmailDialogOpen(false)}
+              disabled={emailMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => emailMutation.mutate()}
+              disabled={
+                emailMutation.isPending || (!emailRecipient.trim() && !invoice.client?.email)
+              }
+              className="gap-1.5"
+            >
+              {emailMutation.isPending ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Send className="size-4" />
+              )}
+              Send Email
             </Button>
           </DialogFooter>
         </DialogContent>

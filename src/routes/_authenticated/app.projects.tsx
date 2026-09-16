@@ -1,13 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+  Archive,
+  ArchiveRestore,
   ArrowRight,
   Briefcase,
   Building2,
-  Calendar,
-  DollarSign,
-  Filter,
   Loader2,
+  MoreHorizontal,
   Plus,
   Search,
 } from "lucide-react";
@@ -15,9 +15,19 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { useWorkspace } from "@/components/app/workspace-context";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +36,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MoneyInput } from "@/components/ui/money-input";
@@ -48,16 +65,22 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { clientsQueryOptions, type Client } from "@/domain/clients";
 import {
+  archiveProject,
   createProject,
   PROJECT_STATUS_LABELS,
   PROJECT_STATUSES,
   projectsQueryOptions,
+  updateProjectStatus,
   type CreateProjectInput,
+  type Project,
   type ProjectStatus,
 } from "@/domain/projects";
 import { roleAtLeast } from "@/domain/workspace";
 import { CURRENCIES, parseMoneyInput } from "@/lib/money";
 import { cn } from "@/lib/utils";
+
+const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
+type PageSize = (typeof PAGE_SIZE_OPTIONS)[number];
 
 export const Route = createFileRoute("/_authenticated/app/projects")({
   head: () => ({
@@ -78,6 +101,9 @@ function ProjectsPage() {
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | "all">("all");
   const [clientFilter, setClientFilter] = useState<string>("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [archiveTarget, setArchiveTarget] = useState<Project | null>(null);
+  const [pageSize, setPageSize] = useState<PageSize>(25);
+  const [page, setPage] = useState(0);
 
   const canManage = roleAtLeast(role, "manager");
 
@@ -94,9 +120,32 @@ function ProjectsPage() {
   const projects = projectsQuery.data ?? [];
   const clients = clientsQuery.data ?? [];
 
+  const totalProjects = projects.length;
+  const totalPages = Math.max(1, Math.ceil(totalProjects / pageSize));
+  const safePage = Math.min(page, totalPages - 1);
+  const paginatedProjects = projects.slice(safePage * pageSize, (safePage + 1) * pageSize);
+
+  const isTargetArchived = archiveTarget?.status === "archived";
+
   const invalidateProjects = () => {
-    queryClient.invalidateQueries({ queryKey: ["projects", workspace.id] });
+    void queryClient.invalidateQueries({ queryKey: ["projects", workspace.id] });
   };
+
+  const archiveMutation = useMutation({
+    mutationFn: (p: Project) =>
+      p.status === "archived"
+        ? updateProjectStatus(workspace.id, p.id, "active")
+        : archiveProject(workspace.id, p.id),
+    onSuccess: (_data, p) => {
+      const action = p.status === "archived" ? "reactivated" : "archived";
+      toast.success(`Project ${action} successfully.`);
+      invalidateProjects();
+      setArchiveTarget(null);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Failed to update project status.");
+    },
+  });
 
   return (
     <div className="space-y-6 pb-12">
@@ -105,9 +154,11 @@ function ProjectsPage() {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-2xl font-bold tracking-tight">Projects</h1>
-            <Badge variant="secondary" className="font-mono text-xs">
-              {projects.length}
-            </Badge>
+            {!projectsQuery.isLoading && (
+              <Badge variant="secondary" className="font-mono text-xs">
+                {totalProjects}
+              </Badge>
+            )}
           </div>
           <p className="text-sm text-muted-foreground mt-0.5">
             Manage your work initiatives, deliverables, milestones, and budgets.
@@ -128,9 +179,12 @@ function ProjectsPage() {
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
             <Input
-              placeholder="Search projects..."
+              placeholder="Search projects…"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setPage(0);
+              }}
               className="pl-9 text-sm"
             />
           </div>
@@ -223,7 +277,7 @@ function ProjectsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {projects.map((p) => {
+                    {paginatedProjects.map((p) => {
                       const isArchived = p.status === "archived";
                       const isCompleted = p.status === "completed";
 
@@ -292,12 +346,56 @@ function ProjectsPage() {
                             )}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button asChild size="sm" variant="ghost" className="h-7 text-xs">
-                              <Link to="/app/projects/$projectId" params={{ projectId: p.id }}>
-                                View
-                                <ArrowRight className="ml-1 size-3" />
-                              </Link>
-                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  aria-label={`Actions for ${p.name}`}
+                                >
+                                  <MoreHorizontal className="size-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-40">
+                                <DropdownMenuItem asChild>
+                                  <Link
+                                    to="/app/projects/$projectId"
+                                    params={{ projectId: p.id }}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <ArrowRight className="size-4" />
+                                    View
+                                  </Link>
+                                </DropdownMenuItem>
+                                {canManage && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() => setArchiveTarget(p)}
+                                      className={cn(
+                                        "flex items-center gap-2",
+                                        isArchived
+                                          ? "text-green-600 focus:text-green-600"
+                                          : "text-destructive focus:text-destructive",
+                                      )}
+                                    >
+                                      {isArchived ? (
+                                        <>
+                                          <ArchiveRestore className="size-4" />
+                                          Reactivate
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Archive className="size-4" />
+                                          Archive
+                                        </>
+                                      )}
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </TableCell>
                         </TableRow>
                       );
@@ -308,7 +406,7 @@ function ProjectsPage() {
 
               {/* Mobile Card List */}
               <div className="block md:hidden space-y-3">
-                {projects.map((p) => {
+                {paginatedProjects.map((p) => {
                   const isArchived = p.status === "archived";
                   const isCompleted = p.status === "completed";
 
@@ -321,7 +419,7 @@ function ProjectsPage() {
                       )}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <Link
                             to="/app/projects/$projectId"
                             params={{ projectId: p.id }}
@@ -344,12 +442,62 @@ function ProjectsPage() {
                             </div>
                           )}
                         </div>
-                        <Badge
-                          variant={isCompleted ? "secondary" : isArchived ? "outline" : "default"}
-                          className="text-[10px] capitalize shrink-0"
-                        >
-                          {PROJECT_STATUS_LABELS[p.status] ?? p.status}
-                        </Badge>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Badge
+                            variant={isCompleted ? "secondary" : isArchived ? "outline" : "default"}
+                            className="text-[10px] capitalize"
+                          >
+                            {PROJECT_STATUS_LABELS[p.status] ?? p.status}
+                          </Badge>
+                          {canManage && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  aria-label={`Actions for ${p.name}`}
+                                >
+                                  <MoreHorizontal className="size-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-40">
+                                <DropdownMenuItem asChild>
+                                  <Link
+                                    to="/app/projects/$projectId"
+                                    params={{ projectId: p.id }}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <ArrowRight className="size-4" />
+                                    View
+                                  </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => setArchiveTarget(p)}
+                                  className={cn(
+                                    "flex items-center gap-2",
+                                    isArchived
+                                      ? "text-green-600 focus:text-green-600"
+                                      : "text-destructive focus:text-destructive",
+                                  )}
+                                >
+                                  {isArchived ? (
+                                    <>
+                                      <ArchiveRestore className="size-4" />
+                                      Reactivate
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Archive className="size-4" />
+                                      Archive
+                                    </>
+                                  )}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </div>
                       </div>
 
                       {p.description && (
@@ -381,6 +529,53 @@ function ProjectsPage() {
                   );
                 })}
               </div>
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between gap-4 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <span>Rows per page:</span>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => {
+                        setPageSize(Number(e.target.value) as PageSize);
+                        setPage(0);
+                      }}
+                      className="border border-border rounded px-1.5 py-0.5 text-xs bg-background text-foreground"
+                      aria-label="Rows per page"
+                    >
+                      {PAGE_SIZE_OPTIONS.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs">
+                      {safePage * pageSize + 1}–{Math.min((safePage + 1) * pageSize, totalProjects)}{" "}
+                      of {totalProjects}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs"
+                      disabled={safePage === 0}
+                      onClick={() => setPage((p) => p - 1)}
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs"
+                      disabled={safePage >= totalPages - 1}
+                      onClick={() => setPage((p) => p + 1)}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </>
@@ -395,6 +590,57 @@ function ProjectsPage() {
         clients={clients}
         onSuccess={invalidateProjects}
       />
+
+      {/* Archive / Reactivate Confirmation */}
+      <AlertDialog
+        open={archiveTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setArchiveTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {isTargetArchived ? "Reactivate Project?" : "Archive Project?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                {isTargetArchived ? (
+                  <p>
+                    <strong className="text-foreground">{archiveTarget?.name}</strong> will be moved
+                    back to active status.
+                  </p>
+                ) : (
+                  <>
+                    <p>
+                      <strong className="text-foreground">{archiveTarget?.name}</strong> will be
+                      archived. All linked invoices, expenses, and financial records are preserved.
+                    </p>
+                    <p>You can reactivate this project at any time.</p>
+                  </>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={archiveMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (archiveTarget) archiveMutation.mutate(archiveTarget);
+              }}
+              disabled={archiveMutation.isPending}
+              className={cn(
+                isTargetArchived
+                  ? "bg-green-600 hover:bg-green-700"
+                  : "bg-destructive hover:bg-destructive/90",
+              )}
+            >
+              {archiveMutation.isPending && <Loader2 className="mr-1.5 size-4 animate-spin" />}
+              {isTargetArchived ? "Reactivate" : "Archive"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

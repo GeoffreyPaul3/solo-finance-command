@@ -82,3 +82,94 @@ export function renderSupportConfirmationEmail(params: {
   `;
   return { subject, html, text };
 }
+
+export function renderInvoiceEmail(params: {
+  invoiceNumber: string;
+  workspaceName: string;
+  clientName: string;
+  currency: string;
+  totalFormatted: string;
+  dueDate?: string | null;
+  items?: Array<{ description: string; quantity: number; unitPrice: number; total: number }>;
+  paymentNotes?: string | null;
+}): { subject: string; html: string; text: string } {
+  const subject = `Invoice ${params.invoiceNumber} from ${params.workspaceName}`;
+  const dueLine = params.dueDate ? `Due date: ${params.dueDate}` : "";
+  const itemsText = (params.items ?? [])
+    .map((i) => `  - ${i.description}: ${params.currency} ${i.total.toLocaleString()}`)
+    .join("\n");
+  const text = `Hi ${params.clientName},\n\nPlease find attached Invoice ${params.invoiceNumber} from ${params.workspaceName}.\n\nTotal Due: ${params.totalFormatted}\n${dueLine}\n\n${itemsText ? `Items:\n${itemsText}\n\n` : ""}${params.paymentNotes ? `Payment Instructions:\n${params.paymentNotes}\n\n` : ""}Thank you for your business.\n${params.workspaceName}`;
+
+  const itemsHtml = (params.items ?? [])
+    .map(
+      (item) => `
+      <tr>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #27272a; color: #d4d4d8; font-size: 14px;">${item.description}</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #27272a; color: #a1a1aa; text-align: center; font-size: 14px;">${item.quantity}</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #27272a; color: #a1a1aa; text-align: right; font-size: 14px;">${item.unitPrice.toLocaleString()}</td>
+        <td style="padding: 8px 12px; border-bottom: 1px solid #27272a; color: #fafafa; text-align: right; font-weight: 500; font-size: 14px;">${item.total.toLocaleString()}</td>
+      </tr>
+    `,
+    )
+    .join("");
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #09090b; color: #f4f4f5; border-radius: 12px; border: 1px solid #27272a;">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 24px; border-bottom: 1px solid #27272a; padding-bottom: 16px;">
+        <h2 style="color: #ffffff; margin: 0; font-size: 22px;">Invoice ${params.invoiceNumber}</h2>
+        <span style="color: #a1a1aa; font-size: 14px;">${params.workspaceName}</span>
+      </div>
+
+      <p style="color: #a1a1aa; font-size: 15px; line-height: 1.5;">
+        Dear <strong style="color: #fafafa;">${params.clientName}</strong>,
+      </p>
+      <p style="color: #a1a1aa; font-size: 14px; line-height: 1.5;">
+        Please find your invoice details below. ${dueLine ? `Payment is due on <strong style="color: #fafafa;">${params.dueDate}</strong>.` : ""}
+      </p>
+
+      <div style="background: #18181b; padding: 16px; border-radius: 8px; margin: 20px 0; border: 1px solid #27272a; text-align: center;">
+        <span style="color: #71717a; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600;">Total Due</span>
+        <h1 style="color: #ffffff; margin: 6px 0 0; font-size: 28px; font-weight: 700;">${params.totalFormatted}</h1>
+      </div>
+
+      ${
+        itemsHtml
+          ? `
+      <table style="width: 100%; border-collapse: collapse; margin: 24px 0;">
+        <thead>
+          <tr style="border-bottom: 1px solid #3f3f46;">
+            <th style="padding: 8px 12px; text-align: left; color: #71717a; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Description</th>
+            <th style="padding: 8px 12px; text-align: center; color: #71717a; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Qty</th>
+            <th style="padding: 8px 12px; text-align: right; color: #71717a; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Rate</th>
+            <th style="padding: 8px 12px; text-align: right; color: #71717a; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsHtml}
+        </tbody>
+      </table>
+      `
+          : ""
+      }
+
+      ${
+        params.paymentNotes
+          ? `
+      <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #27272a;">
+        <h4 style="color: #a1a1aa; margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Payment Instructions</h4>
+        <p style="color: #d4d4d8; font-size: 13px; line-height: 1.5; margin: 0; white-space: pre-wrap;">${params.paymentNotes}</p>
+      </div>
+      `
+          : ""
+      }
+
+      <div style="margin-top: 32px; border-top: 1px solid #27272a; padding-top: 16px; text-align: center;">
+        <p style="color: #52525b; font-size: 12px; margin: 0;">
+          Sent by ${params.workspaceName} via SoloOS Financial OS.
+        </p>
+      </div>
+    </div>
+  `;
+
+  return { subject, html, text };
+}

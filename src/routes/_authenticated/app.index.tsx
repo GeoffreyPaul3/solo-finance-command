@@ -29,6 +29,7 @@ import {
 import { useMemo, useState } from "react";
 
 import { useWorkspace } from "@/components/app/workspace-context";
+import { DashboardCharts } from "@/components/app/dashboard-charts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MoneyValueBlock } from "@/components/ui/money-value";
@@ -501,6 +502,23 @@ function CommandCenter() {
           </div>
         )}
       </section>
+
+      {/* ═══════════════════════════════════════════════════════
+          DASHBOARD VISUALIZATION & CHARTS
+          Answers: How is cash moving? What is receivables posture?
+      ═══════════════════════════════════════════════════════ */}
+      {hasAccounts && (
+        <section aria-labelledby="cashflow-visuals">
+          <h2 id="cashflow-visuals" className="sr-only">
+            Financial trends and receivables
+          </h2>
+          <DashboardCharts
+            transactions={recentTransactions}
+            invoices={recentInvoicesQuery.data ?? []}
+            currency={workspace.currency ?? "USD"}
+          />
+        </section>
+      )}
 
       {/* ═══════════════════════════════════════════════════════
           MONEY IN / COMMITTED — two-column

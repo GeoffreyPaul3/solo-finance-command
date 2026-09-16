@@ -10,6 +10,8 @@ export interface WorkspaceEntitlements {
   canExportPdfReports: boolean;
   canManageMultipleWorkspaces: boolean;
   canInviteUnlimitedTeam: boolean;
+  canAccessAnalytics: boolean;
+  canAccessAudit: boolean;
   maxTeamMembers: number;
   maxInvoicesPerMonth: number;
   maxClients: number;
@@ -20,6 +22,17 @@ export interface WorkspaceEntitlements {
   isInGracePeriod: boolean;
 }
 
+export type EntitlementKey =
+  | "canUseAiCfo"
+  | "canExportPdfReports"
+  | "canManageMultipleWorkspaces"
+  | "canInviteUnlimitedTeam"
+  | "canAccessAnalytics"
+  | "canAccessAudit"
+  | "hasMultiCurrency"
+  | "hasAutomatedObligations"
+  | "hasAdvancedTaxScenarios";
+
 export const TIER_ENTITLEMENTS: Record<PlanTier, WorkspaceEntitlements> = {
   free: {
     tier: "free",
@@ -28,6 +41,8 @@ export const TIER_ENTITLEMENTS: Record<PlanTier, WorkspaceEntitlements> = {
     canExportPdfReports: false,
     canManageMultipleWorkspaces: false,
     canInviteUnlimitedTeam: false,
+    canAccessAnalytics: false,
+    canAccessAudit: false,
     maxTeamMembers: 1,
     maxInvoicesPerMonth: 10,
     maxClients: 5,
@@ -44,6 +59,8 @@ export const TIER_ENTITLEMENTS: Record<PlanTier, WorkspaceEntitlements> = {
     canExportPdfReports: true,
     canManageMultipleWorkspaces: false,
     canInviteUnlimitedTeam: false,
+    canAccessAnalytics: true,
+    canAccessAudit: false,
     maxTeamMembers: 3,
     maxInvoicesPerMonth: Infinity,
     maxClients: Infinity,
@@ -60,6 +77,8 @@ export const TIER_ENTITLEMENTS: Record<PlanTier, WorkspaceEntitlements> = {
     canExportPdfReports: true,
     canManageMultipleWorkspaces: true,
     canInviteUnlimitedTeam: true,
+    canAccessAnalytics: true,
+    canAccessAudit: true,
     maxTeamMembers: Infinity,
     maxInvoicesPerMonth: Infinity,
     maxClients: Infinity,
@@ -70,6 +89,10 @@ export const TIER_ENTITLEMENTS: Record<PlanTier, WorkspaceEntitlements> = {
     isInGracePeriod: false,
   },
 };
+
+export function hasEntitlement(entitlements: WorkspaceEntitlements, key: EntitlementKey): boolean {
+  return Boolean(entitlements[key]);
+}
 
 /**
  * Resolves workspace entitlements deterministically.

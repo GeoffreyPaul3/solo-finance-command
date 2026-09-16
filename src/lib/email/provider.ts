@@ -41,7 +41,7 @@ export class ResendEmailProvider implements EmailProvider {
     if (typeof process !== "undefined" && process.env && process.env["RESEND_FROM_EMAIL"]) {
       return process.env["RESEND_FROM_EMAIL"];
     }
-    return "SoloOS <notifications@soloos.app>";
+    return "SoloOS <gtigergeoffrey@gmail.com>";
   }
 
   isConfigured(): boolean {

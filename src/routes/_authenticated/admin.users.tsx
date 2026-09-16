@@ -83,21 +83,35 @@ function AdminUsersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>User ID</TableHead>
+                  <TableHead>User</TableHead>
                   <TableHead>Workspace</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Joined Date</TableHead>
+                  <TableHead className="text-right">User ID</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {data?.members.map((m, idx) => {
-                  const ws = (m as Record<string, unknown>)["workspaces"] as {
-                    name: string;
+                  const record = m as Record<string, unknown>;
+                  const ws = record["workspaces"] as { name: string } | null;
+                  const profile = record["profile"] as {
+                    full_name: string | null;
+                    email: string | null;
                   } | null;
+                  const displayName = profile?.full_name || profile?.email || "Unnamed Operator";
+                  const displayEmail = profile?.email;
+
                   return (
                     <TableRow key={idx}>
-                      <TableCell className="font-mono text-xs text-muted-foreground truncate max-w-[200px]">
-                        {m.user_id}
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-sm text-foreground">
+                            {displayName}
+                          </span>
+                          {displayEmail && displayName !== displayEmail && (
+                            <span className="text-xs text-muted-foreground">{displayEmail}</span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="font-medium text-sm">
                         {ws?.name ?? "Unknown Workspace"}
@@ -108,7 +122,16 @@ function AdminUsersPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
-                        {new Date(m.created_at).toLocaleDateString()}
+                        {new Date(m.created_at).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </TableCell>
+                      <TableCell className="text-right font-mono text-[11px] text-muted-foreground/70">
+                        <span title={m.user_id} className="cursor-default">
+                          {m.user_id.slice(0, 8)}…{m.user_id.slice(-4)}
+                        </span>
                       </TableCell>
                     </TableRow>
                   );

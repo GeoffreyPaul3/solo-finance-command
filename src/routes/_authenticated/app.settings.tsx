@@ -408,8 +408,11 @@ function SettingsPage() {
         });
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      toast.error("Could not initiate checkout", { description: msg });
+      const msg =
+        err instanceof Error && !err.message.includes("fetch failed")
+          ? err.message
+          : "We couldn't start checkout. Your payment was not started. Please try again.";
+      toast.error("Checkout unavailable", { description: msg });
     } finally {
       setIsCheckingOut(null);
     }

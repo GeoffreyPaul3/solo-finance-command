@@ -123,7 +123,28 @@ export async function adminListUsersFn({ data }: { data: z.infer<typeof paginati
   const { data: members, count, error } = await query;
   if (error) throw new Error(error.message);
 
-  return { members: members ?? [], total: count ?? 0, page, pageSize };
+  // Fetch profiles to show human-readable names and emails instead of raw UUIDs
+  const memberList = members ?? [];
+  const userIds = Array.from(new Set(memberList.map((m) => m.user_id)));
+  let profileMap = new Map<string, { full_name: string | null; email: string | null }>();
+
+  if (userIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", userIds);
+
+    if (profiles) {
+      profileMap = new Map(profiles.map((p) => [p.id, { full_name: p.full_name, email: p.email }]));
+    }
+  }
+
+  const enrichedMembers = memberList.map((m) => ({
+    ...m,
+    profile: profileMap.get(m.user_id) ?? null,
+  }));
+
+  return { members: enrichedMembers, total: count ?? 0, page, pageSize };
 }
 
 // ─────────────────────────────────────────────
@@ -188,7 +209,7 @@ export async function adminListSubscriptionsFn({
       `
       id, workspace_id, plan_id, status, currency,
       current_period_start, current_period_end, canceled_at, created_at,
-      workspaces(name, slug)
+      workspaces(id, name, currency)
     `,
       { count: "exact" },
     )
@@ -226,7 +247,7 @@ export async function adminListPaymentsFn({ data }: { data: z.infer<typeof pagin
       verified_amount_cents, verified_currency,
       tx_ref, provider_ref,
       created_at, verified_at,
-      workspaces(name, slug)
+      workspaces(id, name, currency)
     `,
       { count: "exact" },
     )
@@ -297,4 +318,39 @@ export async function adminUpdateSupportRequestFn({
 
   if (error) throw new Error(error.message);
   return { success: true };
+}
+
+// ─────────────────────────────────────────────
+// Platform Audit Logs
+// ─────────────────────────────────────────────
+
+const auditListSchema = paginationSchema.extend({
+  entityType: z.string().optional(),
+  search: z.string().optional(),
+});
+
+export async function adminListAuditLogsFn({ data }: { data: z.infer<typeof auditListSchema> }) {
+  const validated = auditListSchema.parse(data);
+  const userId = await getCurrentUserId();
+  await assertPlatformAdmin(userId);
+
+  const { page, pageSize, entityType, search } = validated;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  let query = supabase
+    .from("audit_logs")
+    .select("id, action, entity_type, entity_id, actor_id, metadata, created_at, workspace_id", {
+      count: "exact",
+    })
+    .order("created_at", { ascending: false })
+    .range(from, to);
+
+  if (entityType) query = query.eq("entity_type", entityType);
+  if (search) query = query.ilike("action", `%${search}%`);
+
+  const { data: logs, count, error } = await query;
+  if (error) throw new Error(error.message);
+
+  return { logs: logs ?? [], total: count ?? 0, page, pageSize };
 }

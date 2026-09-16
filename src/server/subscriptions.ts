@@ -17,9 +17,24 @@ const createCheckoutSchema = z.object({
   callbackUrl: z.string().url().optional(),
 });
 
+function ensureNodeEnvLoaded() {
+  const nodeProcess = (typeof process !== "undefined" ? process : undefined) as unknown as {
+    loadEnvFile?: () => void;
+  };
+  if (nodeProcess && typeof nodeProcess.loadEnvFile === "function") {
+    try {
+      nodeProcess.loadEnvFile();
+    } catch {
+      // Ignore if .env is already loaded or absent
+    }
+  }
+}
+
 export const createCheckoutServerFn = createServerFn({ method: "POST" })
   .validator((data: z.infer<typeof createCheckoutSchema>) => createCheckoutSchema.parse(data))
   .handler(async ({ data }) => {
+    ensureNodeEnvLoaded();
+
     const priceInfo = CANONICAL_PRICES[data.planId][data.currency];
     if (!priceInfo) {
       throw new Error(`Invalid plan or currency selection: ${data.planId} in ${data.currency}`);
@@ -44,7 +59,10 @@ export const createCheckoutServerFn = createServerFn({ method: "POST" })
     });
 
     if (insertErr) {
-      throw new Error(`Failed to initialize payment record: ${insertErr.message}`);
+      console.error("[Checkout] Failed to initialize payment record:", insertErr);
+      throw new Error(
+        "We couldn't start checkout. Your payment was not started. Please try again.",
+      );
     }
 
     if (!payChangu.isConfigured()) {
@@ -57,22 +75,38 @@ export const createCheckoutServerFn = createServerFn({ method: "POST" })
       };
     }
 
-    const checkout = await payChangu.initiateCheckout({
-      txRef,
-      planId: data.planId,
-      amountMajor: priceInfo.amountMajor,
-      currency: data.currency,
-      customerEmail: data.customerEmail,
-      customerName: data.customerName,
-      returnUrl: data.returnUrl,
-      callbackUrl: data.callbackUrl || data.returnUrl,
-    });
+    try {
+      const checkout = await payChangu.initiateCheckout({
+        txRef,
+        planId: data.planId,
+        amountMajor: priceInfo.amountMajor,
+        currency: data.currency,
+        customerEmail: data.customerEmail,
+        customerName: data.customerName,
+        returnUrl: data.returnUrl,
+        callbackUrl: data.callbackUrl || data.returnUrl,
+      });
 
-    return {
-      configured: true,
-      checkoutUrl: checkout.checkoutUrl,
-      txRef,
-    };
+      return {
+        configured: true,
+        checkoutUrl: checkout.checkoutUrl,
+        txRef,
+      };
+    } catch (err: unknown) {
+      console.error("[Checkout] PayChangu initiation failure:", err);
+      // Mark internal payment record as failed so there is no stale pending attempt
+      await supabase
+        .from("subscription_payments")
+        .update({
+          status: "failed",
+          failure_reason: err instanceof Error ? err.message : String(err),
+        })
+        .eq("tx_ref", txRef);
+
+      throw new Error(
+        "We couldn't start checkout with the payment provider. Your payment was not started. Please try again.",
+      );
+    }
   });
 
 const verifyPaymentSchema = z.object({

@@ -2,12 +2,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Archive,
+  ArchiveRestore,
   ArrowRight,
   Briefcase,
   Building2,
   Calendar,
   Loader2,
   Mail,
+  MoreHorizontal,
   Phone,
   Plus,
   Search,
@@ -18,9 +20,19 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { useWorkspace } from "@/components/app/workspace-context";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +41,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -41,10 +60,13 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import {
+  archiveClient,
   clientsQueryOptions,
   createClient,
+  type Client,
   type ClientStatus,
   type CreateClientInput,
+  unarchiveClient,
 } from "@/domain/clients";
 import { roleAtLeast } from "@/domain/workspace";
 import { cn } from "@/lib/utils";
@@ -60,6 +82,9 @@ export const Route = createFileRoute("/_authenticated/app/clients")({
   component: ClientsPage,
 });
 
+const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
+type PageSize = (typeof PAGE_SIZE_OPTIONS)[number];
+
 function ClientsPage() {
   const { workspace, role } = useWorkspace();
   const queryClient = useQueryClient();
@@ -67,6 +92,9 @@ function ClientsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<ClientStatus | "all">("active");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [archiveTarget, setArchiveTarget] = useState<Client | null>(null);
+  const [pageSize, setPageSize] = useState<PageSize>(25);
+  const [page, setPage] = useState(0);
 
   const canManage = roleAtLeast(role, "manager");
 
@@ -79,9 +107,34 @@ function ClientsPage() {
 
   const clients = clientsQuery.data ?? [];
 
+  // Client-side pagination (dataset is small enough)
+  const totalClients = clients.length;
+  const totalPages = Math.max(1, Math.ceil(totalClients / pageSize));
+  const safePage = Math.min(page, totalPages - 1);
+  const paginatedClients = clients.slice(safePage * pageSize, (safePage + 1) * pageSize);
+
   const invalidateClients = () => {
-    queryClient.invalidateQueries({ queryKey: ["clients", workspace.id] });
+    void queryClient.invalidateQueries({ queryKey: ["clients", workspace.id] });
   };
+
+  const archiveMutation = useMutation({
+    mutationFn: (client: Client) =>
+      client.status === "archived"
+        ? unarchiveClient(workspace.id, client.id)
+        : archiveClient(workspace.id, client.id),
+    onSuccess: (_data, client) => {
+      const action = client.status === "archived" ? "reactivated" : "archived";
+      toast.success(`Client ${action} successfully.`);
+      invalidateClients();
+      setArchiveTarget(null);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Failed to update client status.");
+    },
+  });
+
+  const isArchiving = archiveMutation.isPending;
+  const isTargetArchived = archiveTarget?.status === "archived";
 
   return (
     <div className="space-y-6 pb-12">
@@ -90,9 +143,11 @@ function ClientsPage() {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-2xl font-bold tracking-tight">Clients</h1>
-            <Badge variant="secondary" className="font-mono text-xs">
-              {clients.length}
-            </Badge>
+            {!clientsQuery.isLoading && (
+              <Badge variant="secondary" className="font-mono text-xs">
+                {totalClients}
+              </Badge>
+            )}
           </div>
           <p className="text-sm text-muted-foreground mt-0.5">
             Directory of organizations, individuals, and contract partners you work with.
@@ -112,38 +167,31 @@ function ClientsPage() {
         <div className="relative w-full sm:w-72">
           <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
           <Input
-            placeholder="Search by name, company, or email..."
+            placeholder="Search by name, company, or email…"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setPage(0);
+            }}
             className="pl-9 text-sm"
           />
         </div>
 
         <div className="flex items-center gap-1 self-start sm:self-auto rounded-lg border border-border bg-card p-1">
-          <Button
-            size="sm"
-            variant={statusFilter === "active" ? "secondary" : "ghost"}
-            className="h-7 text-xs"
-            onClick={() => setStatusFilter("active")}
-          >
-            Active
-          </Button>
-          <Button
-            size="sm"
-            variant={statusFilter === "all" ? "secondary" : "ghost"}
-            className="h-7 text-xs"
-            onClick={() => setStatusFilter("all")}
-          >
-            All
-          </Button>
-          <Button
-            size="sm"
-            variant={statusFilter === "archived" ? "secondary" : "ghost"}
-            className="h-7 text-xs"
-            onClick={() => setStatusFilter("archived")}
-          >
-            Archived
-          </Button>
+          {(["active", "all", "archived"] as const).map((f) => (
+            <Button
+              key={f}
+              size="sm"
+              variant={statusFilter === f ? "secondary" : "ghost"}
+              className="h-7 text-xs capitalize"
+              onClick={() => {
+                setStatusFilter(f);
+                setPage(0);
+              }}
+            >
+              {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
+            </Button>
+          ))}
         </div>
       </div>
 
@@ -172,7 +220,7 @@ function ClientsPage() {
               </h3>
               <p className="mt-1 text-sm text-muted-foreground max-w-sm mx-auto">
                 {searchQuery
-                  ? "Try searching for a different name, email, or clear the search filter."
+                  ? "Try a different name, email, or clear the search filter."
                   : "Keep track of who you work for, their contact details, and link active projects."}
               </p>
               {canManage && !searchQuery && (
@@ -196,11 +244,11 @@ function ClientsPage() {
                       <TableHead>Contact</TableHead>
                       <TableHead className="text-center">Projects</TableHead>
                       <TableHead className="text-center">Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead className="text-right w-16">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {clients.map((c) => {
+                    {paginatedClients.map((c) => {
                       const projectsCount = c.projects?.[0]?.count ?? 0;
                       const isArchived = c.status === "archived";
 
@@ -263,12 +311,56 @@ function ClientsPage() {
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button asChild size="sm" variant="ghost" className="h-7 text-xs">
-                              <Link to="/app/clients/$clientId" params={{ clientId: c.id }}>
-                                View
-                                <ArrowRight className="ml-1 size-3" />
-                              </Link>
-                            </Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  aria-label={`Actions for ${c.name}`}
+                                >
+                                  <MoreHorizontal className="size-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-40">
+                                <DropdownMenuItem asChild>
+                                  <Link
+                                    to="/app/clients/$clientId"
+                                    params={{ clientId: c.id }}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <ArrowRight className="size-4" />
+                                    View
+                                  </Link>
+                                </DropdownMenuItem>
+                                {canManage && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() => setArchiveTarget(c)}
+                                      className={cn(
+                                        "flex items-center gap-2",
+                                        isArchived
+                                          ? "text-green-600 focus:text-green-600"
+                                          : "text-destructive focus:text-destructive",
+                                      )}
+                                    >
+                                      {isArchived ? (
+                                        <>
+                                          <ArchiveRestore className="size-4" />
+                                          Reactivate
+                                        </>
+                                      ) : (
+                                        <>
+                                          <Archive className="size-4" />
+                                          Archive
+                                        </>
+                                      )}
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </TableCell>
                         </TableRow>
                       );
@@ -279,7 +371,7 @@ function ClientsPage() {
 
               {/* Mobile Card List */}
               <div className="block md:hidden space-y-3">
-                {clients.map((c) => {
+                {paginatedClients.map((c) => {
                   const projectsCount = c.projects?.[0]?.count ?? 0;
                   const isArchived = c.status === "archived";
 
@@ -292,7 +384,7 @@ function ClientsPage() {
                       )}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <Link
                             to="/app/clients/$clientId"
                             params={{ clientId: c.id }}
@@ -307,12 +399,62 @@ function ClientsPage() {
                             </div>
                           )}
                         </div>
-                        <Badge
-                          variant={isArchived ? "secondary" : "default"}
-                          className="text-[10px] capitalize shrink-0"
-                        >
-                          {c.status}
-                        </Badge>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Badge
+                            variant={isArchived ? "secondary" : "default"}
+                            className="text-[10px] capitalize"
+                          >
+                            {c.status}
+                          </Badge>
+                          {canManage && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  aria-label={`Actions for ${c.name}`}
+                                >
+                                  <MoreHorizontal className="size-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-40">
+                                <DropdownMenuItem asChild>
+                                  <Link
+                                    to="/app/clients/$clientId"
+                                    params={{ clientId: c.id }}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <ArrowRight className="size-4" />
+                                    View
+                                  </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onClick={() => setArchiveTarget(c)}
+                                  className={cn(
+                                    "flex items-center gap-2",
+                                    isArchived
+                                      ? "text-green-600 focus:text-green-600"
+                                      : "text-destructive focus:text-destructive",
+                                  )}
+                                >
+                                  {isArchived ? (
+                                    <>
+                                      <ArchiveRestore className="size-4" />
+                                      Reactivate
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Archive className="size-4" />
+                                      Archive
+                                    </>
+                                  )}
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </div>
                       </div>
 
                       {(c.email || c.phone) && (
@@ -348,6 +490,54 @@ function ClientsPage() {
                   );
                 })}
               </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between gap-4 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <span>Rows per page:</span>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => {
+                        setPageSize(Number(e.target.value) as PageSize);
+                        setPage(0);
+                      }}
+                      className="border border-border rounded px-1.5 py-0.5 text-xs bg-background text-foreground"
+                      aria-label="Rows per page"
+                    >
+                      {PAGE_SIZE_OPTIONS.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs">
+                      {safePage * pageSize + 1}–{Math.min((safePage + 1) * pageSize, totalClients)}{" "}
+                      of {totalClients}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs"
+                      disabled={safePage === 0}
+                      onClick={() => setPage((p) => p - 1)}
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs"
+                      disabled={safePage >= totalPages - 1}
+                      onClick={() => setPage((p) => p + 1)}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </>
@@ -360,6 +550,58 @@ function ClientsPage() {
         workspaceId={workspace.id}
         onSuccess={invalidateClients}
       />
+
+      {/* Archive / Reactivate Confirmation Dialog */}
+      <AlertDialog
+        open={archiveTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setArchiveTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {isTargetArchived ? "Reactivate Client?" : "Archive Client?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                {isTargetArchived ? (
+                  <p>
+                    <strong className="text-foreground">{archiveTarget?.name}</strong> will be moved
+                    back to active status and will appear in your default client view.
+                  </p>
+                ) : (
+                  <>
+                    <p>
+                      <strong className="text-foreground">{archiveTarget?.name}</strong> will be
+                      archived. Archived clients are hidden from the default view but all linked
+                      invoices, projects, and financial records are preserved.
+                    </p>
+                    <p>You can reactivate this client at any time.</p>
+                  </>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isArchiving}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (archiveTarget) archiveMutation.mutate(archiveTarget);
+              }}
+              disabled={isArchiving}
+              className={cn(
+                isTargetArchived
+                  ? "bg-green-600 hover:bg-green-700"
+                  : "bg-destructive hover:bg-destructive/90",
+              )}
+            >
+              {isArchiving && <Loader2 className="mr-1.5 size-4 animate-spin" />}
+              {isTargetArchived ? "Reactivate" : "Archive"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
