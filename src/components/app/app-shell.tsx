@@ -64,7 +64,8 @@ type NavItem = {
   label: string;
   icon: LucideIcon;
   /** When set, a lock icon is shown for users who lack this entitlement. */
-  requiredEntitlement?: "canUseAiCfo" | "canAccessAnalytics" | "canExportPdfReports" | "canAccessAudit";
+  requiredEntitlement?:
+    "canUseAiCfo" | "canAccessAnalytics" | "canExportPdfReports" | "canAccessAudit";
 };
 
 type NavGroup = { label: string; items: NavItem[] };
@@ -105,17 +106,42 @@ const NAV: NavGroup[] = [
   {
     label: "Intelligence",
     items: [
-      { label: "Profitability", icon: Gauge, to: "/app/profitability", requiredEntitlement: "canAccessAnalytics" },
-      { label: "Insights", icon: Lightbulb, to: "/app/insights", requiredEntitlement: "canAccessAnalytics" },
-      { label: "Analytics", icon: TrendingUp, to: "/app/analytics", requiredEntitlement: "canAccessAnalytics" },
+      {
+        label: "Profitability",
+        icon: Gauge,
+        to: "/app/profitability",
+        requiredEntitlement: "canAccessAnalytics",
+      },
+      {
+        label: "Insights",
+        icon: Lightbulb,
+        to: "/app/insights",
+        requiredEntitlement: "canAccessAnalytics",
+      },
+      {
+        label: "Analytics",
+        icon: TrendingUp,
+        to: "/app/analytics",
+        requiredEntitlement: "canAccessAnalytics",
+      },
       { label: "AI CFO", icon: Bot, to: "/app/ai-cfo", requiredEntitlement: "canUseAiCfo" },
     ],
   },
   {
     label: "Reporting",
     items: [
-      { label: "Reports", icon: BarChart3, to: "/app/reports", requiredEntitlement: "canExportPdfReports" },
-      { label: "Audit Trail", icon: ShieldCheck, to: "/app/audit", requiredEntitlement: "canAccessAudit" },
+      {
+        label: "Reports",
+        icon: BarChart3,
+        to: "/app/reports",
+        requiredEntitlement: "canExportPdfReports",
+      },
+      {
+        label: "Audit Trail",
+        icon: ShieldCheck,
+        to: "/app/audit",
+        requiredEntitlement: "canAccessAudit",
+      },
     ],
   },
 ];

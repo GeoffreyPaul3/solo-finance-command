@@ -30,10 +30,35 @@ function ensureNodeEnvLoaded() {
   }
 }
 
+async function getCurrentUserId(): Promise<string | null> {
+  const { data } = await supabase.auth.getUser();
+  if (data?.user) return data.user.id;
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (sessionData.session?.user) return sessionData.session.user.id;
+  return null;
+}
+
+async function verifyWorkspaceMember(userId: string | null, workspaceId: string) {
+  if (!userId) return;
+  const { data, error } = await supabase
+    .from("workspace_members")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("workspace_id", workspaceId)
+    .maybeSingle();
+
+  if (error || !data) {
+    throw new Error("Forbidden: You are not an authorized member of this workspace.");
+  }
+}
+
 export const createCheckoutServerFn = createServerFn({ method: "POST" })
   .validator((data: z.infer<typeof createCheckoutSchema>) => createCheckoutSchema.parse(data))
   .handler(async ({ data }) => {
     ensureNodeEnvLoaded();
+
+    const userId = await getCurrentUserId();
+    await verifyWorkspaceMember(userId, data.workspaceId);
 
     const priceInfo = CANONICAL_PRICES[data.planId][data.currency];
     if (!priceInfo) {
@@ -117,6 +142,10 @@ const verifyPaymentSchema = z.object({
 export const verifyPaymentServerFn = createServerFn({ method: "POST" })
   .validator((data: z.infer<typeof verifyPaymentSchema>) => verifyPaymentSchema.parse(data))
   .handler(async ({ data }) => {
+    // Security Rule #1: Verify caller is authenticated and a workspace member
+    const userId = await getCurrentUserId();
+    await verifyWorkspaceMember(userId, data.workspaceId);
+
     // 1. Fetch internal pending payment record
     const { data: payment, error: fetchErr } = await supabase
       .from("subscription_payments")
@@ -258,6 +287,10 @@ export const verifyPaymentServerFn = createServerFn({ method: "POST" })
 export const cancelSubscriptionServerFn = createServerFn({ method: "POST" })
   .validator((data: { workspaceId: string }) => data)
   .handler(async ({ data }) => {
+    // Security Rule #1: Verify caller is authenticated and a workspace member (owner/admin)
+    const userId = await getCurrentUserId();
+    await verifyWorkspaceMember(userId, data.workspaceId);
+
     const { error } = await supabase
       .from("subscriptions")
       .update({

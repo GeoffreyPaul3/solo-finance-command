@@ -109,7 +109,7 @@ export async function adminListUsersFn({ data }: { data: z.infer<typeof paginati
       role,
       created_at,
       workspace_id,
-      workspaces(name)
+      workspaces(name, plan)
     `,
       { count: "exact" },
     )

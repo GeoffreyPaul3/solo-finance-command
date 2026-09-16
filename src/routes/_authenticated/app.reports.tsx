@@ -2,7 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   AlertCircle,
+  AlertTriangle,
   BarChart3,
+  CheckCircle2,
   Clock,
   Download,
   FileText,
@@ -42,18 +44,21 @@ import {
   calculateExpenseReportTotals,
   calculateIncomeReportTotals,
   calculateReceivablesAgingBuckets,
+  calculateTaxPlanningTotals,
   cashflowReportQueryOptions,
   downloadCsv,
   expenseReportQueryOptions,
   incomeReportQueryOptions,
   receivablesReportQueryOptions,
+  taxPlanningReportQueryOptions,
   type CashflowReportItem,
   type ExpenseReportItem,
   type IncomeReportItem,
   type ReceivablesAgingItem,
   type ReportType,
+  type TaxPlanningReportItem,
 } from "@/domain/reports";
-import { formatMoney } from "@/lib/money";
+import { formatMoney, formatPercent } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app/reports")({
@@ -106,6 +111,7 @@ const REPORT_TABS: { id: ReportType; label: string; icon: typeof BarChart3 }[] =
   { id: "expenses", label: "Expenses", icon: Receipt },
   { id: "cashflow", label: "Cashflow", icon: Wallet },
   { id: "receivables", label: "Receivables Aging", icon: Clock },
+  { id: "tax_planning", label: "Tax Planning", icon: BarChart3 },
 ];
 
 function ReportsContent() {
@@ -115,6 +121,7 @@ function ReportsContent() {
   const [dateFrom, setDateFrom] = useState(defaults.from);
   const [dateTo, setDateTo] = useState(defaults.to);
   const [currency, setCurrency] = useState<string>("all");
+  const [taxYear, setTaxYear] = useState(() => new Date().getFullYear());
 
   const currencyFilter = currency === "all" ? undefined : currency;
 
@@ -138,17 +145,24 @@ function ReportsContent() {
     enabled: reportType === "receivables",
   });
 
+  const taxPlanningQuery = useQuery({
+    ...taxPlanningReportQueryOptions(workspace.id, taxYear, currency),
+    enabled: reportType === "tax_planning",
+  });
+
   const isLoading =
     incomeQuery.isLoading ||
     expenseQuery.isLoading ||
     cashflowQuery.isLoading ||
-    receivablesQuery.isLoading;
+    receivablesQuery.isLoading ||
+    taxPlanningQuery.isLoading;
 
   const isError =
     incomeQuery.isError ||
     expenseQuery.isError ||
     cashflowQuery.isError ||
-    receivablesQuery.isError;
+    receivablesQuery.isError ||
+    taxPlanningQuery.isError;
 
   function handleExport() {
     try {
@@ -183,6 +197,22 @@ function ReportsContent() {
           balance: r.closingBalance,
         }));
         downloadCsv(data, `cashflow-report-${dateFrom}-to-${dateTo}`);
+      } else if (reportType === "tax_planning") {
+        const rows = taxPlanningQuery.data ?? [];
+        const taxCsvData = rows.map((r) => ({
+          tax_year: r.taxYear,
+          currency: r.currency,
+          reporting_period: `${r.taxYear}-01-01 to ${r.taxYear}-12-31`,
+          actual_income: r.actualIncome,
+          actual_expenses: r.actualExpenses,
+          taxable_basis: r.taxableBasis,
+          configured_tax_rate_pct: r.configuredTaxRate,
+          estimated_tax_amount: r.estimatedTaxAmount,
+          actual_tracked_reserve: r.actualTrackedReserve,
+          reserve_shortfall: r.reserveShortfall,
+          health_status: r.healthStatus,
+        }));
+        downloadCsv(taxCsvData, `tax-planning-report-${taxYear}`);
       } else {
         const data = (receivablesQuery.data ?? []).map((r) => ({
           invoice: r.invoiceNumber,
@@ -332,7 +362,7 @@ function ReportsContent() {
           },
           `cashflow-report-${dateFrom}-to-${dateTo}.pdf`,
         );
-      } else {
+      } else if (reportType === "receivables") {
         const agingData = receivablesQuery.data ?? [];
         const buckets = calculateReceivablesAgingBuckets(agingData);
         await generateReportPdf(
@@ -394,6 +424,75 @@ function ReportsContent() {
           },
           `receivables-aging-${new Date().toISOString().slice(0, 10)}.pdf`,
         );
+      } else if (reportType === "tax_planning") {
+        const taxData = taxPlanningQuery.data ?? [];
+        const totals = calculateTaxPlanningTotals(taxData);
+        await generateReportPdf(
+          {
+            title: `Tax Planning Report — ${taxYear}`,
+            workspaceName: workspace.name,
+            logoUrl: workspace.logo_url,
+            periodLabel: `Tax Year ${taxYear} (${taxYear}-01-01 to ${taxYear}-12-31)`,
+            currency: currency === "all" ? "All Currencies" : currency,
+            metrics: [
+              {
+                label: "Actual Income",
+                value: formatMoney(totals.totalIncome, currency === "all" ? "USD" : currency),
+              },
+              {
+                label: "Actual Expenses",
+                value: formatMoney(totals.totalExpenses, currency === "all" ? "USD" : currency),
+              },
+              {
+                label: "Taxable Basis",
+                value: formatMoney(totals.totalTaxableBasis, currency === "all" ? "USD" : currency),
+              },
+              {
+                label: "Estimated Tax",
+                value: formatMoney(totals.totalEstimatedTax, currency === "all" ? "USD" : currency),
+              },
+              {
+                label: "Tracked Reserve",
+                value: formatMoney(
+                  totals.totalTrackedReserve,
+                  currency === "all" ? "USD" : currency,
+                ),
+              },
+              {
+                label: "Shortfall",
+                value: formatMoney(totals.totalShortfall, currency === "all" ? "USD" : currency),
+              },
+            ],
+            tables: [
+              {
+                title: "Tax Planning Breakdown by Currency",
+                headers: [
+                  "Currency",
+                  "Actual Income",
+                  "Expenses",
+                  "Taxable Basis",
+                  "Tax Rate",
+                  "Estimated Tax",
+                  "Reserve Tracked",
+                  "Shortfall",
+                  "Status",
+                ],
+                rows: taxData.map((r) => [
+                  r.currency,
+                  formatMoney(r.actualIncome, r.currency),
+                  formatMoney(r.actualExpenses, r.currency),
+                  formatMoney(r.taxableBasis, r.currency),
+                  `${r.configuredTaxRate}%`,
+                  formatMoney(r.estimatedTaxAmount, r.currency),
+                  formatMoney(r.actualTrackedReserve, r.currency),
+                  r.reserveShortfall > 0 ? formatMoney(r.reserveShortfall, r.currency) : "None",
+                  r.healthStatus.charAt(0).toUpperCase() + r.healthStatus.slice(1),
+                ]),
+              },
+            ],
+          },
+          `tax-planning-report-${taxYear}.pdf`,
+        );
       }
       toast.success("PDF report generated and downloaded");
     } catch (err) {
@@ -404,7 +503,7 @@ function ReportsContent() {
     }
   }
 
-  const showDateRange = reportType !== "receivables";
+  const showDateRange = reportType !== "receivables" && reportType !== "tax_planning";
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 pb-16">
@@ -561,6 +660,15 @@ function ReportsContent() {
       {/* Receivables aging */}
       {!isLoading && reportType === "receivables" && (
         <ReceivablesAgingView data={receivablesQuery.data ?? []} />
+      )}
+
+      {/* Tax Planning report */}
+      {!isLoading && reportType === "tax_planning" && (
+        <TaxPlanningReportView
+          data={taxPlanningQuery.data ?? []}
+          taxYear={taxYear}
+          onYearChange={setTaxYear}
+        />
       )}
     </div>
   );
@@ -907,6 +1015,217 @@ function SummaryCard({
       >
         {formatted}
       </p>
+    </div>
+  );
+}
+
+// ─── Tax Planning Report View ─────────────────────────────────────────────────
+
+function TaxPlanningReportView({
+  data,
+  taxYear,
+  onYearChange,
+}: {
+  data: TaxPlanningReportItem[];
+  taxYear: number;
+  onYearChange: (y: number) => void;
+}) {
+  const now = new Date().getFullYear();
+  const years = [now, now - 1, now - 2];
+
+  const yearButtons = years.map((y) => (
+    <button
+      key={y}
+      id={`tax-report-year-${y}`}
+      onClick={() => onYearChange(y)}
+      className={cn(
+        "px-3 py-1.5 text-sm font-medium transition-colors",
+        taxYear === y
+          ? "bg-primary text-primary-foreground"
+          : "bg-background text-muted-foreground hover:bg-muted",
+      )}
+    >
+      {y}
+    </button>
+  ));
+
+  const yearPicker = (
+    <div className="flex items-center gap-2">
+      <span className="text-sm font-medium text-muted-foreground">Tax Year</span>
+      <div className="flex rounded-lg border border-border overflow-hidden">{yearButtons}</div>
+    </div>
+  );
+
+  if (data.length === 0) {
+    return (
+      <div className="space-y-4">
+        {yearPicker}
+        <EmptyState label="tax data" />
+      </div>
+    );
+  }
+
+  const totals = calculateTaxPlanningTotals(data);
+
+  const HEALTH_STYLE: Record<
+    "funded" | "shortfall" | "overfunded",
+    { label: string; badgeClass: string }
+  > = {
+    funded: {
+      label: "Funded",
+      badgeClass: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30",
+    },
+    shortfall: {
+      label: "Shortfall",
+      badgeClass: "bg-amber-500/15 text-amber-700 border-amber-500/30",
+    },
+    overfunded: { label: "Overfunded", badgeClass: "bg-sky-500/15 text-sky-700 border-sky-500/30" },
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        {yearPicker}
+        <p className="text-xs text-muted-foreground">
+          For informational planning purposes only. Not an official tax return.
+        </p>
+      </div>
+
+      {/* Summary strip */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <SummaryCard
+          label="Actual Income"
+          value={totals.totalIncome}
+          currency={data[0]?.currency}
+        />
+        <SummaryCard
+          label="Actual Expenses"
+          value={totals.totalExpenses}
+          currency={data[0]?.currency}
+        />
+        <SummaryCard
+          label="Taxable Basis"
+          value={totals.totalTaxableBasis}
+          currency={data[0]?.currency}
+          highlight
+        />
+        <SummaryCard
+          label="Estimated Tax"
+          value={totals.totalEstimatedTax}
+          currency={data[0]?.currency}
+        />
+        <SummaryCard
+          label="Tracked Reserve"
+          value={totals.totalTrackedReserve}
+          currency={data[0]?.currency}
+        />
+        <SummaryCard
+          label="Shortfall"
+          value={totals.totalShortfall > 0 ? totals.totalShortfall : "None"}
+          currency={totals.totalShortfall > 0 ? data[0]?.currency : undefined}
+          isWarning={totals.totalShortfall > 0}
+        />
+      </div>
+
+      {/* Per-currency detail cards */}
+      <div className="space-y-4">
+        {data.map((row) => {
+          const cfg = HEALTH_STYLE[row.healthStatus];
+          const coverageRatio =
+            row.estimatedTaxAmount > 0
+              ? Math.min(100, Math.round((row.actualTrackedReserve / row.estimatedTaxAmount) * 100))
+              : 100;
+
+          return (
+            <Card key={row.currency} className="overflow-hidden">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base">{row.currency}</CardTitle>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Tax Year {row.taxYear} · Rate: {formatPercent(row.configuredTaxRate / 100)}
+                      {row.isPrimaryCurrency && " · Primary"}
+                    </p>
+                  </div>
+                  <Badge variant="outline" className={cn("text-xs", cfg.badgeClass)}>
+                    {cfg.label}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Progress bar */}
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Reserve Coverage</span>
+                    <span className="font-semibold text-foreground">{coverageRatio}%</span>
+                  </div>
+                  <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-all duration-500",
+                        row.healthStatus === "funded" && "bg-emerald-500",
+                        row.healthStatus === "shortfall" && "bg-amber-500",
+                        row.healthStatus === "overfunded" && "bg-sky-500",
+                      )}
+                      style={{ width: `${coverageRatio}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Data grid */}
+                <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4">
+                  {[
+                    {
+                      label: "Reporting Period",
+                      value: `${row.taxYear}-01-01 to ${row.taxYear}-12-31`,
+                    },
+                    { label: "Actual Income", value: formatMoney(row.actualIncome, row.currency) },
+                    {
+                      label: "Actual Expenses",
+                      value: formatMoney(row.actualExpenses, row.currency),
+                    },
+                    { label: "Taxable Basis", value: formatMoney(row.taxableBasis, row.currency) },
+                    {
+                      label: "Configured Tax Rate",
+                      value: formatPercent(row.configuredTaxRate / 100),
+                    },
+                    {
+                      label: "Estimated Tax",
+                      value: formatMoney(row.estimatedTaxAmount, row.currency),
+                    },
+                    {
+                      label: "Tracked Reserve",
+                      value: formatMoney(row.actualTrackedReserve, row.currency),
+                    },
+                    {
+                      label: "Reserve Shortfall",
+                      value:
+                        row.reserveShortfall > 0
+                          ? formatMoney(row.reserveShortfall, row.currency)
+                          : "None",
+                    },
+                  ].map((item) => (
+                    <div key={item.label} className="space-y-0.5">
+                      <p className="text-xs text-muted-foreground">{item.label}</p>
+                      <p className="font-semibold text-foreground">{item.value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {row.reserveShortfall > 0 && (
+                  <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-800 dark:text-amber-300">
+                    <AlertTriangle className="mt-0.5 size-3.5 shrink-0" />
+                    <span>
+                      You are <strong>{formatMoney(row.reserveShortfall, row.currency)}</strong>{" "}
+                      short of your tax target. Consider setting this amount aside.
+                    </span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -48,6 +48,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TablePagination } from "@/components/ui/table-pagination";
 import { accountsQueryOptions } from "@/domain/financial";
 import {
   workspacePaymentsQueryOptions,
@@ -80,6 +81,8 @@ function PaymentsPage() {
 
   const [filters, setFilters] = useState<PaymentFilters>({ status: "posted" });
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(25);
   const [reverseDialog, setReverseDialog] = useState<{
     open: boolean;
     paymentId: string;
@@ -101,6 +104,8 @@ function PaymentsPage() {
       p.invoice?.client?.name?.toLowerCase().includes(term)
     );
   });
+
+  const paginatedPayments = payments.slice(page * pageSize, (page + 1) * pageSize);
 
   const reverseMutation = useMutation({
     mutationFn: () =>
@@ -208,16 +213,20 @@ function PaymentsPage() {
             id="payments-search"
             placeholder="Search invoice #, client, reference…"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(0);
+            }}
             className="pl-9 h-9 text-sm"
           />
         </div>
 
         <Select
           value={filters.status ?? "posted"}
-          onValueChange={(v) =>
-            setFilters((prev) => ({ ...prev, status: v as PaymentStatus | "all" }))
-          }
+          onValueChange={(v) => {
+            setFilters((prev) => ({ ...prev, status: v as PaymentStatus | "all" }));
+            setPage(0);
+          }}
         >
           <SelectTrigger id="filter-status" className="h-9 w-36 text-sm">
             <SelectValue />
@@ -231,9 +240,10 @@ function PaymentsPage() {
 
         <Select
           value={filters.method ?? "all"}
-          onValueChange={(v) =>
-            setFilters((prev) => ({ ...prev, method: v as PaymentMethod | "all" }))
-          }
+          onValueChange={(v) => {
+            setFilters((prev) => ({ ...prev, method: v as PaymentMethod | "all" }));
+            setPage(0);
+          }}
         >
           <SelectTrigger id="filter-method" className="h-9 w-44 text-sm">
             <SelectValue placeholder="All Methods" />
@@ -250,9 +260,10 @@ function PaymentsPage() {
 
         <Select
           value={filters.accountId ?? "all"}
-          onValueChange={(v) =>
-            setFilters((prev) => ({ ...prev, accountId: v === "all" ? undefined : v }))
-          }
+          onValueChange={(v) => {
+            setFilters((prev) => ({ ...prev, accountId: v === "all" ? undefined : v }));
+            setPage(0);
+          }}
         >
           <SelectTrigger id="filter-account" className="h-9 w-44 text-sm">
             <SelectValue placeholder="All Accounts" />
@@ -275,6 +286,7 @@ function PaymentsPage() {
             onClick={() => {
               setFilters({ status: "posted" });
               setSearch("");
+              setPage(0);
             }}
           >
             <X className="size-3.5" />
@@ -337,7 +349,7 @@ function PaymentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {payments.map((payment) => {
+              {paginatedPayments.map((payment) => {
                 const inv = payment.invoice;
                 const client = inv?.client;
                 const isPosted = payment.status === "posted";
@@ -412,6 +424,16 @@ function PaymentsPage() {
               })}
             </TableBody>
           </Table>
+          <div className="p-4 pt-3">
+            <TablePagination
+              page={page}
+              pageSize={pageSize}
+              totalItems={payments.length}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+              itemLabel="payments"
+            />
+          </div>
         </div>
       )}
 

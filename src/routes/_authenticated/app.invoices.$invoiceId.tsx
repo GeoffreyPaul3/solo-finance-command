@@ -23,6 +23,10 @@ import { useWorkspace } from "@/components/app/workspace-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  InvoiceTemplateRenderer,
+  type InvoiceTemplateId,
+} from "@/components/app/invoice-templates";
 import { sendInvoiceEmailServerFn } from "@/server/invoices";
 import {
   Dialog,
@@ -34,6 +38,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MoneyInput } from "@/components/ui/money-input";
 import { MoneyValue } from "@/components/ui/money-value";
 import {
   Select,
@@ -107,8 +112,7 @@ function InvoiceDetailPage() {
     null,
   );
 
-  type InvoiceTemplate = "modern" | "minimal" | "professional" | "premium";
-  const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplate>("modern");
+  const [selectedTemplate, setSelectedTemplate] = useState<InvoiceTemplateId>("modern");
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [emailRecipient, setEmailRecipient] = useState("");
   const [emailCustomNote, setEmailCustomNote] = useState("");
@@ -361,218 +365,14 @@ function InvoiceDetailPage() {
         </span>
       </div>
 
-      {/* Main Printable Invoice Card */}
-      <Card
-        className={cn(
-          "shadow-sm space-y-8 text-foreground print:shadow-none print:border-none print:p-0 transition-all duration-150 relative",
-          selectedTemplate === "modern" && "bg-card border border-border/80 p-6 sm:p-8 rounded-xl",
-          selectedTemplate === "minimal" &&
-            "bg-background border border-border/40 p-8 sm:p-12 shadow-none rounded-none",
-          selectedTemplate === "professional" &&
-            "bg-card border-2 border-border p-6 sm:p-8 rounded-md",
-          selectedTemplate === "premium" &&
-            "bg-card border border-amber-500/30 p-6 sm:p-8 rounded-xl shadow-md overflow-hidden",
-        )}
-      >
-        {selectedTemplate === "premium" && (
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-amber-500 via-primary to-emerald-500" />
-        )}
-        {/* Invoice Header: Issuer and Client */}
-        <div className="flex flex-col gap-6 sm:flex-row sm:justify-between border-b border-border pb-6">
-          <div>
-            <div className="flex items-center gap-2">
-              <div className="size-8 rounded bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
-                SO
-              </div>
-              <span className="text-xl font-bold tracking-tight">{workspace.name}</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">Solo Commercial Invoicing</p>
-          </div>
-
-          <div className="sm:text-right space-y-1">
-            <h2 className="text-2xl font-bold font-mono tracking-tight text-primary">INVOICE</h2>
-            <div className="text-sm font-semibold font-mono">{invoice.invoice_number}</div>
-            <div className="text-xs text-muted-foreground">
-              Status:{" "}
-              <span className="font-semibold uppercase">
-                {INVOICE_STATUS_LABELS[invoice.status]}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Bill To / Details Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
-          <div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground block mb-1">
-              Billed To:
-            </span>
-            <div className="font-bold text-base text-foreground">
-              {invoice.client ? (
-                <Link
-                  to="/app/clients/$clientId"
-                  params={{ clientId: invoice.client.id }}
-                  className="hover:underline text-primary"
-                >
-                  {invoice.client.name}
-                </Link>
-              ) : (
-                "Unknown Client"
-              )}
-            </div>
-            {invoice.client?.company_name && (
-              <p className="text-muted-foreground text-xs">{invoice.client.company_name}</p>
-            )}
-            {invoice.client?.email && (
-              <p className="text-muted-foreground text-xs">{invoice.client.email}</p>
-            )}
-            {invoice.client?.address && (
-              <p className="text-muted-foreground text-xs mt-1 whitespace-pre-line">
-                {invoice.client.address}
-              </p>
-            )}
-
-            {invoice.project && (
-              <div className="mt-3 text-xs">
-                <span className="text-muted-foreground font-medium">Project: </span>
-                <Link
-                  to="/app/projects/$projectId"
-                  params={{ projectId: invoice.project.id }}
-                  className="font-medium text-primary hover:underline"
-                >
-                  {invoice.project.name}
-                </Link>
-              </div>
-            )}
-          </div>
-
-          <div className="sm:text-right space-y-2">
-            <div className="grid grid-cols-2 sm:flex sm:justify-end gap-x-4 text-xs">
-              <span className="text-muted-foreground">Issue Date:</span>
-              <span className="font-medium">{invoice.issue_date}</span>
-            </div>
-            <div className="grid grid-cols-2 sm:flex sm:justify-end gap-x-4 text-xs">
-              <span className="text-muted-foreground">Payment Due:</span>
-              <span className="font-medium font-mono">{invoice.due_date}</span>
-            </div>
-            <div className="grid grid-cols-2 sm:flex sm:justify-end gap-x-4 text-xs">
-              <span className="text-muted-foreground">Currency:</span>
-              <span className="font-mono font-bold">{invoice.currency}</span>
-            </div>
-            {invoice.status === "overdue" && (
-              <div className="text-xs text-rose-500 font-semibold mt-1">
-                Payment is currently overdue
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Line Items Table */}
-        <div className="rounded-md border border-border overflow-hidden">
-          <Table>
-            <TableHeader className="bg-muted/50">
-              <TableRow>
-                <TableHead className="w-[50px] text-center font-semibold">#</TableHead>
-                <TableHead className="font-semibold">Description</TableHead>
-                <TableHead className="w-[100px] text-right font-semibold">Qty</TableHead>
-                <TableHead className="w-[140px] text-right font-semibold">Unit Price</TableHead>
-                <TableHead className="w-[150px] text-right font-semibold">Line Total</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(invoice.line_items ?? []).map((item, idx) => (
-                <TableRow key={item.id} className="hover:bg-muted/10">
-                  <TableCell className="text-center text-xs text-muted-foreground font-mono">
-                    {idx + 1}
-                  </TableCell>
-                  <TableCell className="text-sm font-medium">{item.description}</TableCell>
-                  <TableCell className="text-right text-sm font-mono">{item.quantity}</TableCell>
-                  <TableCell className="text-right text-sm font-mono">
-                    {invoice.currency} {Number(item.unit_price).toFixed(2)}
-                  </TableCell>
-                  <TableCell className="text-right text-sm font-mono font-semibold">
-                    {invoice.currency} {Number(item.line_total).toFixed(2)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* Totals and Notes Layout */}
-        <div className="grid grid-cols-1 sm:grid-cols-12 gap-6 pt-2">
-          <div className="sm:col-span-7 space-y-4 text-xs">
-            {invoice.payment_instructions && (
-              <div className="p-3 bg-muted/40 rounded-md border border-border space-y-1">
-                <span className="font-bold text-foreground block">Payment Instructions:</span>
-                <p className="whitespace-pre-line font-mono text-muted-foreground">
-                  {invoice.payment_instructions}
-                </p>
-              </div>
-            )}
-
-            {invoice.notes && (
-              <div className="space-y-1">
-                <span className="font-bold text-muted-foreground block">Notes:</span>
-                <p className="whitespace-pre-line text-muted-foreground">{invoice.notes}</p>
-              </div>
-            )}
-          </div>
-
-          <div className="sm:col-span-5 space-y-2 text-sm border-t sm:border-t-0 border-border pt-4 sm:pt-0">
-            <div className="flex justify-between text-muted-foreground text-xs">
-              <span>Subtotal:</span>
-              <span className="font-mono">
-                {invoice.currency} {invoice.subtotal.toFixed(2)}
-              </span>
-            </div>
-
-            {invoice.discount_amount > 0 && (
-              <div className="flex justify-between text-rose-500 text-xs">
-                <span>Discount:</span>
-                <span className="font-mono">
-                  -{invoice.currency} {invoice.discount_amount.toFixed(2)}
-                </span>
-              </div>
-            )}
-
-            {invoice.tax_amount > 0 && (
-              <div className="flex justify-between text-muted-foreground text-xs">
-                <span>Tax:</span>
-                <span className="font-mono">
-                  +{invoice.currency} {invoice.tax_amount.toFixed(2)}
-                </span>
-              </div>
-            )}
-
-            <div className="border-t border-border pt-2 flex justify-between font-bold text-base text-foreground">
-              <span>Invoice Total:</span>
-              <span className="font-mono">
-                <MoneyValue value={invoice.total} currency={invoice.currency} size="md" />
-              </span>
-            </div>
-
-            <div className="flex justify-between text-emerald-600 text-xs pt-1">
-              <span>Amount Paid:</span>
-              <span className="font-mono font-medium">
-                {invoice.currency} {invoice.amount_paid.toFixed(2)}
-              </span>
-            </div>
-
-            <div className="border-t border-border/80 pt-2 flex justify-between font-bold text-base">
-              <span>Amount Due:</span>
-              <span
-                className={cn(
-                  "font-mono",
-                  invoice.amount_due > 0 ? "text-amber-500" : "text-muted-foreground",
-                )}
-              >
-                <MoneyValue value={invoice.amount_due} currency={invoice.currency} size="lg" />
-              </span>
-            </div>
-          </div>
-        </div>
-      </Card>
+      {/* Dynamic Renderable Invoice Template (Printable) */}
+      <div className="print:m-0 print:p-0">
+        <InvoiceTemplateRenderer
+          templateId={selectedTemplate}
+          invoice={invoice}
+          workspace={workspace}
+        />
+      </div>
 
       {/* Payment History & Ledger Integration Section (Hidden during print) */}
       <Card className="print:hidden">
@@ -921,14 +721,12 @@ function RecordPaymentDialog({
 
           <div className="space-y-1.5">
             <Label className="text-xs">Payment Amount ({invoice.currency}) *</Label>
-            <Input
-              type="number"
-              step="any"
-              min="0.01"
-              max={invoice.amount_due}
+            <MoneyInput
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="h-9 text-xs font-mono"
+              onChange={setAmount}
+              currency={invoice.currency}
+              placeholder="0.00"
+              className="h-9 text-xs"
             />
           </div>
 
@@ -1284,14 +1082,12 @@ function EditInvoiceDialog({
                     />
                   </div>
                   <div className="col-span-5 sm:col-span-3">
-                    <Input
+                    <MoneyInput
                       placeholder="Unit price"
-                      type="number"
-                      min="0"
-                      step="any"
                       value={item.unit_price}
-                      onChange={(e) => updateLineItem(index, "unit_price", e.target.value)}
-                      className="h-8 text-xs font-mono"
+                      onChange={(canonical) => updateLineItem(index, "unit_price", canonical)}
+                      currency={invoice.currency}
+                      className="h-8 text-xs"
                     />
                   </div>
                   <div className="col-span-3 sm:col-span-1 flex justify-end">
@@ -1316,24 +1112,22 @@ function EditInvoiceDialog({
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Discount Amount ({invoice.currency})</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="any"
+                <MoneyInput
                   value={discountAmount}
-                  onChange={(e) => setDiscountAmount(e.target.value)}
-                  className="h-8 text-xs font-mono"
+                  onChange={setDiscountAmount}
+                  currency={invoice.currency}
+                  placeholder="0.00"
+                  className="h-8 text-xs"
                 />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Tax Amount ({invoice.currency})</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="any"
+                <MoneyInput
                   value={taxAmount}
-                  onChange={(e) => setTaxAmount(e.target.value)}
-                  className="h-8 text-xs font-mono"
+                  onChange={setTaxAmount}
+                  currency={invoice.currency}
+                  placeholder="0.00"
+                  className="h-8 text-xs"
                 />
               </div>
             </div>

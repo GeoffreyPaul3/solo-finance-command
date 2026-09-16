@@ -7,9 +7,11 @@ import {
   CheckCircle2,
   ChevronDown,
   ChevronUp,
+  Download,
   Edit3,
   Info,
   Loader2,
+  Printer,
   TrendingUp,
 } from "lucide-react";
 import { useState } from "react";
@@ -29,8 +31,10 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MoneyInput } from "@/components/ui/money-input";
 import { MoneyValue } from "@/components/ui/money-value";
 import { Textarea } from "@/components/ui/textarea";
+import { downloadCsv } from "@/domain/reports";
 import {
   evaluateTaxHealth,
   taxAdjustmentsListQueryOptions,
@@ -154,22 +158,47 @@ function TaxesPage() {
     });
   }
 
+  function handleExportCsv() {
+    if (!summaryRows.length) {
+      toast.error("No tax data to export");
+      return;
+    }
+    const data = summaryRows.map((r) => {
+      const health = evaluateTaxHealth(r.targetTaxReserve, r.trackedTaxReserve);
+      return {
+        tax_year: taxYear,
+        currency: r.currency,
+        reporting_period: `${taxYear}-01-01 to ${taxYear}-12-31`,
+        gross_income_ytd: r.grossIncomeYtd,
+        expenses_ytd: r.expensesYtd,
+        taxable_basis: r.netTaxableIncomeYtd,
+        tax_rate_percent: r.taxReserveRate,
+        target_reserve: r.targetTaxReserve,
+        tracked_reserve: r.trackedTaxReserve,
+        shortfall: r.shortfall,
+        health_status: health,
+      };
+    });
+    downloadCsv(data, `tax-planning-report-${taxYear}`);
+    toast.success("Tax planning report exported to CSV");
+  }
+
   const now = new Date().getFullYear();
   const years = [now, now - 1, now - 2];
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 pb-16">
       {/* Header */}
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border/60 pb-6">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border/60 pb-6 print:border-none print:pb-2">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 print:hidden">
             <Calculator className="size-4 text-primary" />
             <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Understand · Taxes
             </span>
           </div>
           <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            Tax Reserve
+            Tax Reserve & Planning
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Track your tax set-aside against YTD taxable income. Amounts are manually tracked — not
@@ -177,27 +206,52 @@ function TaxesPage() {
           </p>
         </div>
 
-        {/* Year picker */}
-        <div className="flex items-center gap-2">
-          <Label htmlFor="tax-year" className="text-sm font-medium text-muted-foreground">
-            Tax Year
-          </Label>
-          <div className="flex rounded-lg border border-border overflow-hidden">
-            {years.map((y) => (
-              <button
-                key={y}
-                id={y === now ? "tax-year" : undefined}
-                onClick={() => setTaxYear(y)}
-                className={cn(
-                  "px-3 py-1.5 text-sm font-medium transition-colors",
-                  taxYear === y
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-background text-muted-foreground hover:bg-muted",
-                )}
-              >
-                {y}
-              </button>
-            ))}
+        {/* Actions & Year picker */}
+        <div className="flex flex-wrap items-center gap-3 print:hidden">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="tax-year" className="text-sm font-medium text-muted-foreground">
+              Tax Year
+            </Label>
+            <div className="flex rounded-lg border border-border overflow-hidden">
+              {years.map((y) => (
+                <button
+                  key={y}
+                  id={y === now ? "tax-year" : undefined}
+                  onClick={() => setTaxYear(y)}
+                  className={cn(
+                    "px-3 py-1.5 text-sm font-medium transition-colors",
+                    taxYear === y
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-background text-muted-foreground hover:bg-muted",
+                  )}
+                >
+                  {y}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCsv}
+              disabled={summaryRows.length === 0}
+              className="gap-1.5"
+            >
+              <Download className="size-3.5" />
+              Export CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.print()}
+              disabled={summaryRows.length === 0}
+              className="gap-1.5"
+            >
+              <Printer className="size-3.5" />
+              Print
+            </Button>
           </div>
         </div>
       </header>
@@ -285,7 +339,7 @@ function TaxesPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 print:hidden">
                   <Button
                     id={`update-tax-reserve-${row.currency}`}
                     size="sm"
@@ -486,13 +540,11 @@ function TaxesPage() {
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
               <Label htmlFor="reserve-amount">Tracked Amount ({updateDialog.currency})</Label>
-              <Input
+              <MoneyInput
                 id="reserve-amount"
-                type="number"
-                min={0}
-                step="0.01"
                 value={updatedAmount}
-                onChange={(e) => setUpdatedAmount(e.target.value)}
+                onChange={setUpdatedAmount}
+                currency={updateDialog.currency}
                 placeholder="0.00"
               />
             </div>

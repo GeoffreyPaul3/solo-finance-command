@@ -1,6 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createProjectSchema, updateProjectSchema } from "./projects";
+const mockFrom = vi.fn();
+const mockRpc = vi.fn();
+
+vi.mock("@/integrations/supabase/client", () => ({
+  supabase: {
+    from: (...args: unknown[]) => mockFrom(...args),
+    rpc: (...args: unknown[]) => mockRpc(...args),
+  },
+}));
+
+import { createProjectSchema, deleteProject, updateProjectSchema } from "./projects";
 
 describe("createProjectSchema", () => {
   it("accepts valid project with full details", () => {
@@ -122,5 +132,76 @@ describe("updateProjectSchema", () => {
         endDate: "2026-10-01",
       }),
     ).toThrow(/Start date must be on or before end date/);
+  });
+});
+
+describe("deleteProject", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("throws relational integrity error if project has linked invoices", async () => {
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "invoices") {
+        return {
+          select: () => ({
+            eq: () => ({
+              eq: () => Promise.resolve({ count: 3, error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: () => ({
+          eq: () => ({
+            eq: () => Promise.resolve({ count: 0, error: null }),
+          }),
+        }),
+      };
+    });
+
+    await expect(deleteProject("ws-1", "project-1")).rejects.toThrow(
+      /Cannot delete project with linked records.*3 invoice\(s\)/,
+    );
+  });
+
+  it("successfully deletes project and writes audit log when no linked records exist", async () => {
+    mockRpc.mockResolvedValue({ data: null, error: null });
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "projects") {
+        return {
+          select: () => ({
+            eq: () => ({
+              eq: () => ({
+                maybeSingle: () =>
+                  Promise.resolve({ data: { name: "Redesign Project" }, error: null }),
+              }),
+            }),
+          }),
+          delete: () => ({
+            eq: () => ({
+              eq: () => Promise.resolve({ error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: () => ({
+          eq: () => ({
+            eq: () => Promise.resolve({ count: 0, error: null }),
+          }),
+        }),
+      };
+    });
+
+    const res = await deleteProject("ws-1", "project-1");
+    expect(res).toEqual({ id: "project-1" });
+    expect(mockRpc).toHaveBeenCalledWith(
+      "write_audit_log",
+      expect.objectContaining({
+        _action: "project.deleted",
+        _entity_id: "project-1",
+      }),
+    );
   });
 });

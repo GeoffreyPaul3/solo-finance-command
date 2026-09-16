@@ -7,16 +7,18 @@ import {
   Briefcase,
   Building2,
   Calendar,
+  Edit,
   Loader2,
   Mail,
   MoreHorizontal,
   Phone,
   Plus,
   Search,
+  Trash2,
   UserCheck,
   Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { useWorkspace } from "@/components/app/workspace-context";
@@ -63,10 +65,13 @@ import {
   archiveClient,
   clientsQueryOptions,
   createClient,
+  deleteClient,
   type Client,
   type ClientStatus,
   type CreateClientInput,
+  type UpdateClientInput,
   unarchiveClient,
+  updateClient,
 } from "@/domain/clients";
 import { roleAtLeast } from "@/domain/workspace";
 import { cn } from "@/lib/utils";
@@ -93,6 +98,8 @@ function ClientsPage() {
   const [statusFilter, setStatusFilter] = useState<ClientStatus | "all">("active");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState<Client | null>(null);
+  const [editTarget, setEditTarget] = useState<Client | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Client | null>(null);
   const [pageSize, setPageSize] = useState<PageSize>(25);
   const [page, setPage] = useState(0);
 
@@ -130,6 +137,18 @@ function ClientsPage() {
     },
     onError: (err: Error) => {
       toast.error(err.message || "Failed to update client status.");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (client: Client) => deleteClient(workspace.id, client.id),
+    onSuccess: () => {
+      toast.success("Client deleted successfully.");
+      invalidateClients();
+      setDeleteTarget(null);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Failed to delete client.");
     },
   });
 
@@ -322,27 +341,34 @@ function ClientsPage() {
                                   <MoreHorizontal className="size-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-40">
+                              <DropdownMenuContent align="end" className="w-44">
                                 <DropdownMenuItem asChild>
                                   <Link
                                     to="/app/clients/$clientId"
                                     params={{ clientId: c.id }}
-                                    className="flex items-center gap-2"
+                                    className="flex items-center gap-2 cursor-pointer"
                                   >
                                     <ArrowRight className="size-4" />
-                                    View
+                                    View Details
                                   </Link>
                                 </DropdownMenuItem>
                                 {canManage && (
                                   <>
+                                    <DropdownMenuItem
+                                      onClick={() => setEditTarget(c)}
+                                      className="flex items-center gap-2 cursor-pointer"
+                                    >
+                                      <Edit className="size-4" />
+                                      Edit Client
+                                    </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
                                       onClick={() => setArchiveTarget(c)}
                                       className={cn(
-                                        "flex items-center gap-2",
+                                        "flex items-center gap-2 cursor-pointer",
                                         isArchived
-                                          ? "text-green-600 focus:text-green-600"
-                                          : "text-destructive focus:text-destructive",
+                                          ? "text-emerald-600 focus:text-emerald-600"
+                                          : "text-amber-600 focus:text-amber-600",
                                       )}
                                     >
                                       {isArchived ? (
@@ -356,6 +382,13 @@ function ClientsPage() {
                                           Archive
                                         </>
                                       )}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => setDeleteTarget(c)}
+                                      className="flex items-center gap-2 text-destructive focus:text-destructive cursor-pointer"
+                                    >
+                                      <Trash2 className="size-4" />
+                                      Delete Client
                                     </DropdownMenuItem>
                                   </>
                                 )}
@@ -418,25 +451,32 @@ function ClientsPage() {
                                   <MoreHorizontal className="size-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-40">
+                              <DropdownMenuContent align="end" className="w-44">
                                 <DropdownMenuItem asChild>
                                   <Link
                                     to="/app/clients/$clientId"
                                     params={{ clientId: c.id }}
-                                    className="flex items-center gap-2"
+                                    className="flex items-center gap-2 cursor-pointer"
                                   >
                                     <ArrowRight className="size-4" />
-                                    View
+                                    View Details
                                   </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => setEditTarget(c)}
+                                  className="flex items-center gap-2 cursor-pointer"
+                                >
+                                  <Edit className="size-4" />
+                                  Edit Client
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   onClick={() => setArchiveTarget(c)}
                                   className={cn(
-                                    "flex items-center gap-2",
+                                    "flex items-center gap-2 cursor-pointer",
                                     isArchived
-                                      ? "text-green-600 focus:text-green-600"
-                                      : "text-destructive focus:text-destructive",
+                                      ? "text-emerald-600 focus:text-emerald-600"
+                                      : "text-amber-600 focus:text-amber-600",
                                   )}
                                 >
                                   {isArchived ? (
@@ -450,6 +490,13 @@ function ClientsPage() {
                                       Archive
                                     </>
                                   )}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => setDeleteTarget(c)}
+                                  className="flex items-center gap-2 text-destructive focus:text-destructive cursor-pointer"
+                                >
+                                  <Trash2 className="size-4" />
+                                  Delete Client
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -592,7 +639,7 @@ function ClientsPage() {
               disabled={isArchiving}
               className={cn(
                 isTargetArchived
-                  ? "bg-green-600 hover:bg-green-700"
+                  ? "bg-emerald-600 hover:bg-emerald-700"
                   : "bg-destructive hover:bg-destructive/90",
               )}
             >
@@ -602,6 +649,56 @@ function ClientsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Client Permanently?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>
+                  Are you sure you want to permanently delete{" "}
+                  <strong className="text-foreground">{deleteTarget?.name}</strong>?
+                </p>
+                <p>
+                  This action cannot be undone. If this client has any linked projects, invoices, or
+                  expenses, the system will prevent deletion to preserve your financial integrity.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteTarget) deleteMutation.mutate(deleteTarget);
+              }}
+              disabled={deleteMutation.isPending}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {deleteMutation.isPending && <Loader2 className="mr-1.5 size-4 animate-spin" />}
+              Delete Client
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Edit Client Modal */}
+      {editTarget && (
+        <EditClientDialog
+          client={editTarget}
+          isOpen={editTarget !== null}
+          onClose={() => setEditTarget(null)}
+          workspaceId={workspace.id}
+          onSuccess={invalidateClients}
+        />
+      )}
     </div>
   );
 }
@@ -745,6 +842,152 @@ function CreateClientDialog({
             <Button type="submit" disabled={mutation.isPending}>
               {mutation.isPending && <Loader2 className="mr-1.5 size-4 animate-spin" />}
               Save Client
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditClientDialog({
+  client,
+  isOpen,
+  onClose,
+  workspaceId,
+  onSuccess,
+}: {
+  client: Client;
+  isOpen: boolean;
+  onClose: () => void;
+  workspaceId: string;
+  onSuccess: () => void;
+}) {
+  const [name, setName] = useState(client.name);
+  const [companyName, setCompanyName] = useState(client.company_name ?? "");
+  const [email, setEmail] = useState(client.email ?? "");
+  const [phone, setPhone] = useState(client.phone ?? "");
+  const [address, setAddress] = useState(client.address ?? "");
+  const [notes, setNotes] = useState(client.notes ?? "");
+
+  useEffect(() => {
+    setName(client.name);
+    setCompanyName(client.company_name ?? "");
+    setEmail(client.email ?? "");
+    setPhone(client.phone ?? "");
+    setAddress(client.address ?? "");
+    setNotes(client.notes ?? "");
+  }, [client]);
+
+  const mutation = useMutation({
+    mutationFn: (input: UpdateClientInput) => updateClient(workspaceId, client.id, input),
+    onSuccess: () => {
+      toast.success("Client updated successfully");
+      onSuccess();
+      onClose();
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Failed to update client");
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      toast.error("Client name is required");
+      return;
+    }
+
+    mutation.mutate({
+      name: name.trim(),
+      companyName: companyName.trim() || null,
+      email: email.trim() || null,
+      phone: phone.trim() || null,
+      address: address.trim() || null,
+      notes: notes.trim() || null,
+    });
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Edit className="size-5 text-primary" />
+            Edit Client
+          </DialogTitle>
+          <DialogDescription>
+            Update contact and organization details for {client.name}.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-client-name">Client / Contact Name</Label>
+            <Input
+              id="edit-client-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              autoFocus
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-client-company">Company / Organization (Optional)</Label>
+            <Input
+              id="edit-client-company"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-client-email">Email (Optional)</Label>
+              <Input
+                id="edit-client-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-client-phone">Phone (Optional)</Label>
+              <Input
+                id="edit-client-phone"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-client-address">Billing Address (Optional)</Label>
+            <Input
+              id="edit-client-address"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-client-notes">Internal Notes (Optional)</Label>
+            <Textarea
+              id="edit-client-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="h-20 resize-none text-sm"
+            />
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button type="button" variant="outline" onClick={onClose} disabled={mutation.isPending}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={mutation.isPending}>
+              {mutation.isPending && <Loader2 className="mr-1.5 size-4 animate-spin" />}
+              Save Changes
             </Button>
           </DialogFooter>
         </form>

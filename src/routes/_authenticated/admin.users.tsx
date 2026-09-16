@@ -21,6 +21,18 @@ export const Route = createFileRoute("/_authenticated/admin/users")({
   component: AdminUsersPage,
 });
 
+/** Returns a Tailwind class string for the plan badge. */
+function getPlanBadgeClass(plan: string | null | undefined): string {
+  switch (plan) {
+    case "pro":
+      return "border-violet-500/50 bg-violet-500/10 text-violet-600 dark:text-violet-400";
+    case "solo":
+      return "border-sky-500/50 bg-sky-500/10 text-sky-600 dark:text-sky-400";
+    default:
+      return "border-border bg-muted/50 text-muted-foreground";
+  }
+}
+
 function AdminUsersPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -85,6 +97,7 @@ function AdminUsersPage() {
                 <TableRow>
                   <TableHead>User</TableHead>
                   <TableHead>Workspace</TableHead>
+                  <TableHead>Plan</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Joined Date</TableHead>
                   <TableHead className="text-right">User ID</TableHead>
@@ -93,7 +106,7 @@ function AdminUsersPage() {
               <TableBody>
                 {data?.members.map((m, idx) => {
                   const record = m as Record<string, unknown>;
-                  const ws = record["workspaces"] as { name: string } | null;
+                  const ws = record["workspaces"] as { name: string; plan?: string | null } | null;
                   const profile = record["profile"] as {
                     full_name: string | null;
                     email: string | null;
@@ -115,6 +128,14 @@ function AdminUsersPage() {
                       </TableCell>
                       <TableCell className="font-medium text-sm">
                         {ws?.name ?? "Unknown Workspace"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={`capitalize text-xs font-semibold tracking-wide ${getPlanBadgeClass(ws?.plan)}`}
+                        >
+                          {ws?.plan ?? "free"}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="capitalize text-xs font-medium">

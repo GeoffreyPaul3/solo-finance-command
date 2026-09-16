@@ -8,7 +8,34 @@ import {
   type AiCfoResult,
   type FinancialContextParams,
 } from "@/domain/ai-cfo";
+import { getWorkspaceEntitlements } from "@/domain/entitlements";
+import { supabase } from "@/integrations/supabase/client";
 import { getAiProvider } from "@/lib/ai";
+
+// ─────────────────────────────────────────────
+// Auth helpers (server-side only)
+// ─────────────────────────────────────────────
+
+async function getCurrentUserId(): Promise<string> {
+  const { data } = await supabase.auth.getUser();
+  if (data?.user) return data.user.id;
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (sessionData.session?.user) return sessionData.session.user.id;
+  throw new Error("Unauthenticated: Please sign in to use AI CFO.");
+}
+
+async function verifyWorkspaceMember(userId: string, workspaceId: string): Promise<void> {
+  const { data, error } = await supabase
+    .from("workspace_members")
+    .select("role")
+    .eq("user_id", userId)
+    .eq("workspace_id", workspaceId)
+    .maybeSingle();
+
+  if (error || !data) {
+    throw new Error("Forbidden: You are not an authorized member of this workspace.");
+  }
+}
 
 export interface AskAiCfoPayload {
   workspaceId: string;
@@ -19,6 +46,33 @@ export interface AskAiCfoPayload {
 export const askAiCfoServerFn = createServerFn({ method: "POST" })
   .validator((data: AskAiCfoPayload) => data)
   .handler(async ({ data }): Promise<AiCfoResult> => {
+    // Security Rule #1: Verify caller is authenticated and a workspace member
+    const callerId = await getCurrentUserId();
+    await verifyWorkspaceMember(callerId, data.workspaceId);
+
+    // Architectural Rule #5: Server-side entitlement enforcement
+    const { data: ws } = await supabase
+      .from("workspaces")
+      .select("plan")
+      .eq("id", data.workspaceId)
+      .maybeSingle();
+
+    const { data: sub } = await supabase
+      .from("subscriptions")
+      .select("plan_id, status, cancel_at_period_end, current_period_end")
+      .eq("workspace_id", data.workspaceId)
+      .maybeSingle();
+
+    const entitlements = getWorkspaceEntitlements(ws?.plan, sub);
+    if (!entitlements.canUseAiCfo) {
+      return {
+        status: "error",
+        isAvailable: false,
+        errorMessage:
+          "AI CFO is a premium feature available on Solo and Pro plans. Please upgrade your subscription to consult your AI CFO.",
+      };
+    }
+
     const provider = getAiProvider();
 
     if (!provider.isConfigured()) {

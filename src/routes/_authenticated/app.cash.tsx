@@ -82,6 +82,7 @@ import {
   type RecordTransferInput,
 } from "@/domain/financial";
 import { CURRENCIES, formatMoney, parseMoneyInput } from "@/lib/money";
+import { CashCharts } from "@/components/app/cash-charts";
 import { MoneyInput } from "@/components/ui/money-input";
 import { MoneyValue, MoneyValueBlock } from "@/components/ui/money-value";
 import { cn } from "@/lib/utils";
@@ -364,6 +365,17 @@ function CashPage() {
           </div>
         ) : null}
       </div>
+
+      {/* Cashflow & Accounts Visual Analytics */}
+      <CashCharts
+        accounts={accounts}
+        transactions={transactions}
+        availableCurrencies={
+          summary?.positions.map((p) => p.currency) ??
+          Array.from(new Set(accounts.map((a) => a.currency)))
+        }
+        defaultCurrency={workspace.currency ?? summary?.positions[0]?.currency ?? "USD"}
+      />
 
       {/* Authoritative Transaction Ledger */}
       <div className="space-y-4 pt-4 border-t border-border">

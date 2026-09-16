@@ -49,6 +49,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TablePagination } from "@/components/ui/table-pagination";
 import { Textarea } from "@/components/ui/textarea";
 import { accountsQueryOptions, categoriesQueryOptions } from "@/domain/financial";
 import {
@@ -103,6 +104,8 @@ function ExpensesPage() {
 
   const [filters, setFilters] = useState<ExpenseFilters>({ status: "posted" });
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(25);
   const [createOpen, setCreateOpen] = useState(false);
   const [reverseDialog, setReverseDialog] = useState<{
     open: boolean;
@@ -136,6 +139,8 @@ function ExpensesPage() {
       e.project?.name?.toLowerCase().includes(term)
     );
   });
+
+  const paginatedExpenses = expenses.slice(page * pageSize, (page + 1) * pageSize);
 
   // Summary stats
   const totalByCategory: Record<string, { name: string; amount: number; currency: string }> = {};
@@ -283,16 +288,20 @@ function ExpensesPage() {
             id="expenses-search"
             placeholder="Search description, vendor, client…"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(0);
+            }}
             className="pl-9 h-9 text-sm"
           />
         </div>
 
         <Select
           value={filters.status ?? "posted"}
-          onValueChange={(v) =>
-            setFilters((prev) => ({ ...prev, status: v as ExpenseFilters["status"] }))
-          }
+          onValueChange={(v) => {
+            setFilters((prev) => ({ ...prev, status: v as ExpenseFilters["status"] }));
+            setPage(0);
+          }}
         >
           <SelectTrigger id="filter-expense-status" className="h-9 w-36 text-sm">
             <SelectValue />
@@ -306,9 +315,10 @@ function ExpensesPage() {
 
         <Select
           value={filters.accountId ?? "all"}
-          onValueChange={(v) =>
-            setFilters((prev) => ({ ...prev, accountId: v === "all" ? undefined : v }))
-          }
+          onValueChange={(v) => {
+            setFilters((prev) => ({ ...prev, accountId: v === "all" ? undefined : v }));
+            setPage(0);
+          }}
         >
           <SelectTrigger id="filter-expense-account" className="h-9 w-44 text-sm">
             <SelectValue placeholder="All Accounts" />
@@ -325,9 +335,10 @@ function ExpensesPage() {
 
         <Select
           value={filters.categoryId ?? "all"}
-          onValueChange={(v) =>
-            setFilters((prev) => ({ ...prev, categoryId: v === "all" ? undefined : v }))
-          }
+          onValueChange={(v) => {
+            setFilters((prev) => ({ ...prev, categoryId: v === "all" ? undefined : v }));
+            setPage(0);
+          }}
         >
           <SelectTrigger id="filter-expense-category" className="h-9 w-44 text-sm">
             <SelectValue placeholder="All Categories" />
@@ -350,6 +361,7 @@ function ExpensesPage() {
             onClick={() => {
               setFilters({ status: "posted" });
               setSearch("");
+              setPage(0);
             }}
           >
             <X className="size-3.5" />
@@ -415,7 +427,7 @@ function ExpensesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {expenses.map((expense) => {
+              {paginatedExpenses.map((expense) => {
                 const isPosted = expense.status === "posted";
                 const client = expense.client;
                 const project = expense.project;
@@ -512,6 +524,16 @@ function ExpensesPage() {
               })}
             </TableBody>
           </Table>
+          <div className="p-4 pt-3">
+            <TablePagination
+              page={page}
+              pageSize={pageSize}
+              totalItems={expenses.length}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+              itemLabel="expenses"
+            />
+          </div>
         </div>
       )}
 

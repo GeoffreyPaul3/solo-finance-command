@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Check, Lock, Sparkles } from "lucide-react";
+import { AppWindow, ArrowRight, Check, Lock, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +28,7 @@ export function EntitlementGate({
             <Lock className="size-6" />
           </div>
           <div className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-primary">
-            <Sparkles className="size-3.5" />
+            <AppWindow className="size-3.5" />
             <span>Available on {planLabel}</span>
           </div>
           <CardTitle className="text-2xl font-bold tracking-tight text-foreground mt-1">

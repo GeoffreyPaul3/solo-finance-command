@@ -6,12 +6,14 @@ import {
   ArrowRight,
   Briefcase,
   Building2,
+  Edit,
   Loader2,
   MoreHorizontal,
   Plus,
   Search,
+  Trash2,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { useWorkspace } from "@/components/app/workspace-context";
@@ -67,13 +69,16 @@ import { clientsQueryOptions, type Client } from "@/domain/clients";
 import {
   archiveProject,
   createProject,
+  deleteProject,
   PROJECT_STATUS_LABELS,
   PROJECT_STATUSES,
   projectsQueryOptions,
+  updateProject,
   updateProjectStatus,
   type CreateProjectInput,
   type Project,
   type ProjectStatus,
+  type UpdateProjectInput,
 } from "@/domain/projects";
 import { roleAtLeast } from "@/domain/workspace";
 import { CURRENCIES, parseMoneyInput } from "@/lib/money";
@@ -102,6 +107,8 @@ function ProjectsPage() {
   const [clientFilter, setClientFilter] = useState<string>("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [archiveTarget, setArchiveTarget] = useState<Project | null>(null);
+  const [editTarget, setEditTarget] = useState<Project | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
   const [pageSize, setPageSize] = useState<PageSize>(25);
   const [page, setPage] = useState(0);
 
@@ -144,6 +151,18 @@ function ProjectsPage() {
     },
     onError: (err: Error) => {
       toast.error(err.message || "Failed to update project status.");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (project: Project) => deleteProject(workspace.id, project.id),
+    onSuccess: () => {
+      toast.success("Project deleted successfully.");
+      invalidateProjects();
+      setDeleteTarget(null);
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Failed to delete project.");
     },
   });
 
@@ -357,27 +376,34 @@ function ProjectsPage() {
                                   <MoreHorizontal className="size-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-40">
+                              <DropdownMenuContent align="end" className="w-44">
                                 <DropdownMenuItem asChild>
                                   <Link
                                     to="/app/projects/$projectId"
                                     params={{ projectId: p.id }}
-                                    className="flex items-center gap-2"
+                                    className="flex items-center gap-2 cursor-pointer"
                                   >
                                     <ArrowRight className="size-4" />
-                                    View
+                                    View Details
                                   </Link>
                                 </DropdownMenuItem>
                                 {canManage && (
                                   <>
+                                    <DropdownMenuItem
+                                      onClick={() => setEditTarget(p)}
+                                      className="flex items-center gap-2 cursor-pointer"
+                                    >
+                                      <Edit className="size-4" />
+                                      Edit Project
+                                    </DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
                                       onClick={() => setArchiveTarget(p)}
                                       className={cn(
-                                        "flex items-center gap-2",
+                                        "flex items-center gap-2 cursor-pointer",
                                         isArchived
-                                          ? "text-green-600 focus:text-green-600"
-                                          : "text-destructive focus:text-destructive",
+                                          ? "text-emerald-600 focus:text-emerald-600"
+                                          : "text-amber-600 focus:text-amber-600",
                                       )}
                                     >
                                       {isArchived ? (
@@ -391,6 +417,13 @@ function ProjectsPage() {
                                           Archive
                                         </>
                                       )}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => setDeleteTarget(p)}
+                                      className="flex items-center gap-2 text-destructive focus:text-destructive cursor-pointer"
+                                    >
+                                      <Trash2 className="size-4" />
+                                      Delete Project
                                     </DropdownMenuItem>
                                   </>
                                 )}
@@ -461,25 +494,32 @@ function ProjectsPage() {
                                   <MoreHorizontal className="size-4" />
                                 </Button>
                               </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-40">
+                              <DropdownMenuContent align="end" className="w-44">
                                 <DropdownMenuItem asChild>
                                   <Link
                                     to="/app/projects/$projectId"
                                     params={{ projectId: p.id }}
-                                    className="flex items-center gap-2"
+                                    className="flex items-center gap-2 cursor-pointer"
                                   >
                                     <ArrowRight className="size-4" />
-                                    View
+                                    View Details
                                   </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => setEditTarget(p)}
+                                  className="flex items-center gap-2 cursor-pointer"
+                                >
+                                  <Edit className="size-4" />
+                                  Edit Project
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   onClick={() => setArchiveTarget(p)}
                                   className={cn(
-                                    "flex items-center gap-2",
+                                    "flex items-center gap-2 cursor-pointer",
                                     isArchived
-                                      ? "text-green-600 focus:text-green-600"
-                                      : "text-destructive focus:text-destructive",
+                                      ? "text-emerald-600 focus:text-emerald-600"
+                                      : "text-amber-600 focus:text-amber-600",
                                   )}
                                 >
                                   {isArchived ? (
@@ -493,6 +533,13 @@ function ProjectsPage() {
                                       Archive
                                     </>
                                   )}
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => setDeleteTarget(p)}
+                                  className="flex items-center gap-2 text-destructive focus:text-destructive cursor-pointer"
+                                >
+                                  <Trash2 className="size-4" />
+                                  Delete Project
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -631,7 +678,7 @@ function ProjectsPage() {
               disabled={archiveMutation.isPending}
               className={cn(
                 isTargetArchived
-                  ? "bg-green-600 hover:bg-green-700"
+                  ? "bg-emerald-600 hover:bg-emerald-700"
                   : "bg-destructive hover:bg-destructive/90",
               )}
             >
@@ -641,6 +688,58 @@ function ProjectsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Project Permanently?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>
+                  Are you sure you want to permanently delete{" "}
+                  <strong className="text-foreground">{deleteTarget?.name}</strong>?
+                </p>
+                <p>
+                  This action cannot be undone. If this project has any linked invoices or expenses,
+                  the system will prevent deletion to preserve your financial integrity.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (deleteTarget) deleteMutation.mutate(deleteTarget);
+              }}
+              disabled={deleteMutation.isPending}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {deleteMutation.isPending && <Loader2 className="mr-1.5 size-4 animate-spin" />}
+              Delete Project
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Edit Project Modal */}
+      {editTarget && (
+        <EditProjectDialog
+          project={editTarget}
+          isOpen={editTarget !== null}
+          onClose={() => setEditTarget(null)}
+          workspaceId={workspace.id}
+          defaultCurrency={workspace.currency}
+          clients={clients}
+          onSuccess={invalidateProjects}
+        />
+      )}
     </div>
   );
 }
@@ -850,6 +949,224 @@ function CreateProjectDialog({
             <Button type="submit" disabled={mutation.isPending}>
               {mutation.isPending && <Loader2 className="mr-1.5 size-4 animate-spin" />}
               Create Project
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditProjectDialog({
+  project,
+  isOpen,
+  onClose,
+  workspaceId,
+  defaultCurrency,
+  clients,
+  onSuccess,
+}: {
+  project: Project;
+  isOpen: boolean;
+  onClose: () => void;
+  workspaceId: string;
+  defaultCurrency: string;
+  clients: Client[];
+  onSuccess: () => void;
+}) {
+  const [name, setName] = useState(project.name);
+  const [clientId, setClientId] = useState<string>(project.client_id ?? "none");
+  const [description, setDescription] = useState(project.description ?? "");
+  const [status, setStatus] = useState<ProjectStatus>(project.status);
+  const [startDate, setStartDate] = useState(project.start_date ?? "");
+  const [endDate, setEndDate] = useState(project.end_date ?? "");
+  const [budget, setBudget] = useState(project.budget !== null ? String(project.budget) : "");
+  const [budgetCurrency, setBudgetCurrency] = useState(
+    project.budget_currency ?? defaultCurrency ?? "USD",
+  );
+  const [notes, setNotes] = useState(project.notes ?? "");
+
+  useEffect(() => {
+    setName(project.name);
+    setClientId(project.client_id ?? "none");
+    setDescription(project.description ?? "");
+    setStatus(project.status);
+    setStartDate(project.start_date ?? "");
+    setEndDate(project.end_date ?? "");
+    setBudget(project.budget !== null ? String(project.budget) : "");
+    setBudgetCurrency(project.budget_currency ?? defaultCurrency ?? "USD");
+    setNotes(project.notes ?? "");
+  }, [project, defaultCurrency]);
+
+  const mutation = useMutation({
+    mutationFn: (input: UpdateProjectInput) => updateProject(workspaceId, project.id, input),
+    onSuccess: () => {
+      toast.success("Project updated successfully");
+      onSuccess();
+      onClose();
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Failed to update project");
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) {
+      toast.error("Project name is required");
+      return;
+    }
+
+    const parsedBudget = budget.trim() ? parseFloat(parseMoneyInput(budget)) : null;
+
+    mutation.mutate({
+      name: name.trim(),
+      clientId: clientId === "none" ? null : clientId,
+      description: description.trim() || null,
+      status,
+      startDate: startDate || null,
+      endDate: endDate || null,
+      budget: parsedBudget,
+      budgetCurrency: parsedBudget !== null ? budgetCurrency : null,
+      notes: notes.trim() || null,
+    });
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md max-h-[90dvh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Edit className="size-5 text-primary" />
+            Edit Project
+          </DialogTitle>
+          <DialogDescription>
+            Update project scope, client linkage, timeline, and budget.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-proj-name">Project Name</Label>
+            <Input
+              id="edit-proj-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              autoFocus
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-proj-client">Linked Client (Optional)</Label>
+            <Select value={clientId} onValueChange={setClientId}>
+              <SelectTrigger id="edit-proj-client">
+                <SelectValue placeholder="Select a client or leave unlinked" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">No Client (Internal / Direct)</SelectItem>
+                {clients.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name} {c.company_name ? `(${c.company_name})` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-proj-desc">Description (Optional)</Label>
+            <Textarea
+              id="edit-proj-desc"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="h-16 resize-none text-sm"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-proj-status">Status</Label>
+            <Select value={status} onValueChange={(val) => setStatus(val as ProjectStatus)}>
+              <SelectTrigger id="edit-proj-status">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PROJECT_STATUSES.map((st) => (
+                  <SelectItem key={st} value={st}>
+                    {PROJECT_STATUS_LABELS[st]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-proj-budget">Budget (Optional)</Label>
+              <MoneyInput
+                id="edit-proj-budget"
+                placeholder="0.00"
+                value={budget}
+                onChange={setBudget}
+                currency={budgetCurrency}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-proj-currency">Currency</Label>
+              <Select value={budgetCurrency} onValueChange={setBudgetCurrency}>
+                <SelectTrigger id="edit-proj-currency">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CURRENCIES.map((c) => (
+                    <SelectItem key={c.code} value={c.code}>
+                      {c.code} — {c.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-proj-start">Start Date (Optional)</Label>
+              <Input
+                id="edit-proj-start"
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-proj-end">Target End Date (Optional)</Label>
+              <Input
+                id="edit-proj-end"
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="edit-proj-notes">Internal Notes (Optional)</Label>
+            <Textarea
+              id="edit-proj-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="h-20 resize-none text-sm"
+            />
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button type="button" variant="outline" onClick={onClose} disabled={mutation.isPending}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={mutation.isPending}>
+              {mutation.isPending && <Loader2 className="mr-1.5 size-4 animate-spin" />}
+              Save Changes
             </Button>
           </DialogFooter>
         </form>

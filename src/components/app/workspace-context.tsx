@@ -73,9 +73,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   // This is deliberately placed here so that every route that calls
   // useWorkspace() gets the same cached, authoritative entitlements without
   // each page having to independently fetch subscription data.
-  const subscriptionQuery = useQuery(
-    workspaceSubscriptionQueryOptions(active?.workspace.id),
-  );
+  const subscriptionQuery = useQuery(workspaceSubscriptionQueryOptions(active?.workspace.id));
 
   const entitlements = useMemo(
     () => getWorkspaceEntitlements(active?.workspace.plan, subscriptionQuery.data ?? null),

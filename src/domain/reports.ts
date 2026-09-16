@@ -6,7 +6,21 @@ import { supabase } from "@/integrations/supabase/client";
 // Core Types
 // ============================================================================
 
-export type ReportType = "income" | "expenses" | "cashflow" | "receivables";
+export type ReportType = "income" | "expenses" | "cashflow" | "receivables" | "tax_planning";
+
+export interface TaxPlanningReportItem {
+  currency: string;
+  isPrimaryCurrency: boolean;
+  taxYear: number;
+  actualIncome: number;
+  actualExpenses: number;
+  taxableBasis: number;
+  configuredTaxRate: number;
+  estimatedTaxAmount: number;
+  actualTrackedReserve: number;
+  reserveShortfall: number;
+  healthStatus: "funded" | "shortfall" | "overfunded";
+}
 
 export interface IncomeReportItem {
   clientId: string;
@@ -91,6 +105,42 @@ export function calculateExpenseReportTotals(items: ExpenseReportItem[]): Expens
       expenseCount: acc.expenseCount + item.expenseCount,
     }),
     { totalAmount: 0, totalDeductible: 0, expenseCount: 0 },
+  );
+}
+
+export interface TaxPlanningReportTotals {
+  totalIncome: number;
+  totalExpenses: number;
+  totalTaxableBasis: number;
+  totalEstimatedTax: number;
+  totalTrackedReserve: number;
+  totalShortfall: number;
+  currencyCount: number;
+}
+
+export function calculateTaxPlanningTotals(
+  items: TaxPlanningReportItem[],
+): TaxPlanningReportTotals {
+  return items.reduce(
+    (acc, item) => ({
+      totalIncome: Math.round((acc.totalIncome + item.actualIncome) * 100) / 100,
+      totalExpenses: Math.round((acc.totalExpenses + item.actualExpenses) * 100) / 100,
+      totalTaxableBasis: Math.round((acc.totalTaxableBasis + item.taxableBasis) * 100) / 100,
+      totalEstimatedTax: Math.round((acc.totalEstimatedTax + item.estimatedTaxAmount) * 100) / 100,
+      totalTrackedReserve:
+        Math.round((acc.totalTrackedReserve + item.actualTrackedReserve) * 100) / 100,
+      totalShortfall: Math.round((acc.totalShortfall + item.reserveShortfall) * 100) / 100,
+      currencyCount: acc.currencyCount + 1,
+    }),
+    {
+      totalIncome: 0,
+      totalExpenses: 0,
+      totalTaxableBasis: 0,
+      totalEstimatedTax: 0,
+      totalTrackedReserve: 0,
+      totalShortfall: 0,
+      currencyCount: 0,
+    },
   );
 }
 
@@ -343,6 +393,60 @@ export function receivablesReportQueryOptions(workspaceId: string, currency?: st
         amountDue: Number(row.amount_due),
         agingBucket: row.aging_bucket as ReceivablesAgingItem["agingBucket"],
       }));
+    },
+  });
+}
+
+export function taxPlanningReportQueryOptions(
+  workspaceId: string,
+  taxYear?: number,
+  currency?: string,
+) {
+  return queryOptions({
+    queryKey: ["report-tax-planning", workspaceId, taxYear, currency],
+    enabled: Boolean(workspaceId),
+    queryFn: async (): Promise<TaxPlanningReportItem[]> => {
+      const args: {
+        _workspace_id: string;
+        _tax_year?: number;
+      } = {
+        _workspace_id: workspaceId,
+      };
+
+      if (taxYear !== undefined) args._tax_year = taxYear;
+
+      const { data, error } = await supabase.rpc("get_tax_summary", args);
+
+      if (error) throw new Error(error.message);
+
+      const rows: TaxPlanningReportItem[] = (data ?? []).map((row) => {
+        const target = Number(row.target_tax_reserve);
+        const tracked = Number(row.tracked_tax_reserve);
+        const shortfall = Number(row.shortfall);
+        const diff = Math.round((tracked - target) * 100) / 100;
+        const healthStatus: "funded" | "shortfall" | "overfunded" =
+          diff > 0.01 ? "overfunded" : diff >= -0.01 ? "funded" : "shortfall";
+
+        return {
+          currency: row.currency,
+          isPrimaryCurrency: Boolean(row.is_primary_currency),
+          taxYear: taxYear ?? new Date().getFullYear(),
+          actualIncome: Number(row.gross_income_ytd),
+          actualExpenses: Number(row.expenses_ytd),
+          taxableBasis: Number(row.net_taxable_income_ytd),
+          configuredTaxRate: Number(row.tax_reserve_rate),
+          estimatedTaxAmount: target,
+          actualTrackedReserve: tracked,
+          reserveShortfall: shortfall,
+          healthStatus,
+        };
+      });
+
+      if (currency && currency !== "all") {
+        return rows.filter((r) => r.currency.toUpperCase() === currency.toUpperCase());
+      }
+
+      return rows;
     },
   });
 }

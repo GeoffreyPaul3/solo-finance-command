@@ -316,3 +316,57 @@ export async function updateProjectStatus(
 export async function archiveProject(workspaceId: string, projectId: string): Promise<Project> {
   return updateProjectStatus(workspaceId, projectId, "archived");
 }
+
+export async function deleteProject(
+  workspaceId: string,
+  projectId: string,
+): Promise<{ id: string }> {
+  // Relational integrity checks
+  const [{ count: invoiceCount }, { count: expenseCount }] = await Promise.all([
+    supabase
+      .from("invoices")
+      .select("id", { count: "exact", head: true })
+      .eq("workspace_id", workspaceId)
+      .eq("project_id", projectId),
+    supabase
+      .from("expenses")
+      .select("id", { count: "exact", head: true })
+      .eq("workspace_id", workspaceId)
+      .eq("project_id", projectId),
+  ]);
+
+  const conflicts: string[] = [];
+  if (invoiceCount && invoiceCount > 0) conflicts.push(`${invoiceCount} invoice(s)`);
+  if (expenseCount && expenseCount > 0) conflicts.push(`${expenseCount} expense(s)`);
+
+  if (conflicts.length > 0) {
+    throw new Error(
+      `Cannot delete project with linked records (${conflicts.join(", ")}). Please archive the project or reassign linked records first.`,
+    );
+  }
+
+  const { data: project } = await supabase
+    .from("projects")
+    .select("name")
+    .eq("workspace_id", workspaceId)
+    .eq("id", projectId)
+    .maybeSingle();
+
+  const { error } = await supabase
+    .from("projects")
+    .delete()
+    .eq("workspace_id", workspaceId)
+    .eq("id", projectId);
+
+  if (error) throw new Error(error.message);
+
+  await supabase.rpc("write_audit_log", {
+    _workspace_id: workspaceId,
+    _action: "project.deleted",
+    _entity_type: "project",
+    _entity_id: projectId,
+    _metadata: { name: project?.name ?? null } as never,
+  });
+
+  return { id: projectId };
+}

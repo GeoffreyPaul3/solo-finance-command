@@ -249,3 +249,61 @@ export async function unarchiveClient(workspaceId: string, clientId: string): Pr
 
   return client;
 }
+
+export async function deleteClient(workspaceId: string, clientId: string): Promise<{ id: string }> {
+  // Relational integrity checks
+  const [{ count: projectCount }, { count: invoiceCount }, { count: expenseCount }] =
+    await Promise.all([
+      supabase
+        .from("projects")
+        .select("id", { count: "exact", head: true })
+        .eq("workspace_id", workspaceId)
+        .eq("client_id", clientId),
+      supabase
+        .from("invoices")
+        .select("id", { count: "exact", head: true })
+        .eq("workspace_id", workspaceId)
+        .eq("client_id", clientId),
+      supabase
+        .from("expenses")
+        .select("id", { count: "exact", head: true })
+        .eq("workspace_id", workspaceId)
+        .eq("client_id", clientId),
+    ]);
+
+  const conflicts: string[] = [];
+  if (projectCount && projectCount > 0) conflicts.push(`${projectCount} project(s)`);
+  if (invoiceCount && invoiceCount > 0) conflicts.push(`${invoiceCount} invoice(s)`);
+  if (expenseCount && expenseCount > 0) conflicts.push(`${expenseCount} expense(s)`);
+
+  if (conflicts.length > 0) {
+    throw new Error(
+      `Cannot delete client with linked records (${conflicts.join(", ")}). Please archive the client or reassign linked records first.`,
+    );
+  }
+
+  const { data: client } = await supabase
+    .from("clients")
+    .select("name")
+    .eq("workspace_id", workspaceId)
+    .eq("id", clientId)
+    .maybeSingle();
+
+  const { error } = await supabase
+    .from("clients")
+    .delete()
+    .eq("workspace_id", workspaceId)
+    .eq("id", clientId);
+
+  if (error) throw new Error(error.message);
+
+  await supabase.rpc("write_audit_log", {
+    _workspace_id: workspaceId,
+    _action: "client.deleted",
+    _entity_type: "client",
+    _entity_id: clientId,
+    _metadata: { name: client?.name ?? null } as never,
+  });
+
+  return { id: clientId };
+}

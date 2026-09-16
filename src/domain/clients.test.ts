@@ -1,6 +1,16 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createClientSchema, updateClientSchema } from "./clients";
+const mockFrom = vi.fn();
+const mockRpc = vi.fn();
+
+vi.mock("@/integrations/supabase/client", () => ({
+  supabase: {
+    from: (...args: unknown[]) => mockFrom(...args),
+    rpc: (...args: unknown[]) => mockRpc(...args),
+  },
+}));
+
+import { createClientSchema, deleteClient, updateClientSchema } from "./clients";
 
 describe("createClientSchema", () => {
   it("accepts valid client input with all fields", () => {
@@ -106,5 +116,75 @@ describe("updateClientSchema", () => {
 
   it("rejects invalid status", () => {
     expect(() => updateClientSchema.parse({ status: "deleted" as never })).toThrow();
+  });
+});
+
+describe("deleteClient", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("throws relational integrity error if client has linked projects", async () => {
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "projects") {
+        return {
+          select: () => ({
+            eq: () => ({
+              eq: () => Promise.resolve({ count: 2, error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: () => ({
+          eq: () => ({
+            eq: () => Promise.resolve({ count: 0, error: null }),
+          }),
+        }),
+      };
+    });
+
+    await expect(deleteClient("ws-1", "client-1")).rejects.toThrow(
+      /Cannot delete client with linked records.*2 project\(s\)/,
+    );
+  });
+
+  it("successfully deletes client and writes audit log when no linked records exist", async () => {
+    mockRpc.mockResolvedValue({ data: null, error: null });
+    mockFrom.mockImplementation((table: string) => {
+      if (table === "clients") {
+        return {
+          select: () => ({
+            eq: () => ({
+              eq: () => ({
+                maybeSingle: () => Promise.resolve({ data: { name: "Test Client" }, error: null }),
+              }),
+            }),
+          }),
+          delete: () => ({
+            eq: () => ({
+              eq: () => Promise.resolve({ error: null }),
+            }),
+          }),
+        };
+      }
+      return {
+        select: () => ({
+          eq: () => ({
+            eq: () => Promise.resolve({ count: 0, error: null }),
+          }),
+        }),
+      };
+    });
+
+    const res = await deleteClient("ws-1", "client-1");
+    expect(res).toEqual({ id: "client-1" });
+    expect(mockRpc).toHaveBeenCalledWith(
+      "write_audit_log",
+      expect.objectContaining({
+        _action: "client.deleted",
+        _entity_id: "client-1",
+      }),
+    );
   });
 });

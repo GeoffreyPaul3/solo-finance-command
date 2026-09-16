@@ -4,10 +4,12 @@ import {
   calculateExpenseReportTotals,
   calculateIncomeReportTotals,
   calculateReceivablesAgingBuckets,
+  calculateTaxPlanningTotals,
   generateCsvString,
   type ExpenseReportItem,
   type IncomeReportItem,
   type ReceivablesAgingItem,
+  type TaxPlanningReportItem,
 } from "./reports";
 
 describe("Reports Domain Logic", () => {
@@ -152,6 +154,59 @@ describe("Reports Domain Logic", () => {
       expect(summary.bucket61_90).toBe(0);
       expect(summary.bucket90_plus).toBe(1200);
       expect(summary.totalDue).toBe(3450);
+    });
+  });
+
+  describe("calculateTaxPlanningTotals", () => {
+    it("correctly sums income, expenses, taxable basis, estimated tax, reserve, and shortfall", () => {
+      const items: TaxPlanningReportItem[] = [
+        {
+          currency: "USD",
+          isPrimaryCurrency: true,
+          taxYear: 2026,
+          actualIncome: 50000,
+          actualExpenses: 10000,
+          taxableBasis: 40000,
+          configuredTaxRate: 25,
+          estimatedTaxAmount: 10000,
+          actualTrackedReserve: 8000,
+          reserveShortfall: 2000,
+          healthStatus: "shortfall",
+        },
+        {
+          currency: "EUR",
+          isPrimaryCurrency: false,
+          taxYear: 2026,
+          actualIncome: 20000,
+          actualExpenses: 5000,
+          taxableBasis: 15000,
+          configuredTaxRate: 20,
+          estimatedTaxAmount: 3000,
+          actualTrackedReserve: 3500,
+          reserveShortfall: 0,
+          healthStatus: "overfunded",
+        },
+      ];
+
+      const totals = calculateTaxPlanningTotals(items);
+      expect(totals.totalIncome).toBe(70000);
+      expect(totals.totalExpenses).toBe(15000);
+      expect(totals.totalTaxableBasis).toBe(55000);
+      expect(totals.totalEstimatedTax).toBe(13000);
+      expect(totals.totalTrackedReserve).toBe(11500);
+      expect(totals.totalShortfall).toBe(2000);
+      expect(totals.currencyCount).toBe(2);
+    });
+
+    it("returns zeros for empty items", () => {
+      const totals = calculateTaxPlanningTotals([]);
+      expect(totals.totalIncome).toBe(0);
+      expect(totals.totalExpenses).toBe(0);
+      expect(totals.totalTaxableBasis).toBe(0);
+      expect(totals.totalEstimatedTax).toBe(0);
+      expect(totals.totalTrackedReserve).toBe(0);
+      expect(totals.totalShortfall).toBe(0);
+      expect(totals.currencyCount).toBe(0);
     });
   });
 

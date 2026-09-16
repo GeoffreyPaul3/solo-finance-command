@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MoneyInput } from "@/components/ui/money-input";
 import {
   Select,
   SelectContent,
@@ -48,6 +49,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TablePagination } from "@/components/ui/table-pagination";
 import { Textarea } from "@/components/ui/textarea";
 import {
   cancelObligation,
@@ -106,6 +108,8 @@ export function ObligationsPage() {
 
   const [activeTab, setActiveTab] = useState<ActiveTab>("active");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(25);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [createRecurringModalOpen, setCreateRecurringModalOpen] = useState(false);
 
@@ -267,6 +271,8 @@ export function ObligationsPage() {
     return o.status === statusFilter;
   });
 
+  const paginatedObligations = filteredObligations.slice(page * pageSize, (page + 1) * pageSize);
+
   const totalActiveAmount = activeObligations.reduce((sum, o) => sum + Number(o.amount), 0);
 
   return (
@@ -369,7 +375,10 @@ export function ObligationsPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex rounded-lg border border-border overflow-hidden">
           <button
-            onClick={() => setActiveTab("active")}
+            onClick={() => {
+              setActiveTab("active");
+              setPage(0);
+            }}
             className={cn(
               "px-4 py-2 text-sm font-medium transition-colors",
               activeTab === "active"
@@ -380,7 +389,10 @@ export function ObligationsPage() {
             Active ({activeObligations.length})
           </button>
           <button
-            onClick={() => setActiveTab("all")}
+            onClick={() => {
+              setActiveTab("all");
+              setPage(0);
+            }}
             className={cn(
               "px-4 py-2 text-sm font-medium transition-colors",
               activeTab === "all"
@@ -391,7 +403,10 @@ export function ObligationsPage() {
             All History
           </button>
           <button
-            onClick={() => setActiveTab("recurring")}
+            onClick={() => {
+              setActiveTab("recurring");
+              setPage(0);
+            }}
             className={cn(
               "px-4 py-2 text-sm font-medium transition-colors",
               activeTab === "recurring"
@@ -406,7 +421,13 @@ export function ObligationsPage() {
         {activeTab === "all" && (
           <div className="flex items-center gap-2">
             <Filter className="size-3.5 text-muted-foreground" />
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select
+              value={statusFilter}
+              onValueChange={(val) => {
+                setStatusFilter(val);
+                setPage(0);
+              }}
+            >
               <SelectTrigger className="w-36 h-8 text-xs">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
@@ -569,7 +590,7 @@ export function ObligationsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredObligations.map((item) => (
+                {paginatedObligations.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell>
                       <div className="font-medium text-foreground">{item.title}</div>
@@ -628,6 +649,16 @@ export function ObligationsPage() {
                 ))}
               </TableBody>
             </Table>
+            <div className="p-4 pt-3">
+              <TablePagination
+                page={page}
+                pageSize={pageSize}
+                totalItems={filteredObligations.length}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
+                itemLabel="obligations"
+              />
+            </div>
           </CardContent>
         </Card>
       )}
@@ -656,14 +687,12 @@ export function ObligationsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="obl-amount">Amount</Label>
-                <Input
+                <MoneyInput
                   id="obl-amount"
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  placeholder="0.00"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={setAmount}
+                  currency={currency}
+                  placeholder="0.00"
                 />
               </div>
               <div className="space-y-1.5">
@@ -770,14 +799,12 @@ export function ObligationsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="rec-amount">Amount</Label>
-                <Input
+                <MoneyInput
                   id="rec-amount"
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  placeholder="0.00"
                   value={recAmount}
-                  onChange={(e) => setRecAmount(e.target.value)}
+                  onChange={setRecAmount}
+                  currency={recCurrency}
+                  placeholder="0.00"
                 />
               </div>
               <div className="space-y-1.5">

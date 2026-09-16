@@ -2,8 +2,38 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { supabase } from "@/integrations/supabase/client";
+import { getWorkspaceEntitlements } from "@/domain/entitlements";
 import { sendEmailSafely } from "@/lib/email/send";
 import { renderInvitationEmail } from "@/lib/email/templates";
+
+// ─────────────────────────────────────────────
+// Auth helpers
+// ─────────────────────────────────────────────
+
+async function getCurrentUserId(): Promise<string> {
+  const { data } = await supabase.auth.getUser();
+  if (data?.user) return data.user.id;
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (sessionData.session?.user) return sessionData.session.user.id;
+  throw new Error("Unauthenticated: Please sign in to manage invitations.");
+}
+
+/** Asserts the caller is an owner or admin of the given workspace. */
+async function assertCallerIsWorkspaceAdmin(callerId: string, workspaceId: string): Promise<void> {
+  const { data, error } = await supabase
+    .from("workspace_members")
+    .select("role")
+    .eq("user_id", callerId)
+    .eq("workspace_id", workspaceId)
+    .maybeSingle();
+
+  if (error || !data) {
+    throw new Error("Forbidden: You are not a member of this workspace.");
+  }
+  if (data.role !== "owner" && data.role !== "admin") {
+    throw new Error("Forbidden: Only workspace owners and admins can manage invitations.");
+  }
+}
 
 const inviteMemberSchema = z.object({
   workspaceId: z.string().uuid(),
@@ -15,6 +45,10 @@ const inviteMemberSchema = z.object({
 export const inviteMemberServerFn = createServerFn({ method: "POST" })
   .validator((data: z.infer<typeof inviteMemberSchema>) => inviteMemberSchema.parse(data))
   .handler(async ({ data }) => {
+    // Security Rule #1: Verify caller is authenticated and an admin/owner of the workspace
+    const callerId = await getCurrentUserId();
+    await assertCallerIsWorkspaceAdmin(callerId, data.workspaceId);
+
     // 1. Check if user is already in workspace
     const { data: userProfile } = await supabase
       .from("profiles")
@@ -38,9 +72,37 @@ export const inviteMemberServerFn = createServerFn({ method: "POST" })
     // 2. Fetch workspace & inviter info
     const { data: workspace } = await supabase
       .from("workspaces")
-      .select("name, created_by")
+      .select("name, created_by, plan")
       .eq("id", data.workspaceId)
       .single();
+
+    // Architectural Rule #5: Enforce plan member limits server-side
+    const { data: sub } = await supabase
+      .from("subscriptions")
+      .select("plan_id, status, cancel_at_period_end, current_period_end")
+      .eq("workspace_id", data.workspaceId)
+      .maybeSingle();
+
+    const entitlements = getWorkspaceEntitlements(workspace?.plan, sub);
+
+    const { count: memberCount } = await supabase
+      .from("workspace_members")
+      .select("id", { count: "exact", head: true })
+      .eq("workspace_id", data.workspaceId);
+
+    const { count: pendingInviteCount } = await supabase
+      .from("workspace_invitations")
+      .select("id", { count: "exact", head: true })
+      .eq("workspace_id", data.workspaceId)
+      .eq("status", "pending");
+
+    const totalAllocated = (memberCount ?? 0) + (pendingInviteCount ?? 0);
+
+    if (totalAllocated >= entitlements.maxTeamMembers) {
+      throw new Error(
+        `Team member limit reached (${entitlements.maxTeamMembers} member${entitlements.maxTeamMembers === 1 ? "" : "s"} on the ${entitlements.displayName} plan). Please upgrade your subscription to invite more team members.`,
+      );
+    }
 
     const {
       data: { user: currentUser },
@@ -158,6 +220,22 @@ export const acceptInvitationServerFn = createServerFn({ method: "POST" })
 export const revokeInvitationServerFn = createServerFn({ method: "POST" })
   .validator((data: { invitationId: string }) => data)
   .handler(async ({ data }) => {
+    // Security Rule #1: Verify the caller is authenticated and an admin/owner of the workspace
+    const callerId = await getCurrentUserId();
+
+    // Fetch the invitation to determine which workspace it belongs to
+    const { data: invitation, error: fetchErr } = await supabase
+      .from("workspace_invitations")
+      .select("workspace_id")
+      .eq("id", data.invitationId)
+      .maybeSingle();
+
+    if (fetchErr || !invitation) {
+      throw new Error("Invitation not found.");
+    }
+
+    await assertCallerIsWorkspaceAdmin(callerId, invitation.workspace_id);
+
     const { error } = await supabase
       .from("workspace_invitations")
       .update({ status: "revoked" })

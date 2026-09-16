@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MoneyInput } from "@/components/ui/money-input";
 import { MoneyValue } from "@/components/ui/money-value";
 import {
   Select,
@@ -47,6 +48,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { TablePagination } from "@/components/ui/table-pagination";
 import { Textarea } from "@/components/ui/textarea";
 import { clientsQueryOptions } from "@/domain/clients";
 import {
@@ -83,6 +85,8 @@ function InvoicesPage() {
   const [statusFilter, setStatusFilter] = useState<InvoiceStatus | "all">("all");
   const [clientFilter, setClientFilter] = useState<string>("all");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(25);
 
   const canManage = roleAtLeast(role, "manager");
 
@@ -100,6 +104,8 @@ function InvoicesPage() {
   const invoices = invoicesQuery.data ?? [];
   const clients = clientsQuery.data ?? [];
   const summary = summaryQuery.data;
+
+  const paginatedInvoices = invoices.slice(page * pageSize, (page + 1) * pageSize);
 
   const invalidateInvoices = () => {
     queryClient.invalidateQueries({ queryKey: ["invoices", workspace.id] });
@@ -196,12 +202,21 @@ function InvoicesPage() {
             <Input
               placeholder="Search by invoice number..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setPage(0);
+              }}
               className="pl-9 text-sm"
             />
           </div>
 
-          <Select value={clientFilter} onValueChange={setClientFilter}>
+          <Select
+            value={clientFilter}
+            onValueChange={(val) => {
+              setClientFilter(val);
+              setPage(0);
+            }}
+          >
             <SelectTrigger className="h-9 w-44 text-xs">
               <SelectValue placeholder="All Clients" />
             </SelectTrigger>
@@ -217,7 +232,10 @@ function InvoicesPage() {
 
           <Select
             value={statusFilter}
-            onValueChange={(val) => setStatusFilter(val as InvoiceStatus | "all")}
+            onValueChange={(val) => {
+              setStatusFilter(val as InvoiceStatus | "all");
+              setPage(0);
+            }}
           >
             <SelectTrigger className="h-9 w-36 text-xs">
               <SelectValue placeholder="All Statuses" />
@@ -284,7 +302,7 @@ function InvoicesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invoices.map((inv) => {
+                {paginatedInvoices.map((inv) => {
                   const colors = INVOICE_STATUS_COLORS[inv.status];
                   return (
                     <TableRow key={inv.id} className="hover:bg-muted/30 transition-colors">
@@ -359,7 +377,7 @@ function InvoicesPage() {
 
           {/* Mobile Cards */}
           <div className="grid grid-cols-1 gap-3 md:hidden">
-            {invoices.map((inv) => {
+            {paginatedInvoices.map((inv) => {
               const colors = INVOICE_STATUS_COLORS[inv.status];
               return (
                 <Card key={inv.id} className="p-4 space-y-3">
@@ -416,6 +434,15 @@ function InvoicesPage() {
               );
             })}
           </div>
+
+          <TablePagination
+            page={page}
+            pageSize={pageSize}
+            totalItems={invoices.length}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+            itemLabel="invoices"
+          />
         </>
       )}
 
@@ -661,14 +688,12 @@ function CreateInvoiceDialog({
                       />
                     </div>
                     <div className="col-span-5 sm:col-span-3">
-                      <Input
+                      <MoneyInput
                         placeholder="Unit price"
-                        type="number"
-                        min="0"
-                        step="any"
                         value={item.unit_price}
-                        onChange={(e) => updateLineItem(index, "unit_price", e.target.value)}
-                        className="h-8 text-xs font-mono"
+                        onChange={(canonical) => updateLineItem(index, "unit_price", canonical)}
+                        currency={currency}
+                        className="h-8 text-xs"
                       />
                     </div>
                     <div className="col-span-3 sm:col-span-1 flex justify-end">
@@ -694,24 +719,22 @@ function CreateInvoiceDialog({
             <div className="space-y-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Discount Amount ({currency})</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="any"
+                <MoneyInput
                   value={discountAmount}
-                  onChange={(e) => setDiscountAmount(e.target.value)}
-                  className="h-8 text-xs font-mono"
+                  onChange={setDiscountAmount}
+                  currency={currency}
+                  placeholder="0.00"
+                  className="h-8 text-xs"
                 />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Tax Amount ({currency})</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="any"
+                <MoneyInput
                   value={taxAmount}
-                  onChange={(e) => setTaxAmount(e.target.value)}
-                  className="h-8 text-xs font-mono"
+                  onChange={setTaxAmount}
+                  currency={currency}
+                  placeholder="0.00"
+                  className="h-8 text-xs"
                 />
               </div>
             </div>
