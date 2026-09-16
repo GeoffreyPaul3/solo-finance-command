@@ -208,7 +208,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Is my financial data secure and isolated?",
-    a: "Every workspace is completely isolated using PostgreSQL Row-Level Security (RLS). Only authenticated workspace members with verified roles can view or manage financial records. All billing and card processing is securely handled via PayChangu.",
+    a: "Every workspace is completely private and isolated. Only authenticated members with verified roles can access your financial records. Billing and card processing is handled securely through our payment provider.",
   },
 ];
 
@@ -229,9 +229,9 @@ function LandingPage() {
       >
         <span className="inline-flex items-center gap-2">
           <span className="size-1.5 rounded-full bg-primary" />
-          <span className="font-semibold text-foreground">SoloOS in Production</span>
+          <span className="font-semibold text-foreground">SoloOS is live</span>
           <span className="hidden sm:inline">
-            — Multi-currency engine, automated tax reserves, and Safe-to-Spend live now.
+            — Multi-currency accounts, automatic tax reserves, and Safe-to-Spend clarity — available now.
           </span>
         </span>
       </aside>
@@ -304,9 +304,9 @@ function LandingPage() {
             </h1>
 
             <p className="mt-7 max-w-2xl text-base sm:text-lg lg:text-xl text-muted-foreground leading-relaxed">
-              SoloOS gives solo entrepreneurs, consultants, and independent operators authoritative
-              financial control. Multi-currency accounts, automated tax reserves, and your true
-              Safe-to-Spend balance — backed by database invariants, never guesswork.
+              SoloOS gives solo entrepreneurs, consultants, and independent operators real financial
+              clarity. Multi-currency accounts, automatic tax reserves, and a Safe-to-Spend balance
+              you can trust — built to be accurate, not approximate.
             </p>
 
             <div className="mt-9 flex flex-wrap items-center gap-4">
@@ -338,7 +338,7 @@ function LandingPage() {
               </span>
               <span className="flex items-center gap-1.5">
                 <Check className="size-3.5 text-primary" />
-                Database-enforced isolation
+                Your data stays private
               </span>
             </div>
           </div>
@@ -360,7 +360,7 @@ function LandingPage() {
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
                   <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  PostgreSQL Backed
+                  Live
                 </span>
               </div>
             </div>
@@ -802,15 +802,15 @@ function LandingPage() {
             <div className="text-center max-w-2xl mx-auto mb-14">
               <div className="inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary mb-3">
                 <Shield className="size-3.5" aria-hidden />
-                <span>Security & Invariant Standards</span>
+                <span>Security & Reliability</span>
               </div>
               <h2 className="text-display text-3xl font-bold tracking-tight sm:text-4xl">
-                Financial integrity at the database layer.
+                Your numbers are always accurate.
               </h2>
               <p className="mt-3 text-muted-foreground text-sm sm:text-base leading-relaxed">
-                Client-side calculations can drift. SoloOS enforces financial invariants via
-                PostgreSQL constraints, atomic database operations, and strict multi-tenant
-                isolation.
+                Spreadsheets drift. SoloOS keeps your balances correct at all times — every
+                movement is recorded precisely, every workspace is fully private, and nothing
+                can silently go wrong.
               </p>
             </div>
 
@@ -819,10 +819,10 @@ function LandingPage() {
                 <div className="flex size-8 items-center justify-center rounded-md bg-primary/10 text-primary mb-3">
                   <ShieldCheck className="size-4" />
                 </div>
-                <h3 className="font-semibold text-foreground text-base">Tenant Isolation (RLS)</h3>
+                <h3 className="font-semibold text-foreground text-base">Complete Workspace Privacy</h3>
                 <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-                  PostgreSQL Row-Level Security ensures workspaces never leak data across tenants or
-                  allow unauthorized financial execution.
+                  Your workspace is fully isolated. No other user or workspace can ever see
+                  your financial records, clients, or transactions.
                 </p>
               </div>
 
@@ -830,10 +830,10 @@ function LandingPage() {
                 <div className="flex size-8 items-center justify-center rounded-md bg-primary/10 text-primary mb-3">
                   <Layers className="size-4" />
                 </div>
-                <h3 className="font-semibold text-foreground text-base">Atomic Balance Updates</h3>
+                <h3 className="font-semibold text-foreground text-base">Always-Accurate Balances</h3>
                 <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-                  Balance movements and transfers execute in isolated PostgreSQL transactions with
-                  strict decimal precision and automatic audit logging.
+                  Every transfer, payment, and entry is recorded precisely. Balances never
+                  drift, round incorrectly, or silently lose a cent — all with a full audit trail.
                 </p>
               </div>
 
@@ -841,10 +841,10 @@ function LandingPage() {
                 <div className="flex size-8 items-center justify-center rounded-md bg-primary/10 text-primary mb-3">
                   <Lock className="size-4" />
                 </div>
-                <h3 className="font-semibold text-foreground text-base">Read-Only AI CFO</h3>
+                <h3 className="font-semibold text-foreground text-base">AI That Advises, Never Acts</h3>
                 <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
-                  The AI copilot only reads verified context. It possesses zero permissions to
-                  execute transactions, alter balances, or mutate financial data.
+                  Your AI CFO reads your financial context to give you insight. It cannot move
+                  money, change records, or make decisions — only you can.
                 </p>
               </div>
             </div>
@@ -1200,15 +1200,15 @@ function LandingPage() {
                 </li>
                 <li className="flex items-center gap-1.5 pt-1 text-xs">
                   <ShieldCheck className="size-3.5 text-primary" />
-                  <span>PostgreSQL Row-Level Security</span>
+                  <span>Your data is fully private</span>
                 </li>
                 <li className="flex items-center gap-1.5 text-xs">
                   <Lock className="size-3.5 text-primary" />
-                  <span>Read-only AI Guardrails</span>
+                  <span>AI advises — never acts</span>
                 </li>
                 <li className="flex items-center gap-1.5 text-xs">
                   <Check className="size-3.5 text-primary" />
-                  <span>PayChangu Reconciled</span>
+                  <span>Secure payment processing</span>
                 </li>
               </ul>
             </div>
