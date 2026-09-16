@@ -222,19 +222,6 @@ function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground selection:bg-primary/20 selection:text-primary">
-      {/* ── Top Announcement Bar ── */}
-      <aside
-        aria-label="Announcement"
-        className="border-b border-border/60 bg-muted/40 px-4 py-2 text-center text-xs font-medium text-muted-foreground"
-      >
-        <span className="inline-flex items-center gap-2">
-          <span className="size-1.5 rounded-full bg-primary" />
-          <span className="font-semibold text-foreground">SoloOS is live</span>
-          <span className="hidden sm:inline">
-            — Multi-currency accounts, automatic tax reserves, and Safe-to-Spend clarity — available now.
-          </span>
-        </span>
-      </aside>
 
       {/* ── Main Navigation ── */}
       <header className="sticky top-0 z-30 border-b border-border/80 bg-background/85 backdrop-blur-md">
@@ -357,12 +344,7 @@ function LandingPage() {
                   soloos.app/app — Command Center
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                  <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Live
-                </span>
-              </div>
+
             </div>
 
             {/* Architecture Concept Panel */}
@@ -776,13 +758,10 @@ function LandingPage() {
                     className="rounded-xl border border-border bg-card p-6 flex flex-col justify-between shadow-sm hover:border-primary/30 transition-colors"
                   >
                     <div>
-                      <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center mb-4">
                         <div className="flex size-9 items-center justify-center rounded-md bg-secondary text-secondary-foreground">
                           <Icon className="size-4.5" aria-hidden />
                         </div>
-                        <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-[10px] font-bold tracking-wide uppercase text-emerald-600 dark:text-emerald-400">
-                          Live
-                        </span>
                       </div>
                       <h3 className="text-base font-bold text-foreground">{cap.title}</h3>
                       <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
