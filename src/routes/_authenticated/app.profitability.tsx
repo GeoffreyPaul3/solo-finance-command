@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+import { EntitlementGate } from "@/components/app/entitlement-gate";
 import { useWorkspace } from "@/components/app/workspace-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,29 @@ export const Route = createFileRoute("/_authenticated/app/profitability")({
   component: ProfitabilityPage,
 });
 
+function ProfitabilityPage() {
+  const { entitlements } = useWorkspace();
+
+  if (!entitlements.canAccessAnalytics) {
+    return (
+      <EntitlementGate
+        title="Profitability Analysis"
+        description="Cash-based profitability analysis: collected revenue minus posted expenses, strictly per-currency with no FX conversions."
+        requiredPlan="solo"
+        features={[
+          "Monthly and period profitability breakdown",
+          "Revenue vs. expense comparison",
+          "Profit margin percentages",
+          "Multi-currency isolation (no FX mixing)",
+          "Custom date range selection",
+        ]}
+      />
+    );
+  }
+
+  return <ProfitabilityContent />;
+}
+
 // Get first day of current year and today for default range
 function getDefaultDateRange() {
   const now = new Date();
@@ -45,7 +69,7 @@ function getDefaultDateRange() {
   return { from, to };
 }
 
-function ProfitabilityPage() {
+function ProfitabilityContent() {
   const { workspace } = useWorkspace();
   const defaults = getDefaultDateRange();
   const [dateFrom, setDateFrom] = useState(defaults.from);

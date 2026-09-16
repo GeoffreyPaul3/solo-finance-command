@@ -19,6 +19,7 @@ import {
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { EntitlementGate } from "@/components/app/entitlement-gate";
 import { useWorkspace } from "@/components/app/workspace-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -57,6 +58,29 @@ const SUGGESTED_QUESTIONS = [
 ];
 
 function AiCfoPage() {
+  const { entitlements } = useWorkspace();
+
+  if (!entitlements.canUseAiCfo) {
+    return (
+      <EntitlementGate
+        title="AI CFO"
+        description="Get structured financial analysis grounded strictly in your real ledger data. The AI explains — your deterministic metrics calculate."
+        requiredPlan="solo"
+        features={[
+          "Ask questions about your financial health in plain language",
+          "Risk identification based on your actual data",
+          "Cash flow forecasting from real transactions",
+          "Recommended actions grounded in your numbers",
+          "Session history and interaction log",
+        ]}
+      />
+    );
+  }
+
+  return <AiCfoContent />;
+}
+
+function AiCfoContent() {
   const { workspace } = useWorkspace();
   const [question, setQuestion] = useState("");
   const [lastResult, setLastResult] = useState<AiCfoResult | null>(null);

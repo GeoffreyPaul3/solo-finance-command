@@ -16,6 +16,7 @@ import { toast } from "sonner";
 
 import { generateReportPdf } from "@/lib/pdf/report-pdf";
 
+import { EntitlementGate } from "@/components/app/entitlement-gate";
 import { useWorkspace } from "@/components/app/workspace-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -70,6 +71,29 @@ export const Route = createFileRoute("/_authenticated/app/reports")({
   component: ReportsPage,
 });
 
+function ReportsPage() {
+  const { entitlements } = useWorkspace();
+
+  if (!entitlements.canExportPdfReports) {
+    return (
+      <EntitlementGate
+        title="Financial Reports"
+        description="Generate professional income, expense, cashflow, and receivables aging reports — with CSV and PDF export."
+        requiredPlan="solo"
+        features={[
+          "Income & expense reports by date range",
+          "Cashflow statement",
+          "Receivables aging analysis",
+          "CSV export for all report types",
+          "PDF report generation",
+        ]}
+      />
+    );
+  }
+
+  return <ReportsContent />;
+}
+
 function getDefaultDateRange() {
   const now = new Date();
   const from = `${now.getFullYear()}-01-01`;
@@ -84,7 +108,7 @@ const REPORT_TABS: { id: ReportType; label: string; icon: typeof BarChart3 }[] =
   { id: "receivables", label: "Receivables Aging", icon: Clock },
 ];
 
-function ReportsPage() {
+function ReportsContent() {
   const { workspace } = useWorkspace();
   const defaults = getDefaultDateRange();
   const [reportType, setReportType] = useState<ReportType>("income");

@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   Lightbulb,
   LifeBuoy,
+  Lock,
   Menu,
   Receipt,
   Settings as SettingsIcon,
@@ -62,6 +63,8 @@ type NavItem = {
     | "/app/audit";
   label: string;
   icon: LucideIcon;
+  /** When set, a lock icon is shown for users who lack this entitlement. */
+  requiredEntitlement?: "canUseAiCfo" | "canAccessAnalytics" | "canExportPdfReports" | "canAccessAudit";
 };
 
 type NavGroup = { label: string; items: NavItem[] };
@@ -102,23 +105,24 @@ const NAV: NavGroup[] = [
   {
     label: "Intelligence",
     items: [
-      { label: "Profitability", icon: Gauge, to: "/app/profitability" },
-      { label: "Insights", icon: Lightbulb, to: "/app/insights" },
-      { label: "Analytics", icon: TrendingUp, to: "/app/analytics" },
-      { label: "AI CFO", icon: Bot, to: "/app/ai-cfo" },
+      { label: "Profitability", icon: Gauge, to: "/app/profitability", requiredEntitlement: "canAccessAnalytics" },
+      { label: "Insights", icon: Lightbulb, to: "/app/insights", requiredEntitlement: "canAccessAnalytics" },
+      { label: "Analytics", icon: TrendingUp, to: "/app/analytics", requiredEntitlement: "canAccessAnalytics" },
+      { label: "AI CFO", icon: Bot, to: "/app/ai-cfo", requiredEntitlement: "canUseAiCfo" },
     ],
   },
   {
     label: "Reporting",
     items: [
-      { label: "Reports", icon: BarChart3, to: "/app/reports" },
-      { label: "Audit Trail", icon: ShieldCheck, to: "/app/audit" },
+      { label: "Reports", icon: BarChart3, to: "/app/reports", requiredEntitlement: "canExportPdfReports" },
+      { label: "Audit Trail", icon: ShieldCheck, to: "/app/audit", requiredEntitlement: "canAccessAudit" },
     ],
   },
 ];
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { entitlements } = useWorkspace();
 
   return (
     <nav aria-label="Primary" className="flex flex-col gap-5 py-2">
@@ -132,6 +136,9 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
               const Icon = item.icon;
               const active =
                 item.to === "/app" ? pathname === "/app" : pathname.startsWith(item.to);
+              const isLocked = item.requiredEntitlement
+                ? !entitlements[item.requiredEntitlement]
+                : false;
               const className = cn(
                 "group flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-all duration-150",
                 active
@@ -152,7 +159,13 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
                       aria-hidden
                     />
                     <span className="flex-1 truncate">{item.label}</span>
-                    {active && (
+                    {isLocked && !active && (
+                      <Lock
+                        className="ml-auto size-3 shrink-0 text-muted-foreground/40"
+                        aria-label="Requires upgrade"
+                      />
+                    )}
+                    {active && !isLocked && (
                       <span
                         className="ml-auto size-1.5 rounded-full bg-primary shrink-0"
                         aria-hidden

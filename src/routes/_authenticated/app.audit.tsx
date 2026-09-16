@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+import { EntitlementGate } from "@/components/app/entitlement-gate";
 import { useWorkspace } from "@/components/app/workspace-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,29 @@ export const Route = createFileRoute("/_authenticated/app/audit")({
   }),
   component: AuditPage,
 });
+
+function AuditPage() {
+  const { entitlements } = useWorkspace();
+
+  if (!entitlements.canAccessAudit) {
+    return (
+      <EntitlementGate
+        title="Audit Trail"
+        description="A tamper-evident chronological log of every significant action taken in your workspace — essential for compliance and governance."
+        requiredPlan="pro"
+        features={[
+          "Complete action log across all entities",
+          "Filter by entity type (invoices, clients, users…)",
+          "Search by actor, entity ID, or action",
+          "Secure metadata inspection (sensitive fields redacted)",
+          "Pagination for large audit histories",
+        ]}
+      />
+    );
+  }
+
+  return <AuditContent />;
+}
 
 // Safe display of audit metadata — never expose internal secrets or PII
 function sanitizeMetadata(raw: unknown): Record<string, unknown> | null {
@@ -100,7 +124,7 @@ type AuditLog = {
   workspace_id: string;
 };
 
-function AuditPage() {
+function AuditContent() {
   const { workspace } = useWorkspace();
 
   const [search, setSearch] = useState("");

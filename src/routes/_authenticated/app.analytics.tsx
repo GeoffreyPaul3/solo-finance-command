@@ -26,6 +26,7 @@ import {
   YAxis,
 } from "recharts";
 
+import { EntitlementGate } from "@/components/app/entitlement-gate";
 import { useWorkspace } from "@/components/app/workspace-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,29 @@ export const Route = createFileRoute("/_authenticated/app/analytics")({
   }),
   component: AnalyticsPage,
 });
+
+function AnalyticsPage() {
+  const { entitlements } = useWorkspace();
+
+  if (!entitlements.canAccessAnalytics) {
+    return (
+      <EntitlementGate
+        title="Analytics"
+        description="Deep-dive into your revenue trends, expense composition, and profitability across any date range."
+        requiredPlan="solo"
+        features={[
+          "Revenue & expense trend charts",
+          "Profitability analysis by period",
+          "Invoice status distribution",
+          "Client and project performance metrics",
+          "Customizable date ranges (30D, 90D, 12M, YTD)",
+        ]}
+      />
+    );
+  }
+
+  return <AnalyticsContent />;
+}
 
 type DateRange = "30d" | "90d" | "12m" | "ytd";
 
@@ -151,8 +175,9 @@ function StatCard({
   );
 }
 
-function AnalyticsPage() {
+function AnalyticsContent() {
   const { workspace } = useWorkspace();
+
   const [dateRange, setDateRange] = useState<DateRange>("90d");
 
   const { from, to } = getDateRange(dateRange);

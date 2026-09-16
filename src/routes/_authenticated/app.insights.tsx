@@ -15,6 +15,7 @@ import {
   Wallet,
 } from "lucide-react";
 
+import { EntitlementGate } from "@/components/app/entitlement-gate";
 import { useWorkspace } from "@/components/app/workspace-context";
 import {
   insightsQueryOptions,
@@ -30,6 +31,29 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/app/insights")({
   component: InsightsPage,
 });
+
+function InsightsPage() {
+  const { entitlements } = useWorkspace();
+
+  if (!entitlements.canAccessAnalytics) {
+    return (
+      <EntitlementGate
+        title="Financial Insights"
+        description="Deterministic observations derived from your authoritative financial ledger — flagging risks, overdue receivables, and growth opportunities."
+        requiredPlan="solo"
+        features={[
+          "Overdue invoice and receivables alerts",
+          "Cash flow risk detection",
+          "Expense pattern analysis",
+          "Client and project performance signals",
+          "Severity-ranked action items",
+        ]}
+      />
+    );
+  }
+
+  return <InsightsContent />;
+}
 
 const CATEGORY_LABELS: Record<InsightCategory, { label: string; icon: typeof Lightbulb }> = {
   receivables: { label: "Receivables", icon: Receipt },
@@ -61,7 +85,7 @@ const SEVERITY_CONFIG: Record<
   },
 };
 
-function InsightsPage() {
+function InsightsContent() {
   const { workspace } = useWorkspace();
   const [selectedCategory, setSelectedCategory] = useState<InsightCategory | "all">("all");
   const [selectedSeverity, setSelectedSeverity] = useState<InsightSeverity | "all">("all");

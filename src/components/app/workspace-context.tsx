@@ -20,6 +20,8 @@ import {
   type Profile,
   type Workspace,
 } from "@/domain/workspace";
+import { workspaceSubscriptionQueryOptions } from "@/domain/subscriptions";
+import { getWorkspaceEntitlements, type WorkspaceEntitlements } from "@/domain/entitlements";
 
 const ACTIVE_WORKSPACE_KEY = "soloos.active-workspace";
 
@@ -28,6 +30,7 @@ type WorkspaceContextValue = {
   role: AppRole;
   memberships: Membership[];
   profile: Profile | null;
+  entitlements: WorkspaceEntitlements;
   setActiveWorkspace: (id: string) => void;
 };
 
@@ -66,6 +69,19 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   }, [memberships.isSuccess, rows.length, navigate]);
 
+  // Fetch subscription for the active workspace and compute entitlements.
+  // This is deliberately placed here so that every route that calls
+  // useWorkspace() gets the same cached, authoritative entitlements without
+  // each page having to independently fetch subscription data.
+  const subscriptionQuery = useQuery(
+    workspaceSubscriptionQueryOptions(active?.workspace.id),
+  );
+
+  const entitlements = useMemo(
+    () => getWorkspaceEntitlements(active?.workspace.plan, subscriptionQuery.data ?? null),
+    [active?.workspace.plan, subscriptionQuery.data],
+  );
+
   const value = useMemo<WorkspaceContextValue | null>(
     () =>
       active
@@ -74,10 +90,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             role: active.role,
             memberships: rows,
             profile: profile.data ?? null,
+            entitlements,
             setActiveWorkspace,
           }
         : null,
-    [active, rows, profile.data, setActiveWorkspace],
+    [active, rows, profile.data, entitlements, setActiveWorkspace],
   );
 
   if (memberships.isPending) {
