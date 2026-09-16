@@ -196,15 +196,15 @@ const FAQ_ITEMS = [
   },
   {
     q: "Is SoloOS double-entry accounting software?",
-    a: "SoloOS is an authoritative financial operating system designed specifically for independent operators. Instead of burdening you with traditional debit/credit journals and cumbersome chart-of-accounts bookkeeping, SoloOS enforces database-level invariants, atomic transfers, and automated reserve segregation to guarantee accuracy without the complexity.",
+    a: "SoloOS is an authoritative financial operating system designed specifically for independent operators. Instead of burdening you with traditional debit/credit journals and cumbersome chart-of-accounts bookkeeping, SoloOS enforces database-level invariants, atomic account transfers, and explicit tax reserve segregation to provide reliable financial organization without unnecessary complexity.",
   },
   {
     q: "Can I get started for free?",
     a: "Yes. Our Free tier gives you full access to core bookkeeping, up to 5 clients, and up to 10 invoices per month. There is no trial expiration and no credit card required to get started.",
   },
   {
-    q: "How does automated tax segregation work?",
-    a: "You configure your estimated tax rate (for example, 30%). Whenever you record income, SoloOS calculates the required tax allocation and protects it in your Safe-to-Spend formula. You can also track an actual designated tax reserve account.",
+    q: "How does tax reserve planning work?",
+    a: "You configure your target tax rate (for example, 25% or 30%). Whenever you record income, SoloOS calculates the designated tax allocation and protects it in your Safe-to-Spend formula. You can also track an actual designated tax reserve account in your ledger.",
   },
   {
     q: "Is my financial data secure and isolated?",
@@ -527,7 +527,6 @@ function LandingPage() {
             <div className="grid gap-12 lg:grid-cols-2 items-center">
               <div>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                
                   Signature Architecture
                 </span>
                 <h2 className="text-display mt-4 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
@@ -1186,18 +1185,28 @@ function LandingPage() {
 
             <div>
               <p className="font-semibold text-foreground mb-3 uppercase tracking-wider text-[11px]">
-                Security & Invariants
+                Legal & Trust
               </p>
               <ul className="space-y-2 text-muted-foreground">
-                <li className="flex items-center gap-1.5">
+                <li>
+                  <Link to="/privacy" className="hover:text-foreground transition-colors">
+                    Privacy Policy
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/terms" className="hover:text-foreground transition-colors">
+                    Terms of Service
+                  </Link>
+                </li>
+                <li className="flex items-center gap-1.5 pt-1 text-xs">
                   <ShieldCheck className="size-3.5 text-primary" />
                   <span>PostgreSQL Row-Level Security</span>
                 </li>
-                <li className="flex items-center gap-1.5">
+                <li className="flex items-center gap-1.5 text-xs">
                   <Lock className="size-3.5 text-primary" />
                   <span>Read-only AI Guardrails</span>
                 </li>
-                <li className="flex items-center gap-1.5">
+                <li className="flex items-center gap-1.5 text-xs">
                   <Check className="size-3.5 text-primary" />
                   <span>PayChangu Reconciled</span>
                 </li>
@@ -1236,8 +1245,22 @@ function LandingPage() {
             </div>
           </div>
 
-          <div className="pt-6 flex flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground">
+          <div className="pt-6 flex flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground border-t border-border/60">
             <p>© {new Date().getFullYear()} SoloOS. All rights reserved.</p>
+            <div className="flex flex-wrap items-center gap-4">
+              <Link to="/privacy" className="hover:text-foreground transition-colors">
+                Privacy
+              </Link>
+              <Link to="/terms" className="hover:text-foreground transition-colors">
+                Terms
+              </Link>
+              <Link to="/pricing" className="hover:text-foreground transition-colors">
+                Pricing
+              </Link>
+              <Link to="/support" className="hover:text-foreground transition-colors">
+                Support
+              </Link>
+            </div>
             <p className="text-[11px] font-mono">
               Authoritative financial engine · Built for independent operators
             </p>

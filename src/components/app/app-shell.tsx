@@ -371,7 +371,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       {/* ── Main Content ── */}
-      <main className="min-w-0">{children}</main>
+      <main className="min-w-0 px-4 py-7 sm:px-8 sm:py-9">{children}</main>
     </div>
   );
 }

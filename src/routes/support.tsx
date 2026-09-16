@@ -352,12 +352,21 @@ function SupportPage() {
             <span className="font-semibold text-foreground">SoloOS</span>
             <span>— The Financial OS for Independent Professionals</span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <Link to="/" className="hover:text-foreground transition-colors">
               Home
             </Link>
             <Link to="/pricing" className="hover:text-foreground transition-colors">
               Pricing
+            </Link>
+            <Link to="/support" className="text-foreground font-medium transition-colors">
+              Support
+            </Link>
+            <Link to="/privacy" className="hover:text-foreground transition-colors">
+              Privacy
+            </Link>
+            <Link to="/terms" className="hover:text-foreground transition-colors">
+              Terms
             </Link>
             <Link
               to="/auth"

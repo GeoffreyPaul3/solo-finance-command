@@ -1,4 +1,3 @@
-import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -20,16 +19,18 @@ async function assertPlatformAdmin(userId: string) {
 }
 
 async function getCurrentUserId(): Promise<string> {
-  const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) throw new Error("Unauthenticated");
-  return data.user.id;
+  const { data } = await supabase.auth.getUser();
+  if (data?.user) return data.user.id;
+  const { data: sessionData } = await supabase.auth.getSession();
+  if (sessionData.session?.user) return sessionData.session.user.id;
+  throw new Error("Unauthenticated: Please ensure you are signed in as an administrator.");
 }
 
 // ─────────────────────────────────────────────
 // Platform Dashboard Stats
 // ─────────────────────────────────────────────
 
-export const adminDashboardFn = createServerFn({ method: "GET" }).handler(async () => {
+export async function adminDashboardFn() {
   const userId = await getCurrentUserId();
   await assertPlatformAdmin(userId);
 
@@ -79,7 +80,7 @@ export const adminDashboardFn = createServerFn({ method: "GET" }).handler(async 
     usdRevenueMajor,
     planCounts,
   };
-});
+}
 
 // ─────────────────────────────────────────────
 // Users List
@@ -91,151 +92,151 @@ const paginationSchema = z.object({
   search: z.string().optional(),
 });
 
-export const adminListUsersFn = createServerFn({ method: "POST" })
-  .validator((data: z.infer<typeof paginationSchema>) => paginationSchema.parse(data))
-  .handler(async ({ data }) => {
-    const userId = await getCurrentUserId();
-    await assertPlatformAdmin(userId);
+export async function adminListUsersFn({ data }: { data: z.infer<typeof paginationSchema> }) {
+  const validated = paginationSchema.parse(data);
+  const userId = await getCurrentUserId();
+  await assertPlatformAdmin(userId);
 
-    const { page, pageSize, search } = data;
-    const from = (page - 1) * pageSize;
-    const to = from + pageSize - 1;
+  const { page, pageSize, search } = validated;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
 
-    let query = supabase
-      .from("workspace_members")
-      .select(
-        `
-        user_id,
-        role,
-        created_at,
-        workspace_id,
-        workspaces(name)
-      `,
-        { count: "exact" },
-      )
-      .order("created_at", { ascending: false })
-      .range(from, to);
+  let query = supabase
+    .from("workspace_members")
+    .select(
+      `
+      user_id,
+      role,
+      created_at,
+      workspace_id,
+      workspaces(name)
+    `,
+      { count: "exact" },
+    )
+    .order("created_at", { ascending: false })
+    .range(from, to);
 
-    if (search) {
-      query = query.ilike("workspaces.name", `%${search}%`);
-    }
+  if (search) {
+    query = query.ilike("workspaces.name", `%${search}%`);
+  }
 
-    const { data: members, count, error } = await query;
-    if (error) throw new Error(error.message);
+  const { data: members, count, error } = await query;
+  if (error) throw new Error(error.message);
 
-    return { members: members ?? [], total: count ?? 0, page, pageSize };
-  });
+  return { members: members ?? [], total: count ?? 0, page, pageSize };
+}
 
 // ─────────────────────────────────────────────
 // Workspaces List
 // ─────────────────────────────────────────────
 
-export const adminListWorkspacesFn = createServerFn({ method: "POST" })
-  .validator((data: z.infer<typeof paginationSchema>) => paginationSchema.parse(data))
-  .handler(async ({ data }) => {
-    const userId = await getCurrentUserId();
-    await assertPlatformAdmin(userId);
+export async function adminListWorkspacesFn({ data }: { data: z.infer<typeof paginationSchema> }) {
+  const validated = paginationSchema.parse(data);
+  const userId = await getCurrentUserId();
+  await assertPlatformAdmin(userId);
 
-    const { page, pageSize, search } = data;
-    const from = (page - 1) * pageSize;
-    const to = from + pageSize - 1;
+  const { page, pageSize, search } = validated;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
 
-    let query = supabase
-      .from("workspaces")
-      .select(
-        `
-        id, name, created_at, created_by, currency, plan, status,
-        subscriptions(plan_id, status)
-      `,
-        { count: "exact" },
-      )
-      .order("created_at", { ascending: false })
-      .range(from, to);
+  let query = supabase
+    .from("workspaces")
+    .select(
+      `
+      id, name, created_at, created_by, currency, plan, status,
+      subscriptions(plan_id, status)
+    `,
+      { count: "exact" },
+    )
+    .order("created_at", { ascending: false })
+    .range(from, to);
 
-    if (search) {
-      query = query.ilike("name", `%${search}%`);
-    }
+  if (search) {
+    query = query.ilike("name", `%${search}%`);
+  }
 
-    const { data: workspaces, count, error } = await query;
-    if (error) throw new Error(error.message);
+  const { data: workspaces, count, error } = await query;
+  if (error) throw new Error(error.message);
 
-    return { workspaces: workspaces ?? [], total: count ?? 0, page, pageSize };
-  });
+  return { workspaces: workspaces ?? [], total: count ?? 0, page, pageSize };
+}
 
 // ─────────────────────────────────────────────
 // Subscriptions List
 // ─────────────────────────────────────────────
 
-export const adminListSubscriptionsFn = createServerFn({ method: "POST" })
-  .validator((data: z.infer<typeof paginationSchema>) => paginationSchema.parse(data))
-  .handler(async ({ data }) => {
-    const userId = await getCurrentUserId();
-    await assertPlatformAdmin(userId);
+export async function adminListSubscriptionsFn({
+  data,
+}: {
+  data: z.infer<typeof paginationSchema>;
+}) {
+  const validated = paginationSchema.parse(data);
+  const userId = await getCurrentUserId();
+  await assertPlatformAdmin(userId);
 
-    const { page, pageSize } = data;
-    const from = (page - 1) * pageSize;
-    const to = from + pageSize - 1;
+  const { page, pageSize } = validated;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
 
-    const {
-      data: subscriptions,
-      count,
-      error,
-    } = await supabase
-      .from("subscriptions")
-      .select(
-        `
-        id, workspace_id, plan_id, status, currency,
-        current_period_start, current_period_end, canceled_at, created_at,
-        workspaces(name, slug)
-      `,
-        { count: "exact" },
-      )
-      .order("created_at", { ascending: false })
-      .range(from, to);
+  const {
+    data: subscriptions,
+    count,
+    error,
+  } = await supabase
+    .from("subscriptions")
+    .select(
+      `
+      id, workspace_id, plan_id, status, currency,
+      current_period_start, current_period_end, canceled_at, created_at,
+      workspaces(name, slug)
+    `,
+      { count: "exact" },
+    )
+    .order("created_at", { ascending: false })
+    .range(from, to);
 
-    if (error) throw new Error(error.message);
+  if (error) throw new Error(error.message);
 
-    return { subscriptions: subscriptions ?? [], total: count ?? 0, page, pageSize };
-  });
+  return { subscriptions: subscriptions ?? [], total: count ?? 0, page, pageSize };
+}
 
 // ─────────────────────────────────────────────
 // Revenue / Payments
 // ─────────────────────────────────────────────
 
-export const adminListPaymentsFn = createServerFn({ method: "POST" })
-  .validator((data: z.infer<typeof paginationSchema>) => paginationSchema.parse(data))
-  .handler(async ({ data }) => {
-    const userId = await getCurrentUserId();
-    await assertPlatformAdmin(userId);
+export async function adminListPaymentsFn({ data }: { data: z.infer<typeof paginationSchema> }) {
+  const validated = paginationSchema.parse(data);
+  const userId = await getCurrentUserId();
+  await assertPlatformAdmin(userId);
 
-    const { page, pageSize } = data;
-    const from = (page - 1) * pageSize;
-    const to = from + pageSize - 1;
+  const { page, pageSize } = validated;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
 
-    const {
-      data: payments,
-      count,
-      error,
-    } = await supabase
-      .from("subscription_payments")
-      .select(
-        `
-        id, workspace_id, subscription_id, status,
-        expected_amount_cents, expected_currency,
-        verified_amount_cents, verified_currency,
-        tx_ref, provider_ref,
-        created_at, verified_at,
-        workspaces(name, slug)
-      `,
-        { count: "exact" },
-      )
-      .order("created_at", { ascending: false })
-      .range(from, to);
+  const {
+    data: payments,
+    count,
+    error,
+  } = await supabase
+    .from("subscription_payments")
+    .select(
+      `
+      id, workspace_id, subscription_id, status,
+      expected_amount_cents, expected_currency,
+      verified_amount_cents, verified_currency,
+      tx_ref, provider_ref,
+      created_at, verified_at,
+      workspaces(name, slug)
+    `,
+      { count: "exact" },
+    )
+    .order("created_at", { ascending: false })
+    .range(from, to);
 
-    if (error) throw new Error(error.message);
+  if (error) throw new Error(error.message);
 
-    return { payments: payments ?? [], total: count ?? 0, page, pageSize };
-  });
+  return { payments: payments ?? [], total: count ?? 0, page, pageSize };
+}
 
 // ─────────────────────────────────────────────
 // Support Requests
@@ -245,50 +246,55 @@ const supportListSchema = paginationSchema.extend({
   status: z.enum(["open", "in_progress", "resolved", "closed"]).optional(),
 });
 
-export const adminListSupportRequestsFn = createServerFn({ method: "POST" })
-  .validator((data: z.infer<typeof supportListSchema>) => supportListSchema.parse(data))
-  .handler(async ({ data }) => {
-    const userId = await getCurrentUserId();
-    await assertPlatformAdmin(userId);
+export async function adminListSupportRequestsFn({
+  data,
+}: {
+  data: z.infer<typeof supportListSchema>;
+}) {
+  const validated = supportListSchema.parse(data);
+  const userId = await getCurrentUserId();
+  await assertPlatformAdmin(userId);
 
-    const { page, pageSize, status } = data;
-    const from = (page - 1) * pageSize;
-    const to = from + pageSize - 1;
+  const { page, pageSize, status } = validated;
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
 
-    let query = supabase
-      .from("support_requests")
-      .select("*", { count: "exact" })
-      .order("created_at", { ascending: false })
-      .range(from, to);
+  let query = supabase
+    .from("support_requests")
+    .select("*", { count: "exact" })
+    .order("created_at", { ascending: false })
+    .range(from, to);
 
-    if (status) query = query.eq("status", status);
+  if (status) query = query.eq("status", status);
 
-    const { data: requests, count, error } = await query;
-    if (error) throw new Error(error.message);
+  const { data: requests, count, error } = await query;
+  if (error) throw new Error(error.message);
 
-    return { requests: requests ?? [], total: count ?? 0, page, pageSize };
-  });
+  return { requests: requests ?? [], total: count ?? 0, page, pageSize };
+}
 
-export const adminUpdateSupportRequestFn = createServerFn({ method: "POST" })
-  .validator((data: { id: string; status: "open" | "in_progress" | "resolved" | "closed" }) =>
-    z
-      .object({
-        id: z.string().uuid(),
-        status: z.enum(["open", "in_progress", "resolved", "closed"]),
-      })
-      .parse(data),
-  )
-  .handler(async ({ data }) => {
-    const userId = await getCurrentUserId();
-    await assertPlatformAdmin(userId);
+export async function adminUpdateSupportRequestFn({
+  data,
+}: {
+  data: { id: string; status: "open" | "in_progress" | "resolved" | "closed" };
+}) {
+  const validated = z
+    .object({
+      id: z.string().uuid(),
+      status: z.enum(["open", "in_progress", "resolved", "closed"]),
+    })
+    .parse(data);
 
-    const { error } = await supabase
-      .from("support_requests")
-      .update({
-        status: data.status,
-      })
-      .eq("id", data.id);
+  const userId = await getCurrentUserId();
+  await assertPlatformAdmin(userId);
 
-    if (error) throw new Error(error.message);
-    return { success: true };
-  });
+  const { error } = await supabase
+    .from("support_requests")
+    .update({
+      status: validated.status,
+    })
+    .eq("id", validated.id);
+
+  if (error) throw new Error(error.message);
+  return { success: true };
+}

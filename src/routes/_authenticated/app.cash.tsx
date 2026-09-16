@@ -172,9 +172,6 @@ function CashPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Cash & Accounts</h1>
-            <Badge variant="outline" className="text-xs font-mono">
-              Phase 2 Engine
-            </Badge>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
             Authoritative multi-currency financial accounts, opening balances, and atomic ledger.
@@ -1370,8 +1367,8 @@ function RecordTransferModal({
             <div className="rounded-md bg-destructive/10 p-2.5 text-xs text-destructive flex items-center gap-2">
               <AlertCircle className="size-4 shrink-0" />
               <span>
-                Cross-currency transfers are not supported in Phase 2. Both accounts must share
-                currency {sourceAccount.currency}.
+                Cross-currency transfers are not supported. Both accounts must share the same
+                currency ({sourceAccount.currency}).
               </span>
             </div>
           )}

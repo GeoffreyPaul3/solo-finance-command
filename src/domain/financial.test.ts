@@ -65,10 +65,10 @@ export function computeReconciledBalance(
 }
 
 // ============================================================================
-// Test Suite: SoloOS Phase 2 Authoritative Financial Engine
+// Test Suite: SoloOS Authoritative Financial Engine
 // ============================================================================
 
-describe("SoloOS Phase 2: Authoritative Financial Engine", () => {
+describe("SoloOS: Authoritative Financial Engine", () => {
   // --------------------------------------------------------------------------
   // 1. Account Domain & Validation
   // --------------------------------------------------------------------------

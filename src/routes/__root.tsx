@@ -178,7 +178,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           featureList: [
             "Authoritative Transactional Ledger",
             "Multi-Currency Invoicing & Payment Tracking",
-            "Automated Tax Reserve Calculation",
+            "Tax Reserve Planning & Allocation Calculation",
             "Cashflow Forecasting & Safe-to-Spend Runway",
             "Client and Project Profitability Analytics",
             "Multi-Tenant PostgreSQL Row-Level Security",

@@ -133,7 +133,7 @@ function CommandCenter() {
   });
 
   return (
-    <div className="mx-auto max-w-[1200px] px-4 py-7 sm:px-8 sm:py-9 pb-20 space-y-10">
+    <div className="mx-auto max-w-[1200px] space-y-10 pb-20">
       {/* ═══════════════════════════════════════════════════════
           GREETING HEADER
       ═══════════════════════════════════════════════════════ */}
