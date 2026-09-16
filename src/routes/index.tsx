@@ -1114,7 +1114,6 @@ function LandingPage() {
         <section className="border-t border-border py-24 bg-gradient-to-b from-card via-card to-background">
           <div className="mx-auto max-w-4xl px-5 text-center">
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary mb-6">
-              <Sparkles className="size-3.5" aria-hidden />
               <span>Get Started Today</span>
             </div>
 
