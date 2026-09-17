@@ -454,25 +454,19 @@ function CashPage() {
                   const isAdjustment = tx.transaction_type === "adjustment";
 
                   let amountColor = "text-foreground";
-                  let amountPrefix: "+" | "-" | "±" | "" = "";
 
                   if (isIncome) {
                     amountColor = "text-emerald-500 font-semibold";
-                    amountPrefix = "+";
                   } else if (isExpense) {
                     amountColor = "text-rose-500 font-semibold";
-                    amountPrefix = "-";
                   } else if (isTransfer) {
                     if (tx.transfer_role === "destination") {
                       amountColor = "text-emerald-500 font-semibold";
-                      amountPrefix = "+";
                     } else {
                       amountColor = "text-rose-500 font-semibold";
-                      amountPrefix = "-";
                     }
                   } else if (isAdjustment) {
                     amountColor = "text-indigo-400 font-semibold";
-                    amountPrefix = "±";
                   }
 
                   return (
@@ -526,7 +520,6 @@ function CashPage() {
                           value={tx.amount}
                           currency={tx.currency}
                           size="sm"
-                          prefix={amountPrefix}
                           className={amountColor}
                         />
                       </TableCell>
@@ -576,25 +569,19 @@ function CashPage() {
               const isAdjustment = tx.transaction_type === "adjustment";
 
               let amountColor = "text-foreground";
-              let amountPrefix: "+" | "-" | "±" | "" = "";
 
               if (isIncome) {
                 amountColor = "text-emerald-500 font-semibold";
-                amountPrefix = "+";
               } else if (isExpense) {
                 amountColor = "text-rose-500 font-semibold";
-                amountPrefix = "-";
               } else if (isTransfer) {
                 if (tx.transfer_role === "destination") {
                   amountColor = "text-emerald-500 font-semibold";
-                  amountPrefix = "+";
                 } else {
                   amountColor = "text-rose-500 font-semibold";
-                  amountPrefix = "-";
                 }
               } else if (isAdjustment) {
                 amountColor = "text-indigo-400 font-semibold";
-                amountPrefix = "±";
               }
 
               return (
@@ -619,7 +606,6 @@ function CashPage() {
                       value={tx.amount}
                       currency={tx.currency}
                       size="md"
-                      prefix={amountPrefix}
                       className={cn("shrink-0", amountColor)}
                     />
                   </div>

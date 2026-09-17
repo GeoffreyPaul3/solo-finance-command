@@ -38,10 +38,16 @@ export class ResendEmailProvider implements EmailProvider {
   }
 
   private getFromEmail(): string {
+    let from = "SoloOS <onboarding@resend.dev>";
     if (typeof process !== "undefined" && process.env && process.env["RESEND_FROM_EMAIL"]) {
-      return process.env["RESEND_FROM_EMAIL"];
+      from = process.env["RESEND_FROM_EMAIL"].trim();
     }
-    return "SoloOS <gtigergeoffrey@gmail.com>";
+    // Resend requires verified custom domains and rejects free webmail domains with 403.
+    // If an unverified public domain is detected, safely fall back to Resend's default onboarding sender.
+    if (/@(gmail|googlemail|yahoo|hotmail|outlook|live|icloud)\.com/i.test(from)) {
+      return "SoloOS <onboarding@resend.dev>";
+    }
+    return from;
   }
 
   isConfigured(): boolean {

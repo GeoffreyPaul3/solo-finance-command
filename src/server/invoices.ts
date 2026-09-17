@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { sendEmailSafely } from "@/lib/email/send";
 import { renderInvoiceEmail } from "@/lib/email/templates";
 import { formatMoney } from "@/lib/money";
@@ -12,18 +13,30 @@ const sendInvoiceEmailSchema = z.object({
   recipientEmail: z.string().email(),
   clientName: z.string().min(1),
   customMessage: z.string().optional(),
+  authToken: z.string().optional(),
 });
 
-async function getCurrentUserId(): Promise<string> {
+async function getAuthenticatedUserId(authToken?: string): Promise<string | null> {
+  if (authToken) {
+    try {
+      const { data } = await supabaseAdmin.auth.getUser(authToken);
+      if (data?.user) return data.user.id;
+    } catch {
+      // Ignore invalid auth token errors
+    }
+  }
   const { data } = await supabase.auth.getUser();
   if (data?.user) return data.user.id;
   const { data: sessionData } = await supabase.auth.getSession();
   if (sessionData.session?.user) return sessionData.session.user.id;
-  throw new Error("Unauthenticated: Please sign in to send invoices.");
+  return null;
 }
 
-async function verifyWorkspaceMember(userId: string, workspaceId: string) {
-  const { data, error } = await supabase
+async function verifyWorkspaceMember(userId: string | null, workspaceId: string) {
+  if (!userId) {
+    throw new Error("Unauthenticated: Please sign in to send invoices.");
+  }
+  const { data, error } = await supabaseAdmin
     .from("workspace_members")
     .select("role")
     .eq("user_id", userId)
@@ -31,26 +44,26 @@ async function verifyWorkspaceMember(userId: string, workspaceId: string) {
     .maybeSingle();
 
   if (error || !data) {
-    throw new Error("Forbidden: You are not a member of this workspace.");
+    throw new Error("Forbidden: You are not an authorized member of this workspace.");
   }
 }
 
 export const sendInvoiceEmailServerFn = createServerFn({ method: "POST" })
   .validator((data: z.infer<typeof sendInvoiceEmailSchema>) => sendInvoiceEmailSchema.parse(data))
   .handler(async ({ data }) => {
-    const userId = await getCurrentUserId();
+    const userId = await getAuthenticatedUserId(data.authToken);
     await verifyWorkspaceMember(userId, data.workspaceId);
 
-    // Fetch workspace details
-    const { data: ws, error: wsErr } = await supabase
+    // Fetch workspace details using admin client
+    const { data: ws, error: wsErr } = await supabaseAdmin
       .from("workspaces")
       .select("id, name, currency")
       .eq("id", data.workspaceId)
       .single();
     if (wsErr || !ws) throw new Error("Workspace not found");
 
-    // Fetch invoice details
-    const { data: inv, error: invErr } = await supabase
+    // Fetch invoice details using admin client
+    const { data: inv, error: invErr } = await supabaseAdmin
       .from("invoices")
       .select(
         `
@@ -68,8 +81,8 @@ export const sendInvoiceEmailServerFn = createServerFn({ method: "POST" })
       .single();
     if (invErr || !inv) throw new Error("Invoice not found");
 
-    // Fetch line items
-    const { data: items } = await supabase
+    // Fetch line items using admin client
+    const { data: items } = await supabaseAdmin
       .from("invoice_line_items")
       .select("description, quantity, unit_price, line_total")
       .eq("invoice_id", data.invoiceId)
@@ -105,14 +118,18 @@ export const sendInvoiceEmailServerFn = createServerFn({ method: "POST" })
     });
 
     if (!result.sent) {
-      throw new Error(
-        result.error || "Failed to dispatch email. Please check your provider settings.",
-      );
+      let errDetail =
+        result.error || "Failed to dispatch email. Please check your provider settings.";
+      if (errDetail.includes("only send testing emails to your own email address")) {
+        errDetail =
+          "Resend Sandbox Notice: In development/test mode, emails can only be delivered to your registered Resend account address. To send to any client email, please verify your custom domain at https://resend.com/domains.";
+      }
+      throw new Error(errDetail);
     }
 
     // If invoice was in draft, transition status to sent
     if (inv.status === "draft") {
-      await supabase
+      await supabaseAdmin
         .from("invoices")
         .update({ status: "sent", updated_at: new Date().toISOString() })
         .eq("id", inv.id);

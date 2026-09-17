@@ -151,6 +151,13 @@ function InvoiceDetailPage() {
     mutationFn: async () => {
       const recipient = emailRecipient.trim() || invoice?.client?.email;
       if (!recipient) throw new Error("Recipient email address is required");
+
+      // Retrieve the current session token so the server fn can verify the caller
+      const { data: sessionData } = await import("@/integrations/supabase/client").then(
+        (m) => m.supabase.auth.getSession()
+      );
+      const authToken = sessionData?.session?.access_token;
+
       return await sendInvoiceEmailServerFn({
         data: {
           workspaceId: workspace.id,
@@ -158,6 +165,7 @@ function InvoiceDetailPage() {
           recipientEmail: recipient,
           clientName: invoice?.client?.name || "Valued Client",
           customMessage: emailCustomNote.trim() || undefined,
+          authToken,
         },
       });
     },
@@ -236,6 +244,23 @@ function InvoiceDetailPage() {
 
   return (
     <div className="space-y-6 pb-16">
+      {/* ── Print-only isolation styles ── */}
+      <style>{`
+        @media print {
+          body > * { display: none !important; }
+          #invoice-print-region,
+          #invoice-print-region * { display: revert !important; }
+          #invoice-print-region {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: white;
+            padding: 0;
+            margin: 0;
+          }
+        }
+      `}</style>
+
       {/* Top Bar Navigation & Actions (Hidden during print) */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between print:hidden">
         <div className="flex items-center gap-3">
@@ -366,8 +391,8 @@ function InvoiceDetailPage() {
         </span>
       </div>
 
-      {/* Dynamic Renderable Invoice Template (Printable) */}
-      <div className="print:m-0 print:p-0">
+      {/* Dynamic Renderable Invoice Template (Printable) — isolated region */}
+      <div id="invoice-print-region">
         <InvoiceTemplateRenderer
           templateId={selectedTemplate}
           invoice={invoice}

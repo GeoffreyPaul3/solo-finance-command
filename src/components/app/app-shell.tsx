@@ -16,6 +16,8 @@ import {
   LifeBuoy,
   Lock,
   Menu,
+  PanelLeftClose,
+  PanelLeftOpen,
   Receipt,
   Settings as SettingsIcon,
   ShieldCheck,
@@ -146,7 +148,13 @@ const NAV: NavGroup[] = [
   },
 ];
 
-function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
+function NavLinks({
+  onNavigate,
+  isCollapsed,
+}: {
+  onNavigate?: () => void;
+  isCollapsed?: boolean;
+}) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { entitlements } = useWorkspace();
 
@@ -154,9 +162,11 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
     <nav aria-label="Primary" className="flex flex-col gap-5 py-2">
       {NAV.map((group) => (
         <div key={group.label}>
-          <p className="px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground/55 mb-1.5">
-            {group.label}
-          </p>
+          {!isCollapsed && (
+            <p className="px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground/55 mb-1.5">
+              {group.label}
+            </p>
+          )}
           <ul className="space-y-0.5">
             {group.items.map((item) => {
               const Icon = item.icon;
@@ -166,7 +176,8 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
                 ? !entitlements[item.requiredEntitlement]
                 : false;
               const className = cn(
-                "group flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-all duration-150",
+                "group flex items-center rounded-md py-2 text-sm font-medium transition-all duration-150",
+                isCollapsed ? "justify-center px-2" : "gap-2.5 px-3",
                 active
                   ? "bg-primary/10 text-primary"
                   : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
@@ -174,7 +185,12 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 
               return (
                 <li key={item.label}>
-                  <Link to={item.to} onClick={onNavigate} className={className}>
+                  <Link
+                    to={item.to}
+                    onClick={onNavigate}
+                    className={className}
+                    title={isCollapsed ? item.label : undefined}
+                  >
                     <Icon
                       className={cn(
                         "size-4 shrink-0 transition-transform duration-150",
@@ -182,20 +198,25 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
                           ? "text-primary"
                           : "text-muted-foreground/60 group-hover:text-foreground",
                       )}
-                      aria-hidden
+                      aria-hidden={!isCollapsed}
+                      aria-label={isCollapsed ? item.label : undefined}
                     />
-                    <span className="flex-1 truncate">{item.label}</span>
-                    {isLocked && !active && (
-                      <Lock
-                        className="ml-auto size-3 shrink-0 text-muted-foreground/40"
-                        aria-label="Requires upgrade"
-                      />
-                    )}
-                    {active && !isLocked && (
-                      <span
-                        className="ml-auto size-1.5 rounded-full bg-primary shrink-0"
-                        aria-hidden
-                      />
+                    {!isCollapsed && (
+                      <>
+                        <span className="flex-1 truncate">{item.label}</span>
+                        {isLocked && !active && (
+                          <Lock
+                            className="ml-auto size-3 shrink-0 text-muted-foreground/40"
+                            aria-label="Requires upgrade"
+                          />
+                        )}
+                        {active && !isLocked && (
+                          <span
+                            className="ml-auto size-1.5 rounded-full bg-primary shrink-0"
+                            aria-hidden
+                          />
+                        )}
+                      </>
                     )}
                   </Link>
                 </li>
@@ -291,63 +312,113 @@ function UserMenu() {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const { workspace } = useWorkspace();
 
   return (
-    <div className="min-h-screen bg-background lg:grid lg:grid-cols-[240px_1fr]">
+    <div
+      className={cn(
+        "min-h-screen bg-background lg:grid",
+        isCollapsed ? "lg:grid-cols-[64px_1fr]" : "lg:grid-cols-[240px_1fr]",
+        "transition-[grid-template-columns] duration-300 ease-in-out",
+      )}
+    >
       {/* ── Desktop Sidebar ── */}
       <aside
-        className="sticky top-0 hidden h-screen flex-col border-r border-border/60 bg-sidebar lg:flex"
+        className={cn(
+          "sticky top-0 hidden h-screen flex-col border-r border-border/60 bg-sidebar lg:flex overflow-hidden",
+          "transition-all duration-300 ease-in-out",
+          isCollapsed ? "w-16" : "w-[240px]",
+        )}
         aria-label="Application navigation"
       >
-        {/* Logo */}
-        <div className="flex items-center gap-2.5 px-5 py-4 border-b border-border/40">
-          <Link
-            to="/app"
-            className="flex items-center gap-2 group min-w-0"
-            aria-label="SoloOS Dashboard"
+        {/* Logo + collapse toggle */}
+        <div
+          className={cn(
+            "flex items-center border-b border-border/40",
+            isCollapsed ? "justify-center px-2 py-4" : "gap-2.5 px-5 py-4",
+          )}
+        >
+          {!isCollapsed && (
+            <Link
+              to="/app"
+              className="flex items-center gap-2 group min-w-0 flex-1"
+              aria-label="SoloOS Dashboard"
+            >
+              <img src={logo} width={26} height={26} alt="SoloOS" className="shrink-0" />
+              <span className="text-display text-[15px] font-bold tracking-tight text-foreground group-hover:text-primary transition-colors truncate">
+                SoloOS
+              </span>
+            </Link>
+          )}
+          {isCollapsed && (
+            <Link to="/app" aria-label="SoloOS Dashboard">
+              <img src={logo} width={26} height={26} alt="SoloOS" className="shrink-0" />
+            </Link>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "size-7 shrink-0 text-muted-foreground hover:text-foreground",
+              !isCollapsed && "ml-auto",
+            )}
+            onClick={() => setIsCollapsed((c) => !c)}
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            <img src={logo} width={26} height={26} alt="SoloOS" className="shrink-0" />
-            <span className="text-display text-[15px] font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
-              SoloOS
-            </span>
-          </Link>
-          <div className="ml-auto flex items-center gap-1 shrink-0"></div>
+            {isCollapsed ? (
+              <PanelLeftOpen className="size-4" />
+            ) : (
+              <PanelLeftClose className="size-4" />
+            )}
+          </Button>
         </div>
 
         {/* Workspace context */}
-        <div className="px-5 py-2.5 border-b border-border/30">
-          <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/50 mb-0.5">
-            Workspace
-          </p>
-          <p className="text-[13px] font-medium text-foreground truncate">{workspace.name}</p>
-        </div>
+        {!isCollapsed && (
+          <div className="px-5 py-2.5 border-b border-border/30">
+            <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground/50 mb-0.5">
+              Workspace
+            </p>
+            <p className="text-[13px] font-medium text-foreground truncate">{workspace.name}</p>
+          </div>
+        )}
 
         {/* Nav */}
-        <div className="flex-1 overflow-y-auto px-3 py-4 scrollbar-thin">
-          <NavLinks />
+        <div className="flex-1 overflow-y-auto px-1.5 py-4 scrollbar-thin">
+          <NavLinks isCollapsed={isCollapsed} />
         </div>
 
         {/* Footer */}
-        <div className="border-t border-border/40 px-3 pt-2.5 pb-4 space-y-0.5">
+        <div className="border-t border-border/40 pt-2 pb-4 space-y-0.5 px-1.5">
           <Link
             to="/app/settings"
             search={{}}
-            className="flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            title={isCollapsed ? "Settings" : undefined}
+            className={cn(
+              "flex items-center rounded-md py-2 text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors",
+              isCollapsed ? "justify-center px-2" : "gap-2.5 px-3",
+            )}
           >
             <SettingsIcon className="size-3.5 shrink-0" aria-hidden />
-            Settings
+            {!isCollapsed && "Settings"}
           </Link>
           <a
             href="/support"
-            className="flex items-center gap-2.5 rounded-md px-3 py-2 text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            title={isCollapsed ? "Support" : undefined}
+            className={cn(
+              "flex items-center rounded-md py-2 text-[13px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors",
+              isCollapsed ? "justify-center px-2" : "gap-2.5 px-3",
+            )}
           >
             <LifeBuoy className="size-3.5 shrink-0" aria-hidden />
-            Support
+            {!isCollapsed && "Support"}
           </a>
-          <div className="pt-2">
-            <UserMenu />
-          </div>
+          {!isCollapsed && (
+            <div className="pt-2">
+              <UserMenu />
+            </div>
+          )}
         </div>
       </aside>
 

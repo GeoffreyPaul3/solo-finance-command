@@ -974,7 +974,6 @@ function CommandCenter() {
                             !isIncome && !isExpense && "text-foreground",
                           )}
                         >
-                          {isIncome ? "+" : isExpense ? "−" : ""}
                           {formatMoney(tx.amount, tx.currency)}
                         </p>
                         <p className="text-[10px] text-muted-foreground font-mono mt-0.5">
