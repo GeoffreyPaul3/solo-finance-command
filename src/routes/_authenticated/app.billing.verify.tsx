@@ -119,7 +119,9 @@ function BillingVerifyPage() {
 
           <div className="flex justify-center gap-3 pt-2">
             <Button asChild variant="default">
-              <Link to="/app/settings" search={{ tab: "billing" }}>Go to Billing Settings</Link>
+              <Link to="/app/settings" search={{ tab: "billing" }}>
+                Go to Billing Settings
+              </Link>
             </Button>
             <Button asChild variant="outline">
               <Link to="/app">Dashboard</Link>

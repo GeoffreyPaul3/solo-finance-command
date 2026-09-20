@@ -302,7 +302,9 @@ const cancelSubscriptionSchema = z.object({
 });
 
 export const cancelSubscriptionServerFn = createServerFn({ method: "POST" })
-  .validator((data: z.infer<typeof cancelSubscriptionSchema>) => cancelSubscriptionSchema.parse(data))
+  .validator((data: z.infer<typeof cancelSubscriptionSchema>) =>
+    cancelSubscriptionSchema.parse(data),
+  )
   .handler(async ({ data }) => {
     // Security Rule #1: Verify caller is authenticated and a workspace member (owner/admin)
     const userId = await getAuthenticatedUserId(data.authToken);

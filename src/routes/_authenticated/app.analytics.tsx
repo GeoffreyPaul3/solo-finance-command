@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
+  ArrowRight,
   BarChart3,
+  Briefcase,
   DollarSign,
   Loader2,
   Receipt,
@@ -9,7 +11,7 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -32,11 +34,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { clientEconomicsQueryOptions } from "@/domain/client-economics";
 import { clientsQueryOptions } from "@/domain/clients";
 import { transactionsQueryOptions } from "@/domain/financial";
+import { calculateCashForecast } from "@/domain/forecasting";
 import { invoicesQueryOptions, INVOICE_STATUS_LABELS } from "@/domain/invoices";
+import { obligationsListQueryOptions } from "@/domain/obligations";
 import { profitabilitySummaryQueryOptions } from "@/domain/profitability";
+import { projectEconomicsQueryOptions } from "@/domain/project-economics";
 import { projectsQueryOptions } from "@/domain/projects";
+import { recurringExpensesListQueryOptions } from "@/domain/recurring-expenses";
+import { safeToSpendQueryOptions } from "@/domain/cashflow";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
@@ -188,6 +196,13 @@ function AnalyticsContent() {
   const transactionsQuery = useQuery(transactionsQueryOptions(workspace.id));
   const clientsQuery = useQuery(clientsQueryOptions(workspace.id, { status: "active" }));
   const projectsQuery = useQuery(projectsQueryOptions(workspace.id, {}));
+  const clientEconQuery = useQuery(clientEconomicsQueryOptions(workspace.id));
+  const projectEconQuery = useQuery(projectEconomicsQueryOptions(workspace.id));
+  const obligationsQuery = useQuery(
+    obligationsListQueryOptions(workspace.id, { status: "all_active" }),
+  );
+  const recurringQuery = useQuery(recurringExpensesListQueryOptions(workspace.id));
+  const stsQuery = useQuery(safeToSpendQueryOptions(workspace.id));
 
   const isLoading =
     profitQuery.isLoading ||
@@ -217,6 +232,62 @@ function AnalyticsContent() {
   ).length;
 
   const currency = workspace.currency;
+
+  // 30-day base forecast derived from live data
+  const forecastResult = useMemo(() => {
+    const primarySts =
+      (stsQuery.data ?? []).find((s) => s.currency === currency) ?? (stsQuery.data ?? [])[0];
+    if (!primarySts) return null;
+
+    const forecastInvoices = (invoicesQuery.data ?? [])
+      .filter(
+        (i) =>
+          i.currency === currency &&
+          (i.status === "sent" || i.status === "partially_paid" || i.status === "overdue"),
+      )
+      .map((i) => ({
+        id: i.id,
+        invoiceNumber: i.invoice_number,
+        currency: i.currency,
+        amountDue: Number(i.amount_due),
+        dueDate: i.due_date,
+        status: i.status as "sent" | "partially_paid" | "overdue",
+        clientName: i.client?.name ?? null,
+      }));
+
+    const forecastObligations = (obligationsQuery.data ?? [])
+      .filter((o) => o.currency === currency && o.status !== "paid" && o.status !== "cancelled")
+      .map((o) => ({
+        id: o.id,
+        name: o.title,
+        currency: o.currency,
+        amount: Number(o.amount),
+        dueDate: o.due_date,
+        status: o.status as "pending" | "scheduled",
+      }));
+
+    const forecastRecurring = (recurringQuery.data ?? [])
+      .filter((r) => r.currency === currency && r.status === "active")
+      .map((r) => ({
+        id: r.id,
+        name: r.title,
+        currency: r.currency,
+        amount: Number(r.amount),
+        frequency: r.frequency as "weekly" | "monthly" | "quarterly" | "yearly",
+        nextOccurrence: r.next_due_date,
+        endDate: r.end_date,
+      }));
+
+    return calculateCashForecast({
+      currency,
+      startingLiquidCash: primarySts.liquidCash,
+      invoices: forecastInvoices,
+      obligations: forecastObligations,
+      recurringExpenses: forecastRecurring,
+      horizonDays: 30,
+      scenario: "base",
+    });
+  }, [stsQuery.data, invoicesQuery.data, obligationsQuery.data, recurringQuery.data, currency]);
 
   return (
     <div className="space-y-6 pb-12">
@@ -253,11 +324,14 @@ function AnalyticsContent() {
 
       {!isLoading && (
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="h-9">
+          <TabsList className="h-9 flex-wrap">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="receivables">Receivables</TabsTrigger>
             <TabsTrigger value="cashflow">Cash Flow</TabsTrigger>
             <TabsTrigger value="business">Business</TabsTrigger>
+            <TabsTrigger value="clients">Client Economics</TabsTrigger>
+            <TabsTrigger value="projects">Project Economics</TabsTrigger>
+            <TabsTrigger value="forecast">Forecast</TabsTrigger>
           </TabsList>
 
           {/* ── OVERVIEW ── */}
@@ -570,6 +644,370 @@ function AnalyticsContent() {
                   Create projects to track your business activity here.
                 </p>
               </Card>
+            )}
+          </TabsContent>
+
+          {/* ── CLIENT ECONOMICS ── */}
+          <TabsContent value="clients" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-semibold">Client Economics</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Revenue, collections, attributed costs, and net profit per client. Expenses are
+                  only attributed where client_id is explicitly set.
+                </p>
+              </div>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/app/clients">
+                  All Clients <ArrowRight className="ml-1 size-3.5" />
+                </Link>
+              </Button>
+            </div>
+
+            {clientEconQuery.isLoading && (
+              <div className="flex h-40 items-center justify-center">
+                <Loader2 className="size-5 animate-spin text-muted-foreground" />
+              </div>
+            )}
+
+            {!clientEconQuery.isLoading && (clientEconQuery.data ?? []).length === 0 && (
+              <Card className="border-dashed p-10 text-center">
+                <Users className="mx-auto size-10 text-muted-foreground/50" />
+                <h3 className="mt-3 text-base font-semibold">No client data yet</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Create clients and assign invoices or expenses to see economics here.
+                </p>
+              </Card>
+            )}
+
+            {!clientEconQuery.isLoading && (clientEconQuery.data ?? []).length > 0 && (
+              <Card>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                          <th className="px-4 py-3 font-medium">Client</th>
+                          <th className="px-4 py-3 font-medium text-right">Invoiced</th>
+                          <th className="px-4 py-3 font-medium text-right">Collected</th>
+                          <th className="px-4 py-3 font-medium text-right">Outstanding</th>
+                          <th className="px-4 py-3 font-medium text-right">Costs</th>
+                          <th className="px-4 py-3 font-medium text-right">Net Profit</th>
+                          <th className="px-4 py-3 font-medium text-right">Margin</th>
+                          <th className="px-4 py-3 font-medium text-right">Avg Days to Pay</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(clientEconQuery.data ?? []).map((row) => (
+                          <tr
+                            key={`${row.clientId}-${row.currency}`}
+                            className="border-b border-border/40 last:border-0 hover:bg-muted/30 transition-colors"
+                          >
+                            <td className="px-4 py-3">
+                              <div className="font-medium text-foreground">{row.clientName}</div>
+                              <Badge variant="outline" className="mt-0.5 font-mono text-[10px]">
+                                {row.currency}
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3 text-right font-mono text-xs">
+                              {formatMoney(row.totalInvoiced, row.currency)}
+                            </td>
+                            <td className="px-4 py-3 text-right font-mono text-xs text-emerald-500">
+                              {formatMoney(row.totalCollected, row.currency)}
+                            </td>
+                            <td
+                              className={cn(
+                                "px-4 py-3 text-right font-mono text-xs",
+                                row.outstandingReceivables > 0
+                                  ? "text-amber-500"
+                                  : "text-muted-foreground",
+                              )}
+                            >
+                              {formatMoney(row.outstandingReceivables, row.currency)}
+                            </td>
+                            <td className="px-4 py-3 text-right font-mono text-xs text-destructive">
+                              {formatMoney(row.attributableExpenses, row.currency)}
+                            </td>
+                            <td
+                              className={cn(
+                                "px-4 py-3 text-right font-mono text-xs font-semibold",
+                                row.netProfit >= 0 ? "text-emerald-500" : "text-destructive",
+                              )}
+                            >
+                              {formatMoney(row.netProfit, row.currency)}
+                            </td>
+                            <td className="px-4 py-3 text-right text-xs text-muted-foreground">
+                              {row.profitMarginPercent.toFixed(1)}%
+                            </td>
+                            <td className="px-4 py-3 text-right text-xs text-muted-foreground">
+                              {row.avgDaysToPayment !== null
+                                ? `${row.avgDaysToPayment.toFixed(0)}d`
+                                : "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* ── PROJECT ECONOMICS ── */}
+          <TabsContent value="projects" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-semibold">Project Economics</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Revenue, expenses, profit, and budget utilisation per project.
+                </p>
+              </div>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/app/projects">
+                  All Projects <ArrowRight className="ml-1 size-3.5" />
+                </Link>
+              </Button>
+            </div>
+
+            {projectEconQuery.isLoading && (
+              <div className="flex h-40 items-center justify-center">
+                <Loader2 className="size-5 animate-spin text-muted-foreground" />
+              </div>
+            )}
+
+            {!projectEconQuery.isLoading && (projectEconQuery.data ?? []).length === 0 && (
+              <Card className="border-dashed p-10 text-center">
+                <Briefcase className="mx-auto size-10 text-muted-foreground/50" />
+                <h3 className="mt-3 text-base font-semibold">No project data yet</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Create projects and assign invoices or expenses to see economics here.
+                </p>
+              </Card>
+            )}
+
+            {!projectEconQuery.isLoading && (projectEconQuery.data ?? []).length > 0 && (
+              <Card>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                          <th className="px-4 py-3 font-medium">Project</th>
+                          <th className="px-4 py-3 font-medium text-right">Revenue</th>
+                          <th className="px-4 py-3 font-medium text-right">Collected</th>
+                          <th className="px-4 py-3 font-medium text-right">Expenses</th>
+                          <th className="px-4 py-3 font-medium text-right">Net Profit</th>
+                          <th className="px-4 py-3 font-medium text-right">Margin</th>
+                          <th className="px-4 py-3 font-medium text-right">Budget Used</th>
+                          <th className="px-4 py-3 font-medium">Health</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(projectEconQuery.data ?? []).map((row) => (
+                          <tr
+                            key={`${row.projectId}-${row.currency}`}
+                            className="border-b border-border/40 last:border-0 hover:bg-muted/30 transition-colors"
+                          >
+                            <td className="px-4 py-3">
+                              <div className="font-medium text-foreground">{row.projectName}</div>
+                              {row.clientName && (
+                                <div className="text-xs text-muted-foreground">
+                                  {row.clientName}
+                                </div>
+                              )}
+                              <Badge variant="outline" className="mt-0.5 font-mono text-[10px]">
+                                {row.currency}
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3 text-right font-mono text-xs">
+                              {formatMoney(row.projectRevenue, row.currency)}
+                            </td>
+                            <td className="px-4 py-3 text-right font-mono text-xs text-emerald-500">
+                              {formatMoney(row.collectedRevenue, row.currency)}
+                            </td>
+                            <td className="px-4 py-3 text-right font-mono text-xs text-destructive">
+                              {formatMoney(row.projectExpenses, row.currency)}
+                            </td>
+                            <td
+                              className={cn(
+                                "px-4 py-3 text-right font-mono text-xs font-semibold",
+                                row.netProfit >= 0 ? "text-emerald-500" : "text-destructive",
+                              )}
+                            >
+                              {formatMoney(row.netProfit, row.currency)}
+                            </td>
+                            <td className="px-4 py-3 text-right text-xs text-muted-foreground">
+                              {row.profitMarginPercent.toFixed(1)}%
+                            </td>
+                            <td className="px-4 py-3 text-right text-xs">
+                              {row.budgetUtilizationPercent !== null
+                                ? `${row.budgetUtilizationPercent.toFixed(0)}%`
+                                : "—"}
+                            </td>
+                            <td className="px-4 py-3">
+                              <Badge
+                                variant="outline"
+                                className={cn(
+                                  "text-[10px] font-medium",
+                                  row.healthState === "on_track" &&
+                                    "border-emerald-500/50 text-emerald-600 bg-emerald-500/10",
+                                  row.healthState === "watch" &&
+                                    "border-amber-500/50 text-amber-600 bg-amber-500/10",
+                                  row.healthState === "over_budget" &&
+                                    "border-destructive/50 text-destructive bg-destructive/10",
+                                )}
+                              >
+                                {row.healthState === "on_track" && "On Track"}
+                                {row.healthState === "watch" && "Watch"}
+                                {row.healthState === "over_budget" && "Over Budget"}
+                                {row.healthState === "no_budget" && "No Budget"}
+                              </Badge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* ── FORECAST PREVIEW ── */}
+          <TabsContent value="forecast" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-semibold">30-Day Cash Forecast</h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Base scenario: starting Safe-to-Spend plus high/medium reliability collections
+                  minus scheduled obligations and recurring expenses.
+                </p>
+              </div>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/app/forecast">
+                  Full Forecast <ArrowRight className="ml-1 size-3.5" />
+                </Link>
+              </Button>
+            </div>
+
+            {!forecastResult && (
+              <Card className="border-dashed p-10 text-center">
+                <TrendingUp className="mx-auto size-10 text-muted-foreground/50" />
+                <h3 className="mt-3 text-base font-semibold">No forecast data available</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Add a bank account to generate a cash forecast.
+                </p>
+              </Card>
+            )}
+
+            {forecastResult && (
+              <>
+                <div className="grid grid-cols-3 gap-4">
+                  <Card>
+                    <CardContent className="p-5">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Starting Cash
+                      </p>
+                      <p className="text-xl font-bold mt-1 font-mono">
+                        {formatMoney(forecastResult.startingLiquidCash, currency)}
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-5">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Expected Inflows
+                      </p>
+                      <p className="text-xl font-bold mt-1 font-mono text-emerald-500">
+                        +{formatMoney(forecastResult.totalExpectedInflows, currency)}
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-5">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Projected End
+                      </p>
+                      <p
+                        className={cn(
+                          "text-xl font-bold mt-1 font-mono",
+                          forecastResult.endingProjectedCash >= 0
+                            ? "text-emerald-500"
+                            : "text-destructive",
+                        )}
+                      >
+                        {formatMoney(forecastResult.endingProjectedCash, currency)}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">30-Day Trajectory — Base Scenario</CardTitle>
+                    <CardDescription className="text-xs">
+                      {forecastResult.explanation}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={260}>
+                      <AreaChart
+                        data={forecastResult.timeline.filter(
+                          (_: unknown, i: number) => i % 3 === 0,
+                        )}
+                        margin={{ top: 8, right: 8, bottom: 0, left: 0 }}
+                      >
+                        <defs>
+                          <linearGradient id="forecast-grad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.25} />
+                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
+                        <XAxis
+                          dataKey="date"
+                          tick={{ fontSize: 10 }}
+                          tickFormatter={(d: string) =>
+                            new Date(d).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                            })
+                          }
+                        />
+                        <YAxis
+                          tick={{ fontSize: 10 }}
+                          tickFormatter={(v: number) =>
+                            v >= 1_000_000
+                              ? `${(v / 1_000_000).toFixed(1)}M`
+                              : v >= 1_000
+                                ? `${(v / 1_000).toFixed(0)}K`
+                                : String(Math.round(v))
+                          }
+                        />
+                        <Tooltip
+                          formatter={(v: number) => [formatMoney(v, currency), "Projected Cash"]}
+                          labelFormatter={(l: string) =>
+                            new Date(l).toLocaleDateString("en-US", {
+                              weekday: "short",
+                              month: "short",
+                              day: "numeric",
+                            })
+                          }
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="projectedCash"
+                          name="Projected Cash"
+                          stroke="hsl(var(--primary))"
+                          strokeWidth={2}
+                          fill="url(#forecast-grad)"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </>
             )}
           </TabsContent>
         </Tabs>

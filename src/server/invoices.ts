@@ -141,3 +141,159 @@ export const sendInvoiceEmailServerFn = createServerFn({ method: "POST" })
       recipient: data.recipientEmail,
     };
   });
+
+const sendInvoiceReminderEmailSchema = z.object({
+  workspaceId: z.string().uuid(),
+  invoiceId: z.string().uuid(),
+  recipientEmail: z.string().email(),
+  clientName: z.string().min(1),
+  customMessage: z.string().optional(),
+  reminderType: z.enum(["upcoming", "due", "overdue", "escalation", "standard"]).optional(),
+  authToken: z.string().optional(),
+});
+
+export const sendInvoiceReminderEmailServerFn = createServerFn({ method: "POST" })
+  .validator((data: z.infer<typeof sendInvoiceReminderEmailSchema>) =>
+    sendInvoiceReminderEmailSchema.parse(data),
+  )
+  .handler(async ({ data }) => {
+    // 1. Authenticate caller
+    const userId = await getAuthenticatedUserId(data.authToken);
+    await verifyWorkspaceMember(userId, data.workspaceId);
+
+    // 2. Fetch workspace details
+    const { data: ws, error: wsErr } = await supabaseAdmin
+      .from("workspaces")
+      .select("id, name, currency")
+      .eq("id", data.workspaceId)
+      .single();
+    if (wsErr || !ws) throw new Error("Workspace not found");
+
+    // 3. Fetch authoritative invoice details
+    const { data: inv, error: invErr } = await supabaseAdmin
+      .from("invoices")
+      .select(
+        `
+        id,
+        invoice_number,
+        currency,
+        total,
+        amount_due,
+        amount_paid,
+        due_date,
+        payment_instructions,
+        status
+      `,
+      )
+      .eq("id", data.invoiceId)
+      .eq("workspace_id", data.workspaceId)
+      .single();
+    if (invErr || !inv) throw new Error("Invoice not found in this workspace");
+
+    // 4. Verify eligibility
+    if (inv.status === "draft") {
+      throw new Error(
+        "Cannot send a reminder for a draft invoice. Please issue the invoice first.",
+      );
+    }
+    if (inv.status === "cancelled") {
+      throw new Error("Cannot send a reminder for a cancelled invoice.");
+    }
+    if (inv.status === "paid" || Number(inv.amount_due) <= 0) {
+      throw new Error("This invoice is already settled in full. No payment is due.");
+    }
+
+    // 5. 24-hour duplicate send throttle check
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: recentReminders } = await supabaseAdmin
+      .from("invoice_reminders")
+      .select("id, sent_at")
+      .eq("invoice_id", data.invoiceId)
+      .gte("sent_at", twentyFourHoursAgo)
+      .limit(1);
+
+    if (recentReminders && recentReminders.length > 0) {
+      throw new Error(
+        "A reminder was already sent for this invoice in the last 24 hours. To prevent accidental duplicates, please wait before sending another notice.",
+      );
+    }
+
+    // 6. Calculate days overdue
+    const today = new Date().toISOString().slice(0, 10);
+    const todayMs = new Date(today).getTime();
+    const dueMs = new Date(inv.due_date).getTime();
+    const daysOverdue = Math.round((todayMs - dueMs) / (24 * 60 * 60 * 1000));
+
+    const amountDueFormatted = formatMoney(inv.amount_due, inv.currency);
+
+    // Import template dynamically or use standard
+    const { renderInvoiceReminderEmail } = await import("@/lib/email/templates");
+    const rendered = renderInvoiceReminderEmail({
+      invoiceNumber: inv.invoice_number,
+      workspaceName: ws.name,
+      clientName: data.clientName,
+      currency: inv.currency,
+      amountDueFormatted,
+      dueDate: inv.due_date,
+      daysOverdue,
+      customMessage: data.customMessage,
+      paymentInstructions: inv.payment_instructions,
+      reminderType: data.reminderType,
+    });
+
+    const idempotencyKey = `inv-reminder-${inv.id}-${Date.now()}`;
+    const result = await sendEmailSafely({
+      to: data.recipientEmail,
+      subject: rendered.subject,
+      html: rendered.html,
+      text: rendered.text,
+      idempotencyKey,
+      template: "invoice_notification",
+    });
+
+    if (!result.sent) {
+      let errDetail =
+        result.error ||
+        "Failed to dispatch reminder email. Please check your email provider configuration.";
+      if (errDetail.includes("only send testing emails to your own email address")) {
+        errDetail =
+          "Resend Sandbox Notice: In test mode, emails can only be delivered to your registered Resend account address. To send to client emails, please verify your custom domain in Resend.";
+      }
+      throw new Error(errDetail);
+    }
+
+    // 7. Record reminder audit trail in invoice_reminders
+    await supabaseAdmin.from("invoice_reminders").insert({
+      workspace_id: data.workspaceId,
+      invoice_id: data.invoiceId,
+      sent_by: userId,
+      recipient_email: data.recipientEmail,
+      reminder_type:
+        data.reminderType ||
+        (daysOverdue > 14 ? "escalation" : daysOverdue > 0 ? "overdue" : "due"),
+      subject: rendered.subject,
+      message_body: data.customMessage || null,
+      provider_message_id: result.providerMessageId || null,
+      status: "sent",
+    });
+
+    // 8. Write workspace audit log
+    await supabaseAdmin.rpc("write_audit_log", {
+      _workspace_id: data.workspaceId,
+      _action: "invoice.reminder_sent",
+      _entity_type: "invoice",
+      _entity_id: data.invoiceId,
+      _metadata: {
+        invoice_number: inv.invoice_number,
+        recipient_email: data.recipientEmail,
+        amount_due: inv.amount_due,
+        days_overdue: daysOverdue,
+      } as never,
+    });
+
+    return {
+      success: true,
+      messageId: result.providerMessageId,
+      recipient: data.recipientEmail,
+    };
+  });

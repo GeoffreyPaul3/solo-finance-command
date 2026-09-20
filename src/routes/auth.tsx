@@ -172,7 +172,6 @@ function AuthPage() {
         <div className="w-full max-w-sm">
           <Link to="/" className="flex items-center gap-2.5 group mb-6 lg:hidden">
             <img src={logo} width={160} height={120} alt="SoloOS Logo" />
-            
           </Link>
           <h1 className="mt-6 text-2xl font-semibold lg:mt-0">
             {isSignup ? "Create your account" : "Sign in to SoloOS"}

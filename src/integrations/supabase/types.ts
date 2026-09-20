@@ -283,6 +283,119 @@ export type Database = {
           },
         ];
       };
+      financial_goals: {
+        Row: {
+          category: string;
+          created_at: string;
+          created_by: string | null;
+          currency: string;
+          current_amount: number;
+          id: string;
+          name: string;
+          notes: string | null;
+          status: string;
+          target_amount: number;
+          target_date: string | null;
+          updated_at: string;
+          workspace_id: string;
+        };
+        Insert: {
+          category: string;
+          created_at?: string;
+          created_by?: string | null;
+          currency: string;
+          current_amount?: number;
+          id?: string;
+          name: string;
+          notes?: string | null;
+          status?: string;
+          target_amount: number;
+          target_date?: string | null;
+          updated_at?: string;
+          workspace_id: string;
+        };
+        Update: {
+          category?: string;
+          created_at?: string;
+          created_by?: string | null;
+          currency?: string;
+          current_amount?: number;
+          id?: string;
+          name?: string;
+          notes?: string | null;
+          status?: string;
+          target_amount?: number;
+          target_date?: string | null;
+          updated_at?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "financial_goals_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      invoice_reminders: {
+        Row: {
+          id: string;
+          invoice_id: string;
+          message_body: string | null;
+          provider_message_id: string | null;
+          recipient_email: string;
+          reminder_type: string;
+          sent_at: string;
+          sent_by: string | null;
+          status: string;
+          subject: string;
+          workspace_id: string;
+        };
+        Insert: {
+          id?: string;
+          invoice_id: string;
+          message_body?: string | null;
+          provider_message_id?: string | null;
+          recipient_email: string;
+          reminder_type?: string;
+          sent_at?: string;
+          sent_by?: string | null;
+          status?: string;
+          subject: string;
+          workspace_id: string;
+        };
+        Update: {
+          id?: string;
+          invoice_id?: string;
+          message_body?: string | null;
+          provider_message_id?: string | null;
+          recipient_email?: string;
+          reminder_type?: string;
+          sent_at?: string;
+          sent_by?: string | null;
+          status?: string;
+          subject?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "invoice_reminders_invoice_id_fkey";
+            columns: ["invoice_id"];
+            isOneToOne: false;
+            referencedRelation: "invoices";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "invoice_reminders_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       financial_categories: {
         Row: {
           color: string | null;
@@ -1940,6 +2053,52 @@ export type Database = {
           question: string;
           response: Json;
           user_id: string;
+        }[];
+      };
+      get_client_economics: {
+        Args: {
+          _client_id?: string | null;
+          _workspace_id: string;
+        };
+        Returns: {
+          attributable_expenses: number;
+          avg_days_to_payment: number | null;
+          client_id: string;
+          client_name: string;
+          currency: string;
+          last_payment_date: string | null;
+          net_profit: number;
+          outstanding_receivables: number;
+          paid_invoices_count: number;
+          overdue_invoices_count: number;
+          profit_margin_percent: number;
+          total_collected: number;
+          total_invoiced: number;
+          total_invoices_count: number;
+        }[];
+      };
+      get_project_economics: {
+        Args: {
+          _project_id?: string | null;
+          _workspace_id: string;
+        };
+        Returns: {
+          budget: number | null;
+          budget_currency: string | null;
+          budget_utilization_percent: number | null;
+          budget_variance: number | null;
+          client_id: string | null;
+          client_name: string | null;
+          collected_revenue: number;
+          currency: string;
+          health_state: string;
+          net_profit: number;
+          outstanding_revenue: number;
+          profit_margin_percent: number;
+          project_expenses: number;
+          project_id: string;
+          project_name: string;
+          project_revenue: number;
         }[];
       };
       get_safe_to_spend: {

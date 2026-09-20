@@ -17,6 +17,7 @@ export const aiCfoActionSchema = z.object({
   description: z.string().min(1),
   action_type: z.string().optional(),
   suggested_route: z.string().optional(),
+  button_label: z.string().optional(),
 });
 
 export const aiCfoMetricReferenceSchema = z.object({
@@ -51,7 +52,8 @@ Your duties:
 3. NEVER fabricate numbers, accounts, client names, or amounts. All metrics must reference the provided context.
 4. Keep advice strategic, proactive, sober, and actionable.
 5. Emphasize cash preservation, tax safety, and disciplined runway.
-6. Return structured JSON conforming strictly to the requested schema.`;
+6. Return structured JSON conforming strictly to the requested schema.
+7. Important: You are strictly READ-ONLY. You cannot make transactions or modify records. When recommending actions, provide appropriate button_label and suggested_route so the user can execute them manually.`;
 
 // ============================================================================
 // Pure Context Builder Functions (Unit Testable)
@@ -66,6 +68,33 @@ export interface FinancialContextParams {
   upcomingObligationsCount: number;
   unpaidReceivablesTotal: number;
   unpaidReceivablesCount: number;
+  healthSummary?: { score: number | null; rating: string; summary: string } | null;
+  forecastSummary?: {
+    horizon30EndingCash: number;
+    horizon60EndingCash: number;
+    horizon90EndingCash: number;
+  } | null;
+  clientEconomicsSummary?: Array<{
+    clientName: string;
+    totalInvoiced: number;
+    totalCollected: number;
+    netProfit: number;
+    avgDaysToPayment: number | null;
+  }> | null;
+  projectEconomicsSummary?: Array<{
+    projectName: string;
+    revenue: number;
+    expenses: number;
+    budgetUtilizationPercent: number | null;
+    healthState: string;
+  }> | null;
+  followUpInvoices?: Array<{
+    invoiceNumber: string;
+    clientName: string;
+    amountDue: number;
+    daysOverdue: number;
+    urgency: string;
+  }> | null;
 }
 
 /**
@@ -78,6 +107,15 @@ export function buildDeterministicFinancialContext(params: FinancialContextParam
   lines.push(`Workspace: ${params.workspaceName}`);
   lines.push(`Primary Currency: ${params.primaryCurrency}`);
   lines.push("");
+
+  if (params.healthSummary) {
+    lines.push("--- SOLOSS FINANCIAL HEALTH ---");
+    lines.push(
+      `Rating: ${params.healthSummary.rating} (Score: ${params.healthSummary.score ?? "N/A"})`,
+    );
+    lines.push(`Summary: ${params.healthSummary.summary}`);
+    lines.push("");
+  }
 
   lines.push("--- SAFE-TO-SPEND BREAKDOWN ---");
   if (params.safeToSpend.length === 0) {
@@ -96,6 +134,20 @@ export function buildDeterministicFinancialContext(params: FinancialContextParam
     }
   }
   lines.push("");
+
+  if (params.forecastSummary) {
+    lines.push("--- CASH FORECAST (PROJECTED LIQUIDITY) ---");
+    lines.push(
+      `- 30-Day Projected Cash: ${params.primaryCurrency} ${params.forecastSummary.horizon30EndingCash}`,
+    );
+    lines.push(
+      `- 60-Day Projected Cash: ${params.primaryCurrency} ${params.forecastSummary.horizon60EndingCash}`,
+    );
+    lines.push(
+      `- 90-Day Projected Cash: ${params.primaryCurrency} ${params.forecastSummary.horizon90EndingCash}`,
+    );
+    lines.push("");
+  }
 
   lines.push("--- TAX RESERVE STATUS ---");
   if (params.taxSummary.length === 0) {
@@ -120,6 +172,37 @@ export function buildDeterministicFinancialContext(params: FinancialContextParam
   lines.push(
     `Outstanding Receivables: ${params.unpaidReceivablesCount} invoices, Total: ${params.unpaidReceivablesTotal} ${params.primaryCurrency}`,
   );
+  lines.push("");
+
+  if (params.followUpInvoices && params.followUpInvoices.length > 0) {
+    lines.push("--- ACTIONABLE FOLLOW-UP INVOICES ---");
+    for (const inv of params.followUpInvoices) {
+      lines.push(
+        `- Invoice ${inv.invoiceNumber} (${inv.clientName}): ${params.primaryCurrency} ${inv.amountDue} (${inv.daysOverdue > 0 ? `${inv.daysOverdue}d overdue` : "due soon"}, urgency: ${inv.urgency})`,
+      );
+    }
+    lines.push("");
+  }
+
+  if (params.clientEconomicsSummary && params.clientEconomicsSummary.length > 0) {
+    lines.push("--- TOP CLIENT ECONOMICS ---");
+    for (const c of params.clientEconomicsSummary.slice(0, 5)) {
+      lines.push(
+        `- Client ${c.clientName}: Invoiced ${c.totalInvoiced}, Collected ${c.totalCollected}, Net Profit ${c.netProfit}${c.avgDaysToPayment !== null ? `, Avg Pay Speed: ${c.avgDaysToPayment}d` : ""}`,
+      );
+    }
+    lines.push("");
+  }
+
+  if (params.projectEconomicsSummary && params.projectEconomicsSummary.length > 0) {
+    lines.push("--- PROJECT ECONOMICS & BUDGETS ---");
+    for (const p of params.projectEconomicsSummary.slice(0, 5)) {
+      lines.push(
+        `- Project ${p.projectName}: Revenue ${p.revenue}, Expenses ${p.expenses}, Health: ${p.healthState}${p.budgetUtilizationPercent !== null ? `, Budget Utilization: ${p.budgetUtilizationPercent}%` : ""}`,
+      );
+    }
+    lines.push("");
+  }
 
   return lines.join("\n");
 }

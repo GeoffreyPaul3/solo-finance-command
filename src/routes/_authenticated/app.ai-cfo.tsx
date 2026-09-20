@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   AlertCircle,
   AlertTriangle,
@@ -30,6 +30,7 @@ import { safeToSpendQueryOptions, type SafeToSpendBreakdown } from "@/domain/cas
 import { obligationsListQueryOptions } from "@/domain/obligations";
 import { taxSummaryQueryOptions, type TaxSummaryRow } from "@/domain/tax-reserve";
 import { invoicesQueryOptions } from "@/domain/invoices";
+import { supabase } from "@/integrations/supabase/client";
 import { askAiCfoServerFn, type AskAiCfoPayload } from "@/server/ai-cfo";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
@@ -97,6 +98,9 @@ function AiCfoContent() {
 
   const askMutation = useMutation({
     mutationFn: async (q: string) => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const authToken = sessionData?.session?.access_token;
+
       const unpaidInvoices = (invoicesQuery.data ?? []).filter(
         (inv) => inv.status === "sent" || inv.status === "partially_paid",
       );
@@ -107,6 +111,7 @@ function AiCfoContent() {
       const payload: AskAiCfoPayload = {
         workspaceId: workspace.id,
         question: q,
+        authToken,
         context: {
           workspaceName: workspace.name,
           primaryCurrency: workspace.currency ?? "USD",
@@ -477,7 +482,41 @@ function AiCfoResultView({ result }: { result: AiCfoResult }) {
                 </p>
               </div>
               {action.suggested_route && (
-                <ArrowRight className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0 gap-1.5 text-xs h-8"
+                  asChild
+                >
+                  <Link
+                    to={
+                      action.suggested_route as
+                        | "/app"
+                        | "/app/cash"
+                        | "/app/invoices"
+                        | "/app/payments"
+                        | "/app/expenses"
+                        | "/app/obligations"
+                        | "/app/taxes"
+                        | "/app/goals"
+                        | "/app/forecast"
+                        | "/app/calendar"
+                        | "/app/follow-ups"
+                        | "/app/clients"
+                        | "/app/projects"
+                        | "/app/profitability"
+                        | "/app/insights"
+                        | "/app/analytics"
+                        | "/app/ai-cfo"
+                        | "/app/reports"
+                        | "/app/audit"
+                        | "/app/settings"
+                        | "/app/intelligence"
+                    }
+                  >
+                    Go <ArrowRight className="size-3.5" />
+                  </Link>
+                </Button>
               )}
             </div>
           ))}

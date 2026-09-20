@@ -1,5 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link, Outlet, useChildMatches, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  Outlet,
+  useChildMatches,
+  useNavigate,
+} from "@tanstack/react-router";
 import {
   AlertCircle,
   ArrowRight,
@@ -458,7 +464,9 @@ function InvoicesPage() {
                             {canManage && inv.status !== "cancelled" && (
                               <>
                                 <DropdownMenuSeparator />
-                                {(inv.status === "draft" || inv.status === "sent" || inv.status === "overdue") && (
+                                {(inv.status === "draft" ||
+                                  inv.status === "sent" ||
+                                  inv.status === "overdue") && (
                                   <DropdownMenuItem
                                     onClick={() => sendMutation.mutate(inv)}
                                     disabled={sendMutation.isPending}
@@ -468,7 +476,9 @@ function InvoicesPage() {
                                     Send to Client
                                   </DropdownMenuItem>
                                 )}
-                                {(inv.status === "sent" || inv.status === "partially_paid" || inv.status === "overdue") && (
+                                {(inv.status === "sent" ||
+                                  inv.status === "partially_paid" ||
+                                  inv.status === "overdue") && (
                                   <DropdownMenuItem
                                     onClick={() => setPaymentTarget(inv)}
                                     className="flex items-center gap-2 cursor-pointer"
@@ -583,7 +593,9 @@ function InvoicesPage() {
       {/* Cancel Invoice Confirmation */}
       <AlertDialog
         open={cancelTarget !== null}
-        onOpenChange={(open) => { if (!open) setCancelTarget(null); }}
+        onOpenChange={(open) => {
+          if (!open) setCancelTarget(null);
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -604,7 +616,9 @@ function InvoicesPage() {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={cancelMutation.isPending}>Keep Invoice</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => { if (cancelTarget) cancelMutation.mutate(cancelTarget); }}
+              onClick={() => {
+                if (cancelTarget) cancelMutation.mutate(cancelTarget);
+              }}
               disabled={cancelMutation.isPending}
               className="bg-destructive hover:bg-destructive/90"
             >

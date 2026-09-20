@@ -173,3 +173,92 @@ export function renderInvoiceEmail(params: {
 
   return { subject, html, text };
 }
+
+export function renderInvoiceReminderEmail(params: {
+  invoiceNumber: string;
+  workspaceName: string;
+  clientName: string;
+  currency: string;
+  amountDueFormatted: string;
+  dueDate: string;
+  daysOverdue: number;
+  customMessage?: string | null | undefined;
+  paymentInstructions?: string | null | undefined;
+  reminderType?: "upcoming" | "due" | "overdue" | "escalation" | "standard" | undefined;
+}): { subject: string; html: string; text: string } {
+  const isOverdue = params.daysOverdue > 0;
+  let subjectPrefix = "Payment Reminder";
+  if (params.reminderType === "escalation" || params.daysOverdue > 14) {
+    subjectPrefix = "Urgent: Overdue Payment Notice";
+  } else if (isOverdue) {
+    subjectPrefix = "Overdue Invoice Notice";
+  } else if (params.daysOverdue === 0) {
+    subjectPrefix = "Payment Due Today";
+  } else {
+    subjectPrefix = "Upcoming Payment Reminder";
+  }
+
+  const subject = `${subjectPrefix}: Invoice ${params.invoiceNumber} (${params.amountDueFormatted}) from ${params.workspaceName}`;
+
+  const defaultMessage = isOverdue
+    ? `This is a reminder that invoice ${params.invoiceNumber} for ${params.amountDueFormatted} was due on ${params.dueDate} and is currently ${params.daysOverdue} ${params.daysOverdue === 1 ? "day" : "days"} overdue. We kindly request settlement at your earliest convenience.`
+    : `This is a friendly reminder that invoice ${params.invoiceNumber} for ${params.amountDueFormatted} is due on ${params.dueDate}.`;
+
+  const messageText =
+    params.customMessage && params.customMessage.trim().length > 0
+      ? params.customMessage.trim()
+      : defaultMessage;
+
+  const text = `Dear ${params.clientName},\n\n${messageText}\n\nInvoice: ${params.invoiceNumber}\nAmount Due: ${params.amountDueFormatted}\nDue Date: ${params.dueDate}\n\n${params.paymentInstructions ? `Payment Instructions:\n${params.paymentInstructions}\n\n` : ""}Sent by ${params.workspaceName} via SoloOS.`;
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #09090b; color: #f4f4f5; border-radius: 12px; border: 1px solid #27272a;">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 24px; border-bottom: 1px solid #27272a; padding-bottom: 16px;">
+        <h2 style="color: #ffffff; margin: 0; font-size: 22px;">Invoice Reminder</h2>
+        <span style="color: #a1a1aa; font-size: 14px;">${params.workspaceName}</span>
+      </div>
+
+      <p style="color: #a1a1aa; font-size: 15px; line-height: 1.5;">
+        Dear <strong style="color: #fafafa;">${params.clientName}</strong>,
+      </p>
+
+      <p style="color: #d4d4d8; font-size: 14px; line-height: 1.6; white-space: pre-wrap;">
+        ${messageText}
+      </p>
+
+      <div style="background: #18181b; padding: 20px; border-radius: 8px; margin: 24px 0; border: 1px solid #27272a;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; color: #a1a1aa;">
+          <span>Invoice Number:</span>
+          <strong style="color: #fafafa;">${params.invoiceNumber}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; color: #a1a1aa;">
+          <span>Due Date:</span>
+          <strong style="color: ${isOverdue ? "#f87171" : "#fafafa"};">${params.dueDate} ${isOverdue ? `(${params.daysOverdue}d overdue)` : ""}</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 12px; padding-top: 12px; border-top: 1px solid #27272a; font-size: 15px;">
+          <span style="color: #fafafa; font-weight: 600;">Amount Due:</span>
+          <strong style="color: #10b981; font-size: 18px;">${params.amountDueFormatted}</strong>
+        </div>
+      </div>
+
+      ${
+        params.paymentInstructions
+          ? `
+      <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #27272a;">
+        <h4 style="color: #a1a1aa; margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Payment Instructions</h4>
+        <p style="color: #d4d4d8; font-size: 13px; line-height: 1.5; margin: 0; white-space: pre-wrap;">${params.paymentInstructions}</p>
+      </div>
+      `
+          : ""
+      }
+
+      <div style="margin-top: 32px; border-top: 1px solid #27272a; padding-top: 16px; text-align: center;">
+        <p style="color: #52525b; font-size: 12px; margin: 0;">
+          Sent by ${params.workspaceName} via SoloOS Financial OS.
+        </p>
+      </div>
+    </div>
+  `;
+
+  return { subject, html, text };
+}

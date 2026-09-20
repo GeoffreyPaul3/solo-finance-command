@@ -35,10 +35,15 @@ import { Route as AuthenticatedAppModuleRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAppAiCfoRouteImport } from './routes/_authenticated/app.ai-cfo'
 import { Route as AuthenticatedAppAnalyticsRouteImport } from './routes/_authenticated/app.analytics'
 import { Route as AuthenticatedAppAuditRouteImport } from './routes/_authenticated/app.audit'
+import { Route as AuthenticatedAppCalendarRouteImport } from './routes/_authenticated/app.calendar'
 import { Route as AuthenticatedAppCashRouteImport } from './routes/_authenticated/app.cash'
 import { Route as AuthenticatedAppClientsRouteImport } from './routes/_authenticated/app.clients'
 import { Route as AuthenticatedAppExpensesRouteImport } from './routes/_authenticated/app.expenses'
+import { Route as AuthenticatedAppFollowUpsRouteImport } from './routes/_authenticated/app.follow-ups'
+import { Route as AuthenticatedAppForecastRouteImport } from './routes/_authenticated/app.forecast'
+import { Route as AuthenticatedAppGoalsRouteImport } from './routes/_authenticated/app.goals'
 import { Route as AuthenticatedAppInsightsRouteImport } from './routes/_authenticated/app.insights'
+import { Route as AuthenticatedAppIntelligenceRouteImport } from './routes/_authenticated/app.intelligence'
 import { Route as AuthenticatedAppInvoicesRouteImport } from './routes/_authenticated/app.invoices'
 import { Route as AuthenticatedAppObligationsRouteImport } from './routes/_authenticated/app.obligations'
 import { Route as AuthenticatedAppPaymentsRouteImport } from './routes/_authenticated/app.payments'
@@ -188,6 +193,12 @@ const AuthenticatedAppAuditRoute = AuthenticatedAppAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppCalendarRoute =
+  AuthenticatedAppCalendarRouteImport.update({
+    id: '/calendar',
+    path: '/calendar',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppCashRoute = AuthenticatedAppCashRouteImport.update({
   id: '/cash',
   path: '/cash',
@@ -204,10 +215,33 @@ const AuthenticatedAppExpensesRoute =
     path: '/expenses',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppFollowUpsRoute =
+  AuthenticatedAppFollowUpsRouteImport.update({
+    id: '/follow-ups',
+    path: '/follow-ups',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppForecastRoute =
+  AuthenticatedAppForecastRouteImport.update({
+    id: '/forecast',
+    path: '/forecast',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppGoalsRoute = AuthenticatedAppGoalsRouteImport.update({
+  id: '/goals',
+  path: '/goals',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const AuthenticatedAppInsightsRoute =
   AuthenticatedAppInsightsRouteImport.update({
     id: '/insights',
     path: '/insights',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
+const AuthenticatedAppIntelligenceRoute =
+  AuthenticatedAppIntelligenceRouteImport.update({
+    id: '/intelligence',
+    path: '/intelligence',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
 const AuthenticatedAppInvoicesRoute =
@@ -305,10 +339,15 @@ export interface FileRoutesByFullPath {
   '/app/ai-cfo': typeof AuthenticatedAppAiCfoRoute
   '/app/analytics': typeof AuthenticatedAppAnalyticsRoute
   '/app/audit': typeof AuthenticatedAppAuditRoute
+  '/app/calendar': typeof AuthenticatedAppCalendarRoute
   '/app/cash': typeof AuthenticatedAppCashRoute
   '/app/clients': typeof AuthenticatedAppClientsRouteWithChildren
   '/app/expenses': typeof AuthenticatedAppExpensesRoute
+  '/app/follow-ups': typeof AuthenticatedAppFollowUpsRoute
+  '/app/forecast': typeof AuthenticatedAppForecastRoute
+  '/app/goals': typeof AuthenticatedAppGoalsRoute
   '/app/insights': typeof AuthenticatedAppInsightsRoute
+  '/app/intelligence': typeof AuthenticatedAppIntelligenceRoute
   '/app/invoices': typeof AuthenticatedAppInvoicesRouteWithChildren
   '/app/obligations': typeof AuthenticatedAppObligationsRoute
   '/app/payments': typeof AuthenticatedAppPaymentsRoute
@@ -346,10 +385,15 @@ export interface FileRoutesByTo {
   '/app/ai-cfo': typeof AuthenticatedAppAiCfoRoute
   '/app/analytics': typeof AuthenticatedAppAnalyticsRoute
   '/app/audit': typeof AuthenticatedAppAuditRoute
+  '/app/calendar': typeof AuthenticatedAppCalendarRoute
   '/app/cash': typeof AuthenticatedAppCashRoute
   '/app/clients': typeof AuthenticatedAppClientsRouteWithChildren
   '/app/expenses': typeof AuthenticatedAppExpensesRoute
+  '/app/follow-ups': typeof AuthenticatedAppFollowUpsRoute
+  '/app/forecast': typeof AuthenticatedAppForecastRoute
+  '/app/goals': typeof AuthenticatedAppGoalsRoute
   '/app/insights': typeof AuthenticatedAppInsightsRoute
+  '/app/intelligence': typeof AuthenticatedAppIntelligenceRoute
   '/app/invoices': typeof AuthenticatedAppInvoicesRouteWithChildren
   '/app/obligations': typeof AuthenticatedAppObligationsRoute
   '/app/payments': typeof AuthenticatedAppPaymentsRoute
@@ -391,10 +435,15 @@ export interface FileRoutesById {
   '/_authenticated/app/ai-cfo': typeof AuthenticatedAppAiCfoRoute
   '/_authenticated/app/analytics': typeof AuthenticatedAppAnalyticsRoute
   '/_authenticated/app/audit': typeof AuthenticatedAppAuditRoute
+  '/_authenticated/app/calendar': typeof AuthenticatedAppCalendarRoute
   '/_authenticated/app/cash': typeof AuthenticatedAppCashRoute
   '/_authenticated/app/clients': typeof AuthenticatedAppClientsRouteWithChildren
   '/_authenticated/app/expenses': typeof AuthenticatedAppExpensesRoute
+  '/_authenticated/app/follow-ups': typeof AuthenticatedAppFollowUpsRoute
+  '/_authenticated/app/forecast': typeof AuthenticatedAppForecastRoute
+  '/_authenticated/app/goals': typeof AuthenticatedAppGoalsRoute
   '/_authenticated/app/insights': typeof AuthenticatedAppInsightsRoute
+  '/_authenticated/app/intelligence': typeof AuthenticatedAppIntelligenceRoute
   '/_authenticated/app/invoices': typeof AuthenticatedAppInvoicesRouteWithChildren
   '/_authenticated/app/obligations': typeof AuthenticatedAppObligationsRoute
   '/_authenticated/app/payments': typeof AuthenticatedAppPaymentsRoute
@@ -436,10 +485,15 @@ export interface FileRouteTypes {
     | '/app/ai-cfo'
     | '/app/analytics'
     | '/app/audit'
+    | '/app/calendar'
     | '/app/cash'
     | '/app/clients'
     | '/app/expenses'
+    | '/app/follow-ups'
+    | '/app/forecast'
+    | '/app/goals'
     | '/app/insights'
+    | '/app/intelligence'
     | '/app/invoices'
     | '/app/obligations'
     | '/app/payments'
@@ -477,10 +531,15 @@ export interface FileRouteTypes {
     | '/app/ai-cfo'
     | '/app/analytics'
     | '/app/audit'
+    | '/app/calendar'
     | '/app/cash'
     | '/app/clients'
     | '/app/expenses'
+    | '/app/follow-ups'
+    | '/app/forecast'
+    | '/app/goals'
     | '/app/insights'
+    | '/app/intelligence'
     | '/app/invoices'
     | '/app/obligations'
     | '/app/payments'
@@ -521,10 +580,15 @@ export interface FileRouteTypes {
     | '/_authenticated/app/ai-cfo'
     | '/_authenticated/app/analytics'
     | '/_authenticated/app/audit'
+    | '/_authenticated/app/calendar'
     | '/_authenticated/app/cash'
     | '/_authenticated/app/clients'
     | '/_authenticated/app/expenses'
+    | '/_authenticated/app/follow-ups'
+    | '/_authenticated/app/forecast'
+    | '/_authenticated/app/goals'
     | '/_authenticated/app/insights'
+    | '/_authenticated/app/intelligence'
     | '/_authenticated/app/invoices'
     | '/_authenticated/app/obligations'
     | '/_authenticated/app/payments'
@@ -737,6 +801,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppAuditRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/calendar': {
+      id: '/_authenticated/app/calendar'
+      path: '/calendar'
+      fullPath: '/app/calendar'
+      preLoaderRoute: typeof AuthenticatedAppCalendarRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/cash': {
       id: '/_authenticated/app/cash'
       path: '/cash'
@@ -758,11 +829,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppExpensesRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/follow-ups': {
+      id: '/_authenticated/app/follow-ups'
+      path: '/follow-ups'
+      fullPath: '/app/follow-ups'
+      preLoaderRoute: typeof AuthenticatedAppFollowUpsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/forecast': {
+      id: '/_authenticated/app/forecast'
+      path: '/forecast'
+      fullPath: '/app/forecast'
+      preLoaderRoute: typeof AuthenticatedAppForecastRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/goals': {
+      id: '/_authenticated/app/goals'
+      path: '/goals'
+      fullPath: '/app/goals'
+      preLoaderRoute: typeof AuthenticatedAppGoalsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/insights': {
       id: '/_authenticated/app/insights'
       path: '/insights'
       fullPath: '/app/insights'
       preLoaderRoute: typeof AuthenticatedAppInsightsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/intelligence': {
+      id: '/_authenticated/app/intelligence'
+      path: '/intelligence'
+      fullPath: '/app/intelligence'
+      preLoaderRoute: typeof AuthenticatedAppIntelligenceRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/app/invoices': {
@@ -928,10 +1027,15 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppAiCfoRoute: typeof AuthenticatedAppAiCfoRoute
   AuthenticatedAppAnalyticsRoute: typeof AuthenticatedAppAnalyticsRoute
   AuthenticatedAppAuditRoute: typeof AuthenticatedAppAuditRoute
+  AuthenticatedAppCalendarRoute: typeof AuthenticatedAppCalendarRoute
   AuthenticatedAppCashRoute: typeof AuthenticatedAppCashRoute
   AuthenticatedAppClientsRoute: typeof AuthenticatedAppClientsRouteWithChildren
   AuthenticatedAppExpensesRoute: typeof AuthenticatedAppExpensesRoute
+  AuthenticatedAppFollowUpsRoute: typeof AuthenticatedAppFollowUpsRoute
+  AuthenticatedAppForecastRoute: typeof AuthenticatedAppForecastRoute
+  AuthenticatedAppGoalsRoute: typeof AuthenticatedAppGoalsRoute
   AuthenticatedAppInsightsRoute: typeof AuthenticatedAppInsightsRoute
+  AuthenticatedAppIntelligenceRoute: typeof AuthenticatedAppIntelligenceRoute
   AuthenticatedAppInvoicesRoute: typeof AuthenticatedAppInvoicesRouteWithChildren
   AuthenticatedAppObligationsRoute: typeof AuthenticatedAppObligationsRoute
   AuthenticatedAppPaymentsRoute: typeof AuthenticatedAppPaymentsRoute
@@ -949,10 +1053,15 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppAiCfoRoute: AuthenticatedAppAiCfoRoute,
   AuthenticatedAppAnalyticsRoute: AuthenticatedAppAnalyticsRoute,
   AuthenticatedAppAuditRoute: AuthenticatedAppAuditRoute,
+  AuthenticatedAppCalendarRoute: AuthenticatedAppCalendarRoute,
   AuthenticatedAppCashRoute: AuthenticatedAppCashRoute,
   AuthenticatedAppClientsRoute: AuthenticatedAppClientsRouteWithChildren,
   AuthenticatedAppExpensesRoute: AuthenticatedAppExpensesRoute,
+  AuthenticatedAppFollowUpsRoute: AuthenticatedAppFollowUpsRoute,
+  AuthenticatedAppForecastRoute: AuthenticatedAppForecastRoute,
+  AuthenticatedAppGoalsRoute: AuthenticatedAppGoalsRoute,
   AuthenticatedAppInsightsRoute: AuthenticatedAppInsightsRoute,
+  AuthenticatedAppIntelligenceRoute: AuthenticatedAppIntelligenceRoute,
   AuthenticatedAppInvoicesRoute: AuthenticatedAppInvoicesRouteWithChildren,
   AuthenticatedAppObligationsRoute: AuthenticatedAppObligationsRoute,
   AuthenticatedAppPaymentsRoute: AuthenticatedAppPaymentsRoute,

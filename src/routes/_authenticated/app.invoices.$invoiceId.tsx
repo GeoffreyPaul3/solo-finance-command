@@ -153,8 +153,8 @@ function InvoiceDetailPage() {
       if (!recipient) throw new Error("Recipient email address is required");
 
       // Retrieve the current session token so the server fn can verify the caller
-      const { data: sessionData } = await import("@/integrations/supabase/client").then(
-        (m) => m.supabase.auth.getSession()
+      const { data: sessionData } = await import("@/integrations/supabase/client").then((m) =>
+        m.supabase.auth.getSession(),
       );
       const authToken = sessionData?.session?.access_token;
 
@@ -653,8 +653,6 @@ function InvoiceDetailPage() {
     </div>
   );
 }
-
-
 
 // ============================================================================
 // Reverse Payment Dialog

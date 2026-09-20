@@ -228,7 +228,6 @@ function LandingPage() {
           <div className="flex items-center">
             <Link to="/" className="flex items-center gap-2.5 group">
               <img src={logo} width={70} height={36} alt="SoloOS" className="rounded-md" />
-              
             </Link>
           </div>
 
@@ -1127,7 +1126,6 @@ function LandingPage() {
             <div>
               <div className="flex items-center gap-2.5 mb-3">
                 <img src={logo} width={80} height={28} alt="SoloOS" className="rounded" />
-                
               </div>
               <p className="text-muted-foreground leading-relaxed">
                 The financial operating system for independent professionals. Know what you earned,

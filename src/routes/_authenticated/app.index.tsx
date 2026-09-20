@@ -45,6 +45,11 @@ import { insightsQueryOptions } from "@/domain/insights";
 import { safeToSpendQueryOptions } from "@/domain/cashflow";
 import { obligationsListQueryOptions } from "@/domain/obligations";
 import { taxSummaryQueryOptions } from "@/domain/tax-reserve";
+import { FinancialPulseCard } from "@/components/app/financial-pulse";
+import { FinancialBriefCard } from "@/components/app/financial-brief";
+import { computeFinancialPulse } from "@/domain/financial-pulse";
+import { calculateSoloOSFinancialHealth } from "@/domain/financial-health";
+import { generateFinancialBrief } from "@/domain/financial-brief";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
@@ -126,6 +131,104 @@ function CommandCenter() {
       })
       .slice(0, 5);
   }, [activeObligations]);
+
+  const primarySts =
+    safeToSpendList.find((s) => s.currency === workspace.currency) ?? safeToSpendList[0];
+  const primaryTax = taxSummaries.find(
+    (t) => t.currency === (primarySts?.currency ?? workspace.currency),
+  );
+  const primaryCash = cashSummary?.positions.find(
+    (p) => p.currency === (primarySts?.currency ?? workspace.currency),
+  );
+  const primaryPerf = performanceMetrics.find(
+    (p) => p.currency === (primarySts?.currency ?? workspace.currency),
+  );
+
+  const primaryPulse = useMemo(() => {
+    if (!primarySts) return null;
+    const curr = primarySts.currency;
+    const upcoming30d = activeObligations
+      .filter((o) => o.currency === curr && o.status !== "paid" && o.status !== "cancelled")
+      .reduce((acc, o) => acc + Number(o.amount), 0);
+
+    return computeFinancialPulse({
+      currency: curr,
+      liquidCash: primaryCash?.totalBalance ?? 0,
+      safeToSpend: primarySts.currentSafeToSpend,
+      outstandingReceivables: Number(receivables?.total_outstanding ?? 0),
+      upcomingObligations: upcoming30d,
+      actualTaxReserve: primaryTax?.trackedTaxReserve ?? 0,
+      targetTaxReserve: primaryTax?.targetTaxReserve ?? 0,
+      taxShortfall: primaryTax?.shortfall ?? 0,
+      currentPeriodIncome: primaryPerf?.total_revenue ?? 0,
+      currentPeriodExpenses: primaryPerf?.total_expenses ?? 0,
+      currentPeriodProfit: (primaryPerf?.total_revenue ?? 0) - (primaryPerf?.total_expenses ?? 0),
+      isPrimaryCurrency: true,
+    });
+  }, [primarySts, primaryCash, receivables, primaryTax, primaryPerf, activeObligations]);
+
+  const healthScore = useMemo(() => {
+    if (!primaryPulse) return null;
+    return calculateSoloOSFinancialHealth({
+      currency: primaryPulse.currency,
+      liquidCash: primaryPulse.liquidCash,
+      safeToSpend: primaryPulse.safeToSpend,
+      totalReceivables: Number(receivables?.total_outstanding ?? 0),
+      overdueReceivables: Number(receivables?.total_overdue ?? 0),
+      upcomingObligations: primaryPulse.upcomingObligations,
+      operatingBuffer: primarySts?.operatingBuffer ?? 0,
+      actualTaxReserve: primaryPulse.actualTaxReserve,
+      targetTaxReserve: primaryPulse.targetTaxReserve,
+      taxShortfall: primaryPulse.taxShortfall,
+      currentPeriodIncome: primaryPulse.currentPeriodIncome,
+      currentPeriodExpenses: primaryPulse.currentPeriodExpenses,
+      hasActiveAccounts: hasAccounts,
+    });
+  }, [primaryPulse, receivables, primarySts, hasAccounts]);
+
+  const financialBrief = useMemo(() => {
+    if (!primaryPulse) return null;
+
+    const now = new Date();
+    const in7d = new Date(now);
+    in7d.setDate(in7d.getDate() + 7);
+    const in14d = new Date(now);
+    in14d.setDate(in14d.getDate() + 14);
+    const ago30d = new Date(now);
+    ago30d.setDate(ago30d.getDate() - 30);
+
+    const overdueInvoices = recentInvoices.filter((i) => i.status === "overdue");
+    const dueSoonInvoices = recentInvoices.filter(
+      (i) =>
+        (i.status === "sent" || i.status === "partially_paid") &&
+        i.due_date &&
+        new Date(i.due_date) > now &&
+        new Date(i.due_date) <= in14d,
+    );
+    const obligationsDue7d = activeObligations.filter(
+      (o) =>
+        o.due_date &&
+        new Date(o.due_date) > now &&
+        new Date(o.due_date) <= in7d &&
+        o.status !== "paid" &&
+        o.status !== "cancelled",
+    );
+    const recentPayments = recentTransactions.filter(
+      (t) => t.transaction_type === "income" && t.created_at && new Date(t.created_at) >= ago30d,
+    );
+
+    return generateFinancialBrief({
+      pulse: primaryPulse,
+      overdueInvoicesCount: overdueInvoices.length,
+      overdueInvoicesTotal: overdueInvoices.reduce((s, i) => s + Number(i.amount_due ?? 0), 0),
+      dueSoonInvoicesCount: dueSoonInvoices.length,
+      dueSoonInvoicesTotal: dueSoonInvoices.reduce((s, i) => s + Number(i.amount_due ?? 0), 0),
+      obligationsDue7dCount: obligationsDue7d.length,
+      obligationsDue7dTotal: obligationsDue7d.reduce((s, o) => s + Number(o.amount ?? 0), 0),
+      recentPaymentsCount: recentPayments.length,
+      recentPaymentsTotal: recentPayments.reduce((s, t) => s + Number(t.amount ?? 0), 0),
+    });
+  }, [primaryPulse, recentInvoices, activeObligations, recentTransactions]);
 
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -502,6 +605,20 @@ function CommandCenter() {
           </div>
         )}
       </section>
+
+      {/* ═══════════════════════════════════════════════════════
+          FINANCIAL PULSE & HEALTH + EXECUTIVE FINANCIAL BRIEF
+          Answers: What is my SoloOS Financial Health score? What needs attention?
+      ═══════════════════════════════════════════════════════ */}
+      {hasAccounts && primaryPulse && healthScore && (
+        <section aria-labelledby="pulse-and-brief" className="grid gap-6 lg:grid-cols-2">
+          <h2 id="pulse-and-brief" className="sr-only">
+            SoloOS Financial Health and Intelligence Brief
+          </h2>
+          <FinancialPulseCard pulse={primaryPulse} health={healthScore} />
+          {financialBrief && <FinancialBriefCard brief={financialBrief} />}
+        </section>
+      )}
 
       {/* ═══════════════════════════════════════════════════════
           DASHBOARD VISUALIZATION & CHARTS

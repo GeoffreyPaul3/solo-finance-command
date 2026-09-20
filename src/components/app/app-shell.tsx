@@ -1,15 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
+  Activity,
   BarChart3,
   Banknote,
   Bot,
   Briefcase,
   Building2,
   Calculator,
+  Calendar,
   ChevronDown,
   CreditCard,
   FileText,
+  Flag,
   Gauge,
   LayoutDashboard,
   Lightbulb,
@@ -24,6 +27,7 @@ import {
   TrendingUp,
   Users,
   Wallet,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
@@ -62,7 +66,12 @@ type NavItem = {
     | "/app/insights"
     | "/app/ai-cfo"
     | "/app/analytics"
-    | "/app/audit";
+    | "/app/audit"
+    | "/app/intelligence"
+    | "/app/goals"
+    | "/app/follow-ups"
+    | "/app/forecast"
+    | "/app/calendar";
   label: string;
   icon: LucideIcon;
   /** When set, a lock icon is shown for users who lack this entitlement. */
@@ -103,11 +112,31 @@ const NAV: NavGroup[] = [
     items: [
       { label: "Obligations", icon: Banknote, to: "/app/obligations" },
       { label: "Tax Reserve", icon: Calculator, to: "/app/taxes" },
+      { label: "Financial Goals", icon: Flag, to: "/app/goals" },
+      {
+        label: "Cash Forecast",
+        icon: BarChart3,
+        to: "/app/forecast",
+        requiredEntitlement: "canAccessAnalytics",
+      },
+      {
+        label: "Calendar",
+        icon: Calendar,
+        to: "/app/calendar",
+        requiredEntitlement: "canAccessAnalytics",
+      },
+      { label: "Follow-ups", icon: Zap, to: "/app/follow-ups" },
     ],
   },
   {
     label: "Intelligence",
     items: [
+      {
+        label: "Intelligence Hub",
+        icon: Activity,
+        to: "/app/intelligence",
+        requiredEntitlement: "canAccessAnalytics",
+      },
       {
         label: "Profitability",
         icon: Gauge,
@@ -148,13 +177,7 @@ const NAV: NavGroup[] = [
   },
 ];
 
-function NavLinks({
-  onNavigate,
-  isCollapsed,
-}: {
-  onNavigate?: () => void;
-  isCollapsed?: boolean;
-}) {
+function NavLinks({ onNavigate, isCollapsed }: { onNavigate?: () => void; isCollapsed?: boolean }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { entitlements } = useWorkspace();
 

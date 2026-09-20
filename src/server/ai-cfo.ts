@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 
 import {
   aiCfoResponseSchema,
@@ -10,22 +11,47 @@ import {
 } from "@/domain/ai-cfo";
 import { getWorkspaceEntitlements } from "@/domain/entitlements";
 import { supabase } from "@/integrations/supabase/client";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { getAiProvider } from "@/lib/ai";
 
 // ─────────────────────────────────────────────
 // Auth helpers (server-side only)
 // ─────────────────────────────────────────────
 
-async function getCurrentUserId(): Promise<string> {
+async function getAuthenticatedUserId(authToken?: string): Promise<string> {
+  if (authToken) {
+    try {
+      const { data } = await supabaseAdmin.auth.getUser(authToken);
+      if (data?.user) return data.user.id;
+    } catch {
+      // Ignore invalid auth token errors
+    }
+  }
+
+  try {
+    const req = getRequest();
+    const authHeader = req?.headers?.get?.("authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.replace("Bearer ", "").trim();
+      if (token) {
+        const { data } = await supabaseAdmin.auth.getUser(token);
+        if (data?.user) return data.user.id;
+      }
+    }
+  } catch {
+    // getRequest may not be available in non-SSR/test execution contexts
+  }
+
   const { data } = await supabase.auth.getUser();
   if (data?.user) return data.user.id;
   const { data: sessionData } = await supabase.auth.getSession();
   if (sessionData.session?.user) return sessionData.session.user.id;
+
   throw new Error("Unauthenticated: Please sign in to use AI CFO.");
 }
 
 async function verifyWorkspaceMember(userId: string, workspaceId: string): Promise<void> {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("workspace_members")
     .select("role")
     .eq("user_id", userId)
@@ -41,23 +67,24 @@ export interface AskAiCfoPayload {
   workspaceId: string;
   question: string;
   context: FinancialContextParams;
+  authToken?: string | undefined;
 }
 
 export const askAiCfoServerFn = createServerFn({ method: "POST" })
   .validator((data: AskAiCfoPayload) => data)
   .handler(async ({ data }): Promise<AiCfoResult> => {
     // Security Rule #1: Verify caller is authenticated and a workspace member
-    const callerId = await getCurrentUserId();
+    const callerId = await getAuthenticatedUserId(data.authToken);
     await verifyWorkspaceMember(callerId, data.workspaceId);
 
     // Architectural Rule #5: Server-side entitlement enforcement
-    const { data: ws } = await supabase
+    const { data: ws } = await supabaseAdmin
       .from("workspaces")
       .select("plan")
       .eq("id", data.workspaceId)
       .maybeSingle();
 
-    const { data: sub } = await supabase
+    const { data: sub } = await supabaseAdmin
       .from("subscriptions")
       .select("plan_id, status, cancel_at_period_end, current_period_end")
       .eq("workspace_id", data.workspaceId)

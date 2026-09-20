@@ -18,6 +18,9 @@ import {
   Receipt,
   Scale,
   Users,
+  Info,
+  TrendingUp,
+  AlertTriangle,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -79,8 +82,10 @@ import {
   type ProjectWithClient,
   type UpdateProjectInput,
 } from "@/domain/projects";
+import { Progress } from "@/components/ui/progress";
 import { roleAtLeast } from "@/domain/workspace";
-import { CURRENCIES, parseMoneyInput } from "@/lib/money";
+import { projectEconomicsQueryOptions } from "@/domain/project-economics";
+import { CURRENCIES, formatMoney, parseMoneyInput } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app/projects/$projectId")({
@@ -107,15 +112,18 @@ function ProjectDetailPage() {
   const projectQuery = useQuery(projectQueryOptions(workspace.id, projectId));
   const invoicesQuery = useQuery(projectInvoicesQueryOptions(workspace.id, projectId));
   const clientsQuery = useQuery(clientsQueryOptions(workspace.id, { status: "active" }));
+  const economicsQuery = useQuery(projectEconomicsQueryOptions(workspace.id, projectId));
 
   const project = projectQuery.data;
   const invoices = invoicesQuery.data ?? [];
   const clients = clientsQuery.data ?? [];
+  const economics = economicsQuery.data?.[0];
 
   const invalidateProject = () => {
     queryClient.invalidateQueries({ queryKey: ["project", workspace.id, projectId] });
     queryClient.invalidateQueries({ queryKey: ["projects", workspace.id] });
     queryClient.invalidateQueries({ queryKey: ["invoices", "project", workspace.id, projectId] });
+    queryClient.invalidateQueries({ queryKey: ["project-economics", workspace.id, projectId] });
   };
 
   const statusMutation = useMutation({
@@ -366,6 +374,154 @@ function ProjectDetailPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Project Economics & Budget Health Section */}
+      <div className="space-y-4">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
+              <TrendingUp className="size-5 text-primary" />
+              Project Economics & Budget Health
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Authoritative financial realization, attributable project costs, and budget tracking.
+            </p>
+          </div>
+
+          {economics && (
+            <Badge
+              variant="outline"
+              className={cn(
+                "text-xs font-semibold px-2.5 py-0.5 capitalize self-start sm:self-auto",
+                economics.healthState === "on_track" &&
+                  "border-emerald-500/40 text-emerald-400 bg-emerald-500/10",
+                economics.healthState === "watch" &&
+                  "border-amber-500/40 text-amber-400 bg-amber-500/10",
+                economics.healthState === "over_budget" &&
+                  "border-rose-500/40 text-rose-400 bg-rose-500/10",
+                economics.healthState === "no_budget" &&
+                  "border-border text-muted-foreground bg-muted/20",
+              )}
+            >
+              {economics.healthLabel}
+            </Badge>
+          )}
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Card className="border-border/60 bg-card/40">
+            <CardHeader className="pb-2">
+              <CardDescription className="text-xs">Project Revenue</CardDescription>
+              <CardTitle className="text-xl font-bold font-mono">
+                <MoneyValue
+                  value={economics?.projectRevenue ?? 0}
+                  currency={economics?.currency ?? project.budget_currency ?? workspace.currency}
+                  size="lg"
+                />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 text-[11px] text-muted-foreground">
+              Total invoiced for this project
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/60 bg-card/40">
+            <CardHeader className="pb-2">
+              <CardDescription className="text-xs">Collected Revenue</CardDescription>
+              <CardTitle className="text-xl font-bold font-mono">
+                <MoneyValue
+                  value={economics?.collectedRevenue ?? 0}
+                  currency={economics?.currency ?? project.budget_currency ?? workspace.currency}
+                  size="lg"
+                  className="text-emerald-500"
+                />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 text-[11px] text-muted-foreground">
+              Payments settled to date
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/60 bg-card/40">
+            <CardHeader className="pb-2">
+              <CardDescription className="text-xs">Attributable Costs</CardDescription>
+              <CardTitle className="text-xl font-bold font-mono">
+                <MoneyValue
+                  value={economics?.projectExpenses ?? 0}
+                  currency={economics?.currency ?? project.budget_currency ?? workspace.currency}
+                  size="lg"
+                  className="text-rose-400"
+                />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 text-[11px] text-muted-foreground">
+              Direct project expenses
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/60 bg-card/40">
+            <CardHeader className="pb-2">
+              <CardDescription className="text-xs">Net Project Profit</CardDescription>
+              <CardTitle className="text-xl font-bold font-mono">
+                <MoneyValue
+                  value={economics?.netProfit ?? 0}
+                  currency={economics?.currency ?? project.budget_currency ?? workspace.currency}
+                  size="lg"
+                  className={
+                    (economics?.netProfit ?? 0) >= 0 ? "text-emerald-500" : "text-rose-500"
+                  }
+                />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 text-[11px] text-muted-foreground">
+              {economics?.profitMarginPercent !== undefined
+                ? `${economics.profitMarginPercent.toFixed(1)}% net margin`
+                : "N/A"}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Budget Health Card */}
+        {economics && (
+          <Card className="border-border/60 bg-card/20 p-4 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs">
+              <span className="font-semibold text-foreground">
+                {economics.budget !== null
+                  ? `Budget Utilization (${economics.budgetUtilizationPercent ?? 0}%)`
+                  : "Uncapped Project Budget"}
+              </span>
+              {economics.budgetVariance !== null && (
+                <span
+                  className={cn(
+                    "font-mono font-semibold",
+                    economics.budgetVariance >= 0 ? "text-emerald-400" : "text-rose-400",
+                  )}
+                >
+                  {economics.budgetVariance >= 0 ? "Remaining Buffer: " : "Over Budget: "}
+                  {formatMoney(Math.abs(economics.budgetVariance), economics.currency)}
+                </span>
+              )}
+            </div>
+
+            {economics.budget !== null && economics.budgetUtilizationPercent !== null && (
+              <Progress
+                value={Math.min(100, economics.budgetUtilizationPercent)}
+                className={cn(
+                  "h-1.5 bg-muted",
+                  economics.healthState === "over_budget" && "[&>div]:bg-rose-500",
+                  economics.healthState === "watch" && "[&>div]:bg-amber-500",
+                  economics.healthState === "on_track" && "[&>div]:bg-emerald-500",
+                )}
+              />
+            )}
+
+            <p className="text-xs text-muted-foreground flex items-start gap-1.5 pt-1">
+              <Info className="size-3.5 shrink-0 mt-0.5 text-muted-foreground" />
+              <span>{economics.healthExplanation}</span>
+            </p>
+          </Card>
+        )}
+      </div>
 
       {/* Project Invoices & Realization Section */}
       <div className="space-y-4">

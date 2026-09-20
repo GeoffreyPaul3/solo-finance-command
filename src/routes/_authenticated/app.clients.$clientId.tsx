@@ -17,8 +17,14 @@ import {
   Plus,
   Receipt,
   Users,
+  Clock,
+  CreditCard,
+  Info,
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle2,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { useWorkspace } from "@/components/app/workspace-context";
@@ -59,6 +65,11 @@ import {
   INVOICE_STATUS_LABELS,
 } from "@/domain/invoices";
 import { PROJECT_STATUS_LABELS, type Project } from "@/domain/projects";
+import {
+  clientEconomicsQueryOptions,
+  calculateClientPaymentBehavior,
+} from "@/domain/client-economics";
+import { formatMoney } from "@/lib/money";
 import { roleAtLeast } from "@/domain/workspace";
 import { cn } from "@/lib/utils";
 
@@ -85,14 +96,28 @@ function ClientDetailPage() {
 
   const clientQuery = useQuery(clientQueryOptions(workspace.id, clientId));
   const invoicesQuery = useQuery(clientInvoicesQueryOptions(workspace.id, clientId));
+  const economicsQuery = useQuery(clientEconomicsQueryOptions(workspace.id, clientId));
 
   const client = clientQuery.data;
   const invoices = invoicesQuery.data ?? [];
+  const economics = economicsQuery.data?.[0];
+
+  const paymentBehavior = useMemo(() => {
+    const paidInvs = invoices
+      .filter((i) => i.status === "paid")
+      .map((i) => ({
+        invoiceId: i.id,
+        issueDate: i.issue_date,
+        paidAtDate: i.updated_at ? i.updated_at.slice(0, 10) : null,
+      }));
+    return calculateClientPaymentBehavior({ paidInvoices: paidInvs });
+  }, [invoices]);
 
   const invalidateClient = () => {
     queryClient.invalidateQueries({ queryKey: ["client", workspace.id, clientId] });
     queryClient.invalidateQueries({ queryKey: ["clients", workspace.id] });
     queryClient.invalidateQueries({ queryKey: ["invoices", "client", workspace.id, clientId] });
+    queryClient.invalidateQueries({ queryKey: ["client-economics", workspace.id, clientId] });
   };
 
   const archiveMutation = useMutation({
@@ -283,6 +308,132 @@ function ClientDetailPage() {
               </p>
             )}
           </CardContent>
+        </Card>
+      </div>
+
+      {/* Client Economics & Payment Performance Section */}
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
+            <TrendingUp className="size-5 text-primary" />
+            Client Economics & Payment Performance
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            Authoritative profitability, attributable expenses, and verified settlement speed.
+          </p>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <Card className="border-border/60 bg-card/40">
+            <CardHeader className="pb-2">
+              <CardDescription className="text-xs">Total Invoiced</CardDescription>
+              <CardTitle className="text-xl font-bold font-mono">
+                <MoneyValue
+                  value={economics?.totalInvoiced ?? 0}
+                  currency={economics?.currency ?? workspace.currency}
+                  size="lg"
+                />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 text-[11px] text-muted-foreground">
+              {economics?.totalInvoicesCount ?? 0} total invoices
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/60 bg-card/40">
+            <CardHeader className="pb-2">
+              <CardDescription className="text-xs">Total Collected</CardDescription>
+              <CardTitle className="text-xl font-bold font-mono">
+                <MoneyValue
+                  value={economics?.totalCollected ?? 0}
+                  currency={economics?.currency ?? workspace.currency}
+                  size="lg"
+                  className="text-emerald-500"
+                />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 text-[11px] text-muted-foreground">
+              {economics?.paidInvoicesCount ?? 0} paid · {economics?.overdueInvoicesCount ?? 0}{" "}
+              overdue
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/60 bg-card/40">
+            <CardHeader className="pb-2">
+              <CardDescription className="text-xs">Net Client Profit</CardDescription>
+              <CardTitle className="text-xl font-bold font-mono">
+                <MoneyValue
+                  value={economics?.netProfit ?? 0}
+                  currency={economics?.currency ?? workspace.currency}
+                  size="lg"
+                  className={
+                    (economics?.netProfit ?? 0) >= 0 ? "text-emerald-500" : "text-rose-500"
+                  }
+                />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 text-[11px] text-muted-foreground">
+              {economics?.profitMarginPercent !== undefined
+                ? `${economics.profitMarginPercent.toFixed(1)}% margin`
+                : "N/A"}
+            </CardContent>
+          </Card>
+
+          <Card className="border-border/60 bg-card/40">
+            <CardHeader className="pb-2">
+              <CardDescription className="text-xs flex items-center justify-between">
+                <span>Avg Payment Speed</span>
+                <Clock className="size-3.5 text-muted-foreground" />
+              </CardDescription>
+              <CardTitle className="text-xl font-bold font-mono">
+                {paymentBehavior.avgDaysToPayment !== null
+                  ? `${paymentBehavior.avgDaysToPayment}d`
+                  : "N/A"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 text-[11px] text-muted-foreground truncate">
+              {paymentBehavior.hasSufficientHistory
+                ? `${paymentBehavior.paidInvoicesCount} settled invoices`
+                : "No settled invoices yet"}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Detailed Economics Breakdown */}
+        <Card className="border-border/60 bg-card/20 p-4">
+          <div className="grid gap-4 sm:grid-cols-3 text-xs">
+            <div>
+              <span className="text-muted-foreground block mb-0.5">Outstanding Receivables</span>
+              <span className="font-mono font-bold text-amber-500">
+                {formatMoney(
+                  economics?.outstandingReceivables ?? 0,
+                  economics?.currency ?? workspace.currency,
+                )}
+              </span>
+            </div>
+            <div>
+              <span className="text-muted-foreground block mb-0.5">Attributable Client Costs</span>
+              <span className="font-mono font-bold text-foreground">
+                {formatMoney(
+                  economics?.attributableExpenses ?? 0,
+                  economics?.currency ?? workspace.currency,
+                )}
+              </span>
+            </div>
+            <div>
+              <span className="text-muted-foreground block mb-0.5">Settlement Window</span>
+              <span className="font-mono text-muted-foreground">
+                {paymentBehavior.hasSufficientHistory
+                  ? `Fastest: ${paymentBehavior.fastestPaymentDays}d · Slowest: ${paymentBehavior.slowestPaymentDays}d`
+                  : "Requires payment history"}
+              </span>
+            </div>
+          </div>
+          <p className="text-[11px] text-muted-foreground/80 mt-3 pt-2 border-t border-border/40 flex items-center gap-1.5">
+            <Info className="size-3 shrink-0" />
+            Attributable expenses reflect direct costs tagged with this client. Shared overhead is
+            not arbitrarily distributed.
+          </p>
         </Card>
       </div>
 
