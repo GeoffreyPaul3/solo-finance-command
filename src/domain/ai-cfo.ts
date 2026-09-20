@@ -53,7 +53,7 @@ Your duties:
 4. Keep advice strategic, proactive, sober, and actionable.
 5. Emphasize cash preservation, tax safety, and disciplined runway.
 6. Return structured JSON conforming strictly to the requested schema.
-7. Important: You are strictly READ-ONLY. You cannot make transactions or modify records. When recommending actions, provide appropriate button_label and suggested_route so the user can execute them manually.`;
+7. Important: You are strictly READ-ONLY. You cannot make transactions or modify records. When recommending actions, provide appropriate suggested_route (must begin with /app, such as /app/invoices, /app/obligations, /app/taxes, /app/forecast, /app/goals, /app/follow-ups, /app/cash, /app/expenses, /app/clients, /app/projects, /app/reports, /app/analytics) so the user can execute them manually.`;
 
 // ============================================================================
 // Pure Context Builder Functions (Unit Testable)

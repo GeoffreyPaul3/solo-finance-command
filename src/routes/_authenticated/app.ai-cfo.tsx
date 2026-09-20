@@ -58,6 +58,75 @@ const SUGGESTED_QUESTIONS = [
   "What actions should I take to improve my financial position?",
 ];
 
+type ValidAppRoute =
+  | "/app"
+  | "/app/cash"
+  | "/app/invoices"
+  | "/app/payments"
+  | "/app/expenses"
+  | "/app/obligations"
+  | "/app/taxes"
+  | "/app/goals"
+  | "/app/forecast"
+  | "/app/calendar"
+  | "/app/follow-ups"
+  | "/app/clients"
+  | "/app/projects"
+  | "/app/profitability"
+  | "/app/insights"
+  | "/app/analytics"
+  | "/app/ai-cfo"
+  | "/app/reports"
+  | "/app/audit"
+  | "/app/settings";
+
+function normalizeSuggestedRoute(rawRoute?: string | null): ValidAppRoute | null {
+  if (!rawRoute) return null;
+  let r = rawRoute.trim().toLowerCase();
+  if (!r) return null;
+
+  try {
+    if (r.startsWith("http://") || r.startsWith("https://")) {
+      r = new URL(r).pathname;
+    }
+  } catch {
+    // Keep r as is
+  }
+
+  r = r.replace(/\/+$/, "");
+  if (!r.startsWith("/")) r = "/" + r;
+
+  // Semantic intent mapping
+  if (r.includes("obligation")) return "/app/obligations";
+  if (r.includes("follow") || r.includes("remind") || r.includes("overdue"))
+    return "/app/follow-ups";
+  if (
+    r.includes("invoice") ||
+    r.includes("income") ||
+    r.includes("receivable") ||
+    r.includes("billing")
+  )
+    return "/app/invoices";
+  if (r.includes("expense") || r.includes("receipt") || r.includes("spend") || r.includes("payout"))
+    return "/app/expenses";
+  if (r.includes("forecast") || r.includes("projection")) return "/app/forecast";
+  if (r.includes("calendar") || r.includes("schedule")) return "/app/calendar";
+  if (r.includes("goal") || r.includes("target")) return "/app/goals";
+  if (r.includes("tax")) return "/app/taxes";
+  if (r.includes("client") || r.includes("customer")) return "/app/clients";
+  if (r.includes("project")) return "/app/projects";
+  if (r.includes("cash") || r.includes("account") || r.includes("bank")) return "/app/cash";
+  if (r.includes("payment")) return "/app/payments";
+  if (r.includes("profit")) return "/app/profitability";
+  if (r.includes("insight")) return "/app/insights";
+  if (r.includes("analytic")) return "/app/analytics";
+  if (r.includes("report")) return "/app/reports";
+  if (r.includes("setting")) return "/app/settings";
+  if (r.includes("audit")) return "/app/audit";
+
+  return "/app";
+}
+
 function AiCfoPage() {
   const { entitlements } = useWorkspace();
 
@@ -481,43 +550,22 @@ function AiCfoResultView({ result }: { result: AiCfoResult }) {
                   {action.description}
                 </p>
               </div>
-              {action.suggested_route && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="shrink-0 gap-1.5 text-xs h-8"
-                  asChild
-                >
-                  <Link
-                    to={
-                      action.suggested_route as
-                        | "/app"
-                        | "/app/cash"
-                        | "/app/invoices"
-                        | "/app/payments"
-                        | "/app/expenses"
-                        | "/app/obligations"
-                        | "/app/taxes"
-                        | "/app/goals"
-                        | "/app/forecast"
-                        | "/app/calendar"
-                        | "/app/follow-ups"
-                        | "/app/clients"
-                        | "/app/projects"
-                        | "/app/profitability"
-                        | "/app/insights"
-                        | "/app/analytics"
-                        | "/app/ai-cfo"
-                        | "/app/reports"
-                        | "/app/audit"
-                        | "/app/settings"
-                        | "/app/intelligence"
-                    }
+              {(() => {
+                const targetRoute = normalizeSuggestedRoute(action.suggested_route);
+                if (!targetRoute) return null;
+                return (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0 gap-1.5 text-xs h-8"
+                    asChild
                   >
-                    Go <ArrowRight className="size-3.5" />
-                  </Link>
-                </Button>
-              )}
+                    <Link to={targetRoute}>
+                      Go <ArrowRight className="size-3.5" />
+                    </Link>
+                  </Button>
+                );
+              })()}
             </div>
           ))}
         </div>

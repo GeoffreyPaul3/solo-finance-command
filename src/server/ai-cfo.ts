@@ -108,7 +108,7 @@ export const askAiCfoServerFn = createServerFn({ method: "POST" })
 
     try {
       const contextStr = buildDeterministicFinancialContext(data.context);
-      const userPrompt = `FINANCIAL CONTEXT (DETERMINISTIC FACTS):\n${contextStr}\n\nUSER QUESTION / FOCUS:\n${data.question}\n\nAnalyze the financial context above and address the user's question. Remember to ground every number strictly in the provided context. Return valid JSON matching the schema: summary, key_points, risks, opportunities, recommended_actions (title, description, action_type, suggested_route), metric_references (label, value).`;
+      const userPrompt = `FINANCIAL CONTEXT (DETERMINISTIC FACTS):\n${contextStr}\n\nUSER QUESTION / FOCUS:\n${data.question}\n\nAnalyze the financial context above and address the user's question. Remember to ground every number strictly in the provided context. Return valid JSON matching the schema: summary, key_points, risks, opportunities, recommended_actions (title, description, action_type, suggested_route), metric_references (label, value). Note: for suggested_route in recommended_actions, only use exact SoloOS routes starting with /app: /app/cash, /app/invoices, /app/payments, /app/expenses, /app/obligations, /app/taxes, /app/goals, /app/forecast, /app/calendar, /app/follow-ups, /app/clients, /app/projects, /app/profitability, /app/insights, /app/analytics, /app/reports, or /app.`;
 
       const rawResponse = await provider.generateStructuredResponse({
         systemPrompt: AI_CFO_SYSTEM_PROMPT,
