@@ -396,6 +396,232 @@ export type Database = {
           },
         ];
       };
+      shareable_artifacts: {
+        Row: {
+          access_config: Json;
+          artifact_type: string;
+          created_at: string;
+          created_by: string | null;
+          description: string | null;
+          expires_at: string | null;
+          id: string;
+          last_viewed_at: string | null;
+          revoked_at: string | null;
+          share_token: string;
+          snapshot_data: Json;
+          source_entity_id: string;
+          source_entity_type: string;
+          status: string;
+          title: string;
+          updated_at: string;
+          view_count: number;
+          visibility: string;
+          workspace_id: string;
+        };
+        Insert: {
+          access_config?: Json;
+          artifact_type: string;
+          created_at?: string;
+          created_by?: string | null;
+          description?: string | null;
+          expires_at?: string | null;
+          id?: string;
+          last_viewed_at?: string | null;
+          revoked_at?: string | null;
+          share_token: string;
+          snapshot_data?: Json;
+          source_entity_id: string;
+          source_entity_type: string;
+          status?: string;
+          title: string;
+          updated_at?: string;
+          view_count?: number;
+          visibility?: string;
+          workspace_id: string;
+        };
+        Update: {
+          access_config?: Json;
+          artifact_type?: string;
+          created_at?: string;
+          created_by?: string | null;
+          description?: string | null;
+          expires_at?: string | null;
+          id?: string;
+          last_viewed_at?: string | null;
+          revoked_at?: string | null;
+          share_token?: string;
+          snapshot_data?: Json;
+          source_entity_id?: string;
+          source_entity_type?: string;
+          status?: string;
+          title?: string;
+          updated_at?: string;
+          view_count?: number;
+          visibility?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "shareable_artifacts_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      workspace_referral_profiles: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          referral_code: string;
+          updated_at: string;
+          workspace_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          referral_code: string;
+          updated_at?: string;
+          workspace_id: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          referral_code?: string;
+          updated_at?: string;
+          workspace_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "workspace_referral_profiles_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: true;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      referral_attributions: {
+        Row: {
+          activated_at: string | null;
+          anonymous_session_id: string | null;
+          converted_at: string | null;
+          created_at: string;
+          id: string;
+          landing_at: string;
+          referral_code: string;
+          referred_user_id: string | null;
+          referred_workspace_id: string | null;
+          referrer_workspace_id: string;
+          signup_at: string | null;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          activated_at?: string | null;
+          anonymous_session_id?: string | null;
+          converted_at?: string | null;
+          created_at?: string;
+          id?: string;
+          landing_at?: string;
+          referral_code: string;
+          referred_user_id?: string | null;
+          referred_workspace_id?: string | null;
+          referrer_workspace_id: string;
+          signup_at?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          activated_at?: string | null;
+          anonymous_session_id?: string | null;
+          converted_at?: string | null;
+          created_at?: string;
+          id?: string;
+          landing_at?: string;
+          referral_code?: string;
+          referred_user_id?: string | null;
+          referred_workspace_id?: string | null;
+          referrer_workspace_id?: string;
+          signup_at?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "referral_attributions_referrer_workspace_id_fkey";
+            columns: ["referrer_workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "referral_attributions_referred_workspace_id_fkey";
+            columns: ["referred_workspace_id"];
+            isOneToOne: true;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      distribution_events: {
+        Row: {
+          actor_user_id: string | null;
+          anonymous_session_id: string | null;
+          artifact_id: string | null;
+          created_at: string;
+          event_type: string;
+          id: string;
+          metadata: Json;
+          referral_code: string | null;
+          source: string | null;
+          workspace_id: string | null;
+        };
+        Insert: {
+          actor_user_id?: string | null;
+          anonymous_session_id?: string | null;
+          artifact_id?: string | null;
+          created_at?: string;
+          event_type: string;
+          id?: string;
+          metadata?: Json;
+          referral_code?: string | null;
+          source?: string | null;
+          workspace_id?: string | null;
+        };
+        Update: {
+          actor_user_id?: string | null;
+          anonymous_session_id?: string | null;
+          artifact_id?: string | null;
+          created_at?: string;
+          event_type?: string;
+          id?: string;
+          metadata?: Json;
+          referral_code?: string | null;
+          source?: string | null;
+          workspace_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "distribution_events_workspace_id_fkey";
+            columns: ["workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "distribution_events_artifact_id_fkey";
+            columns: ["artifact_id"];
+            isOneToOne: false;
+            referencedRelation: "shareable_artifacts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       financial_categories: {
         Row: {
           color: string | null;
@@ -1613,6 +1839,12 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      increment_artifact_view: {
+        Args: {
+          p_share_token: string;
+        };
+        Returns: boolean;
+      };
       is_platform_admin: {
         Args: {
           check_user_id: string;

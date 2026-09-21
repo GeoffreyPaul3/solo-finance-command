@@ -13,6 +13,7 @@ import {
   Printer,
   RotateCcw,
   Send,
+  Share2,
   Trash2,
   XCircle,
 } from "lucide-react";
@@ -85,6 +86,8 @@ import {
   computeTotal,
 } from "@/lib/invoice-calculations";
 import { cn } from "@/lib/utils";
+import { createShareArtifactServerFn } from "@/server/share";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated/app/invoices/$invoiceId")({
   head: () => ({
@@ -117,6 +120,7 @@ function InvoiceDetailPage() {
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const [emailRecipient, setEmailRecipient] = useState("");
   const [emailCustomNote, setEmailCustomNote] = useState("");
+  const [isSharing, setIsSharing] = useState(false);
 
   const canManage = roleAtLeast(role, "manager");
 
@@ -247,16 +251,25 @@ function InvoiceDetailPage() {
       {/* ── Print-only isolation styles ── */}
       <style>{`
         @media print {
-          body > * { display: none !important; }
-          #invoice-print-region,
-          #invoice-print-region * { display: revert !important; }
+          html, body {
+            background: #ffffff !important;
+            color: #000000 !important;
+            overflow: visible !important;
+            height: auto !important;
+          }
+          aside, header, nav, .print\\:hidden {
+            display: none !important;
+          }
           #invoice-print-region {
-            position: fixed;
-            inset: 0;
-            z-index: 9999;
-            background: white;
-            padding: 0;
-            margin: 0;
+            display: block !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+          }
+          @page {
+            margin: 12mm;
+            size: auto;
           }
         }
       `}</style>
@@ -296,6 +309,55 @@ function InvoiceDetailPage() {
           <Button variant="outline" size="sm" onClick={handlePrint} className="h-9">
             <Printer className="mr-1.5 size-4" />
             Print / PDF
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            id={`share-invoice-btn-${invoice.id}`}
+            disabled={isSharing}
+            onClick={async () => {
+              setIsSharing(true);
+              try {
+                const { data: { session } } = await supabase.auth.getSession();
+                const res = await createShareArtifactServerFn({
+                  data: {
+                    workspaceId: workspace.id,
+                    artifactType: "invoice",
+                    sourceEntityType: "invoice",
+                    sourceEntityId: invoice.id,
+                    title: `Invoice ${invoice.invoice_number}`,
+                    description: `Invoice for ${invoice.client?.name ?? "client"} — ${invoice.currency} ${Number(invoice.total).toFixed(2)}`,
+                    visibility: "unlisted",
+                    accessConfig: {},
+                    sourceData: {
+                      invoiceNumber: invoice.invoice_number,
+                      clientName: invoice.client?.name,
+                      totalAmount: Number(invoice.total),
+                      status: invoice.status,
+                      issueDate: invoice.issue_date,
+                      dueDate: invoice.due_date,
+                      currency: invoice.currency,
+                      lineItems: invoice.line_items,
+                    },
+                    authToken: session?.access_token,
+                  },
+                });
+                if (res.success) {
+                  const url = `${window.location.origin}${res.shareUrl}`;
+                  await navigator.clipboard.writeText(url);
+                  toast.success("Share link copied to clipboard", { description: url });
+                }
+              } catch (e) {
+                toast.error("Failed to create share link");
+              } finally {
+                setIsSharing(false);
+              }
+            }}
+            className="h-9"
+          >
+            {isSharing ? <Loader2 className="mr-1.5 size-4 animate-spin" /> : <Share2 className="mr-1.5 size-4" />}
+            Share
           </Button>
 
           <Button

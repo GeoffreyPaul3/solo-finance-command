@@ -21,6 +21,14 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAppRouteImport } from './routes/_authenticated/app'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated/onboarding'
+import { Route as RReferralCodeRouteImport } from './routes/r.$referralCode'
+import { Route as ShareTokenRouteImport } from './routes/share.$token'
+import { Route as ToolsIndexRouteImport } from './routes/tools.index'
+import { Route as ToolsCashRunwayRouteImport } from './routes/tools.cash-runway'
+import { Route as ToolsInvoiceProfitRouteImport } from './routes/tools.invoice-profit'
+import { Route as ToolsProfitCalculatorRouteImport } from './routes/tools.profit-calculator'
+import { Route as ToolsSafeToSpendRouteImport } from './routes/tools.safe-to-spend'
+import { Route as ToolsTaxReserveRouteImport } from './routes/tools.tax-reserve'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin.analytics'
 import { Route as AuthenticatedAdminAuditRouteImport } from './routes/_authenticated/admin.audit'
@@ -38,6 +46,7 @@ import { Route as AuthenticatedAppAuditRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedAppCalendarRouteImport } from './routes/_authenticated/app.calendar'
 import { Route as AuthenticatedAppCashRouteImport } from './routes/_authenticated/app.cash'
 import { Route as AuthenticatedAppClientsRouteImport } from './routes/_authenticated/app.clients'
+import { Route as AuthenticatedAppDistributionRouteImport } from './routes/_authenticated/app.distribution'
 import { Route as AuthenticatedAppExpensesRouteImport } from './routes/_authenticated/app.expenses'
 import { Route as AuthenticatedAppFollowUpsRouteImport } from './routes/_authenticated/app.follow-ups'
 import { Route as AuthenticatedAppForecastRouteImport } from './routes/_authenticated/app.forecast'
@@ -49,8 +58,10 @@ import { Route as AuthenticatedAppObligationsRouteImport } from './routes/_authe
 import { Route as AuthenticatedAppPaymentsRouteImport } from './routes/_authenticated/app.payments'
 import { Route as AuthenticatedAppProfitabilityRouteImport } from './routes/_authenticated/app.profitability'
 import { Route as AuthenticatedAppProjectsRouteImport } from './routes/_authenticated/app.projects'
+import { Route as AuthenticatedAppReferralsRouteImport } from './routes/_authenticated/app.referrals'
 import { Route as AuthenticatedAppReportsRouteImport } from './routes/_authenticated/app.reports'
 import { Route as AuthenticatedAppSettingsRouteImport } from './routes/_authenticated/app.settings'
+import { Route as AuthenticatedAppShareRouteImport } from './routes/_authenticated/app.share'
 import { Route as AuthenticatedAppTaxesRouteImport } from './routes/_authenticated/app.taxes'
 import { Route as AuthenticatedAppBillingVerifyRouteImport } from './routes/_authenticated/app.billing.verify'
 import { Route as AuthenticatedAppClientsClientIdRouteImport } from './routes/_authenticated/app.clients.$clientId'
@@ -115,6 +126,46 @@ const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const RReferralCodeRoute = RReferralCodeRouteImport.update({
+  id: '/r/$referralCode',
+  path: '/r/$referralCode',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShareTokenRoute = ShareTokenRouteImport.update({
+  id: '/share/$token',
+  path: '/share/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ToolsIndexRoute = ToolsIndexRouteImport.update({
+  id: '/tools/',
+  path: '/tools/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ToolsCashRunwayRoute = ToolsCashRunwayRouteImport.update({
+  id: '/tools/cash-runway',
+  path: '/tools/cash-runway',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ToolsInvoiceProfitRoute = ToolsInvoiceProfitRouteImport.update({
+  id: '/tools/invoice-profit',
+  path: '/tools/invoice-profit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ToolsProfitCalculatorRoute = ToolsProfitCalculatorRouteImport.update({
+  id: '/tools/profit-calculator',
+  path: '/tools/profit-calculator',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ToolsSafeToSpendRoute = ToolsSafeToSpendRouteImport.update({
+  id: '/tools/safe-to-spend',
+  path: '/tools/safe-to-spend',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ToolsTaxReserveRoute = ToolsTaxReserveRouteImport.update({
+  id: '/tools/tax-reserve',
+  path: '/tools/tax-reserve',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
@@ -209,6 +260,12 @@ const AuthenticatedAppClientsRoute = AuthenticatedAppClientsRouteImport.update({
   path: '/clients',
   getParentRoute: () => AuthenticatedAppRoute,
 } as any)
+const AuthenticatedAppDistributionRoute =
+  AuthenticatedAppDistributionRouteImport.update({
+    id: '/distribution',
+    path: '/distribution',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppExpensesRoute =
   AuthenticatedAppExpensesRouteImport.update({
     id: '/expenses',
@@ -274,6 +331,12 @@ const AuthenticatedAppProjectsRoute =
     path: '/projects',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppReferralsRoute =
+  AuthenticatedAppReferralsRouteImport.update({
+    id: '/referrals',
+    path: '/referrals',
+    getParentRoute: () => AuthenticatedAppRoute,
+  } as any)
 const AuthenticatedAppReportsRoute = AuthenticatedAppReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
@@ -285,6 +348,11 @@ const AuthenticatedAppSettingsRoute =
     path: '/settings',
     getParentRoute: () => AuthenticatedAppRoute,
   } as any)
+const AuthenticatedAppShareRoute = AuthenticatedAppShareRouteImport.update({
+  id: '/share',
+  path: '/share',
+  getParentRoute: () => AuthenticatedAppRoute,
+} as any)
 const AuthenticatedAppTaxesRoute = AuthenticatedAppTaxesRouteImport.update({
   id: '/taxes',
   path: '/taxes',
@@ -327,6 +395,14 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/app': typeof AuthenticatedAppRouteWithChildren
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/r/$referralCode': typeof RReferralCodeRoute
+  '/share/$token': typeof ShareTokenRoute
+  '/tools/cash-runway': typeof ToolsCashRunwayRoute
+  '/tools/invoice-profit': typeof ToolsInvoiceProfitRoute
+  '/tools/profit-calculator': typeof ToolsProfitCalculatorRoute
+  '/tools/safe-to-spend': typeof ToolsSafeToSpendRoute
+  '/tools/tax-reserve': typeof ToolsTaxReserveRoute
+  '/tools/': typeof ToolsIndexRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
@@ -342,6 +418,7 @@ export interface FileRoutesByFullPath {
   '/app/calendar': typeof AuthenticatedAppCalendarRoute
   '/app/cash': typeof AuthenticatedAppCashRoute
   '/app/clients': typeof AuthenticatedAppClientsRouteWithChildren
+  '/app/distribution': typeof AuthenticatedAppDistributionRoute
   '/app/expenses': typeof AuthenticatedAppExpensesRoute
   '/app/follow-ups': typeof AuthenticatedAppFollowUpsRoute
   '/app/forecast': typeof AuthenticatedAppForecastRoute
@@ -353,8 +430,10 @@ export interface FileRoutesByFullPath {
   '/app/payments': typeof AuthenticatedAppPaymentsRoute
   '/app/profitability': typeof AuthenticatedAppProfitabilityRoute
   '/app/projects': typeof AuthenticatedAppProjectsRouteWithChildren
+  '/app/referrals': typeof AuthenticatedAppReferralsRoute
   '/app/reports': typeof AuthenticatedAppReportsRoute
   '/app/settings': typeof AuthenticatedAppSettingsRoute
+  '/app/share': typeof AuthenticatedAppShareRoute
   '/app/taxes': typeof AuthenticatedAppTaxesRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/app/': typeof AuthenticatedAppIndexRoute
@@ -373,6 +452,14 @@ export interface FileRoutesByTo {
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
+  '/r/$referralCode': typeof RReferralCodeRoute
+  '/share/$token': typeof ShareTokenRoute
+  '/tools/cash-runway': typeof ToolsCashRunwayRoute
+  '/tools/invoice-profit': typeof ToolsInvoiceProfitRoute
+  '/tools/profit-calculator': typeof ToolsProfitCalculatorRoute
+  '/tools/safe-to-spend': typeof ToolsSafeToSpendRoute
+  '/tools/tax-reserve': typeof ToolsTaxReserveRoute
+  '/tools': typeof ToolsIndexRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
@@ -388,6 +475,7 @@ export interface FileRoutesByTo {
   '/app/calendar': typeof AuthenticatedAppCalendarRoute
   '/app/cash': typeof AuthenticatedAppCashRoute
   '/app/clients': typeof AuthenticatedAppClientsRouteWithChildren
+  '/app/distribution': typeof AuthenticatedAppDistributionRoute
   '/app/expenses': typeof AuthenticatedAppExpensesRoute
   '/app/follow-ups': typeof AuthenticatedAppFollowUpsRoute
   '/app/forecast': typeof AuthenticatedAppForecastRoute
@@ -399,8 +487,10 @@ export interface FileRoutesByTo {
   '/app/payments': typeof AuthenticatedAppPaymentsRoute
   '/app/profitability': typeof AuthenticatedAppProfitabilityRoute
   '/app/projects': typeof AuthenticatedAppProjectsRouteWithChildren
+  '/app/referrals': typeof AuthenticatedAppReferralsRoute
   '/app/reports': typeof AuthenticatedAppReportsRoute
   '/app/settings': typeof AuthenticatedAppSettingsRoute
+  '/app/share': typeof AuthenticatedAppShareRoute
   '/app/taxes': typeof AuthenticatedAppTaxesRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/app': typeof AuthenticatedAppIndexRoute
@@ -423,6 +513,14 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/app': typeof AuthenticatedAppRouteWithChildren
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
+  '/r/$referralCode': typeof RReferralCodeRoute
+  '/share/$token': typeof ShareTokenRoute
+  '/tools/cash-runway': typeof ToolsCashRunwayRoute
+  '/tools/invoice-profit': typeof ToolsInvoiceProfitRoute
+  '/tools/profit-calculator': typeof ToolsProfitCalculatorRoute
+  '/tools/safe-to-spend': typeof ToolsSafeToSpendRoute
+  '/tools/tax-reserve': typeof ToolsTaxReserveRoute
+  '/tools/': typeof ToolsIndexRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/admin/audit': typeof AuthenticatedAdminAuditRoute
   '/_authenticated/admin/payments': typeof AuthenticatedAdminPaymentsRoute
@@ -438,6 +536,7 @@ export interface FileRoutesById {
   '/_authenticated/app/calendar': typeof AuthenticatedAppCalendarRoute
   '/_authenticated/app/cash': typeof AuthenticatedAppCashRoute
   '/_authenticated/app/clients': typeof AuthenticatedAppClientsRouteWithChildren
+  '/_authenticated/app/distribution': typeof AuthenticatedAppDistributionRoute
   '/_authenticated/app/expenses': typeof AuthenticatedAppExpensesRoute
   '/_authenticated/app/follow-ups': typeof AuthenticatedAppFollowUpsRoute
   '/_authenticated/app/forecast': typeof AuthenticatedAppForecastRoute
@@ -449,8 +548,10 @@ export interface FileRoutesById {
   '/_authenticated/app/payments': typeof AuthenticatedAppPaymentsRoute
   '/_authenticated/app/profitability': typeof AuthenticatedAppProfitabilityRoute
   '/_authenticated/app/projects': typeof AuthenticatedAppProjectsRouteWithChildren
+  '/_authenticated/app/referrals': typeof AuthenticatedAppReferralsRoute
   '/_authenticated/app/reports': typeof AuthenticatedAppReportsRoute
   '/_authenticated/app/settings': typeof AuthenticatedAppSettingsRoute
+  '/_authenticated/app/share': typeof AuthenticatedAppShareRoute
   '/_authenticated/app/taxes': typeof AuthenticatedAppTaxesRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/app/': typeof AuthenticatedAppIndexRoute
@@ -473,6 +574,14 @@ export interface FileRouteTypes {
     | '/admin'
     | '/app'
     | '/onboarding'
+    | '/r/$referralCode'
+    | '/share/$token'
+    | '/tools/cash-runway'
+    | '/tools/invoice-profit'
+    | '/tools/profit-calculator'
+    | '/tools/safe-to-spend'
+    | '/tools/tax-reserve'
+    | '/tools/'
     | '/admin/analytics'
     | '/admin/audit'
     | '/admin/payments'
@@ -488,6 +597,7 @@ export interface FileRouteTypes {
     | '/app/calendar'
     | '/app/cash'
     | '/app/clients'
+    | '/app/distribution'
     | '/app/expenses'
     | '/app/follow-ups'
     | '/app/forecast'
@@ -499,8 +609,10 @@ export interface FileRouteTypes {
     | '/app/payments'
     | '/app/profitability'
     | '/app/projects'
+    | '/app/referrals'
     | '/app/reports'
     | '/app/settings'
+    | '/app/share'
     | '/app/taxes'
     | '/admin/'
     | '/app/'
@@ -519,6 +631,14 @@ export interface FileRouteTypes {
     | '/support'
     | '/terms'
     | '/onboarding'
+    | '/r/$referralCode'
+    | '/share/$token'
+    | '/tools/cash-runway'
+    | '/tools/invoice-profit'
+    | '/tools/profit-calculator'
+    | '/tools/safe-to-spend'
+    | '/tools/tax-reserve'
+    | '/tools'
     | '/admin/analytics'
     | '/admin/audit'
     | '/admin/payments'
@@ -534,6 +654,7 @@ export interface FileRouteTypes {
     | '/app/calendar'
     | '/app/cash'
     | '/app/clients'
+    | '/app/distribution'
     | '/app/expenses'
     | '/app/follow-ups'
     | '/app/forecast'
@@ -545,8 +666,10 @@ export interface FileRouteTypes {
     | '/app/payments'
     | '/app/profitability'
     | '/app/projects'
+    | '/app/referrals'
     | '/app/reports'
     | '/app/settings'
+    | '/app/share'
     | '/app/taxes'
     | '/admin'
     | '/app'
@@ -568,6 +691,14 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/app'
     | '/_authenticated/onboarding'
+    | '/r/$referralCode'
+    | '/share/$token'
+    | '/tools/cash-runway'
+    | '/tools/invoice-profit'
+    | '/tools/profit-calculator'
+    | '/tools/safe-to-spend'
+    | '/tools/tax-reserve'
+    | '/tools/'
     | '/_authenticated/admin/analytics'
     | '/_authenticated/admin/audit'
     | '/_authenticated/admin/payments'
@@ -583,6 +714,7 @@ export interface FileRouteTypes {
     | '/_authenticated/app/calendar'
     | '/_authenticated/app/cash'
     | '/_authenticated/app/clients'
+    | '/_authenticated/app/distribution'
     | '/_authenticated/app/expenses'
     | '/_authenticated/app/follow-ups'
     | '/_authenticated/app/forecast'
@@ -594,8 +726,10 @@ export interface FileRouteTypes {
     | '/_authenticated/app/payments'
     | '/_authenticated/app/profitability'
     | '/_authenticated/app/projects'
+    | '/_authenticated/app/referrals'
     | '/_authenticated/app/reports'
     | '/_authenticated/app/settings'
+    | '/_authenticated/app/share'
     | '/_authenticated/app/taxes'
     | '/_authenticated/admin/'
     | '/_authenticated/app/'
@@ -615,6 +749,14 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   SupportRoute: typeof SupportRoute
   TermsRoute: typeof TermsRoute
+  RReferralCodeRoute: typeof RReferralCodeRoute
+  ShareTokenRoute: typeof ShareTokenRoute
+  ToolsCashRunwayRoute: typeof ToolsCashRunwayRoute
+  ToolsInvoiceProfitRoute: typeof ToolsInvoiceProfitRoute
+  ToolsProfitCalculatorRoute: typeof ToolsProfitCalculatorRoute
+  ToolsSafeToSpendRoute: typeof ToolsSafeToSpendRoute
+  ToolsTaxReserveRoute: typeof ToolsTaxReserveRoute
+  ToolsIndexRoute: typeof ToolsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -702,6 +844,62 @@ declare module '@tanstack/react-router' {
       fullPath: '/onboarding'
       preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/r/$referralCode': {
+      id: '/r/$referralCode'
+      path: '/r/$referralCode'
+      fullPath: '/r/$referralCode'
+      preLoaderRoute: typeof RReferralCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/share/$token': {
+      id: '/share/$token'
+      path: '/share/$token'
+      fullPath: '/share/$token'
+      preLoaderRoute: typeof ShareTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tools/': {
+      id: '/tools/'
+      path: '/tools'
+      fullPath: '/tools/'
+      preLoaderRoute: typeof ToolsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tools/cash-runway': {
+      id: '/tools/cash-runway'
+      path: '/tools/cash-runway'
+      fullPath: '/tools/cash-runway'
+      preLoaderRoute: typeof ToolsCashRunwayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tools/invoice-profit': {
+      id: '/tools/invoice-profit'
+      path: '/tools/invoice-profit'
+      fullPath: '/tools/invoice-profit'
+      preLoaderRoute: typeof ToolsInvoiceProfitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tools/profit-calculator': {
+      id: '/tools/profit-calculator'
+      path: '/tools/profit-calculator'
+      fullPath: '/tools/profit-calculator'
+      preLoaderRoute: typeof ToolsProfitCalculatorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tools/safe-to-spend': {
+      id: '/tools/safe-to-spend'
+      path: '/tools/safe-to-spend'
+      fullPath: '/tools/safe-to-spend'
+      preLoaderRoute: typeof ToolsSafeToSpendRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tools/tax-reserve': {
+      id: '/tools/tax-reserve'
+      path: '/tools/tax-reserve'
+      fullPath: '/tools/tax-reserve'
+      preLoaderRoute: typeof ToolsTaxReserveRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/': {
       id: '/_authenticated/admin/'
@@ -822,6 +1020,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppClientsRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/distribution': {
+      id: '/_authenticated/app/distribution'
+      path: '/distribution'
+      fullPath: '/app/distribution'
+      preLoaderRoute: typeof AuthenticatedAppDistributionRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/expenses': {
       id: '/_authenticated/app/expenses'
       path: '/expenses'
@@ -899,6 +1104,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppProjectsRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
+    '/_authenticated/app/referrals': {
+      id: '/_authenticated/app/referrals'
+      path: '/referrals'
+      fullPath: '/app/referrals'
+      preLoaderRoute: typeof AuthenticatedAppReferralsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
     '/_authenticated/app/reports': {
       id: '/_authenticated/app/reports'
       path: '/reports'
@@ -911,6 +1123,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/app/settings'
       preLoaderRoute: typeof AuthenticatedAppSettingsRouteImport
+      parentRoute: typeof AuthenticatedAppRoute
+    }
+    '/_authenticated/app/share': {
+      id: '/_authenticated/app/share'
+      path: '/share'
+      fullPath: '/app/share'
+      preLoaderRoute: typeof AuthenticatedAppShareRouteImport
       parentRoute: typeof AuthenticatedAppRoute
     }
     '/_authenticated/app/taxes': {
@@ -1030,6 +1249,7 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppCalendarRoute: typeof AuthenticatedAppCalendarRoute
   AuthenticatedAppCashRoute: typeof AuthenticatedAppCashRoute
   AuthenticatedAppClientsRoute: typeof AuthenticatedAppClientsRouteWithChildren
+  AuthenticatedAppDistributionRoute: typeof AuthenticatedAppDistributionRoute
   AuthenticatedAppExpensesRoute: typeof AuthenticatedAppExpensesRoute
   AuthenticatedAppFollowUpsRoute: typeof AuthenticatedAppFollowUpsRoute
   AuthenticatedAppForecastRoute: typeof AuthenticatedAppForecastRoute
@@ -1041,8 +1261,10 @@ interface AuthenticatedAppRouteChildren {
   AuthenticatedAppPaymentsRoute: typeof AuthenticatedAppPaymentsRoute
   AuthenticatedAppProfitabilityRoute: typeof AuthenticatedAppProfitabilityRoute
   AuthenticatedAppProjectsRoute: typeof AuthenticatedAppProjectsRouteWithChildren
+  AuthenticatedAppReferralsRoute: typeof AuthenticatedAppReferralsRoute
   AuthenticatedAppReportsRoute: typeof AuthenticatedAppReportsRoute
   AuthenticatedAppSettingsRoute: typeof AuthenticatedAppSettingsRoute
+  AuthenticatedAppShareRoute: typeof AuthenticatedAppShareRoute
   AuthenticatedAppTaxesRoute: typeof AuthenticatedAppTaxesRoute
   AuthenticatedAppIndexRoute: typeof AuthenticatedAppIndexRoute
   AuthenticatedAppBillingVerifyRoute: typeof AuthenticatedAppBillingVerifyRoute
@@ -1056,6 +1278,7 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppCalendarRoute: AuthenticatedAppCalendarRoute,
   AuthenticatedAppCashRoute: AuthenticatedAppCashRoute,
   AuthenticatedAppClientsRoute: AuthenticatedAppClientsRouteWithChildren,
+  AuthenticatedAppDistributionRoute: AuthenticatedAppDistributionRoute,
   AuthenticatedAppExpensesRoute: AuthenticatedAppExpensesRoute,
   AuthenticatedAppFollowUpsRoute: AuthenticatedAppFollowUpsRoute,
   AuthenticatedAppForecastRoute: AuthenticatedAppForecastRoute,
@@ -1067,8 +1290,10 @@ const AuthenticatedAppRouteChildren: AuthenticatedAppRouteChildren = {
   AuthenticatedAppPaymentsRoute: AuthenticatedAppPaymentsRoute,
   AuthenticatedAppProfitabilityRoute: AuthenticatedAppProfitabilityRoute,
   AuthenticatedAppProjectsRoute: AuthenticatedAppProjectsRouteWithChildren,
+  AuthenticatedAppReferralsRoute: AuthenticatedAppReferralsRoute,
   AuthenticatedAppReportsRoute: AuthenticatedAppReportsRoute,
   AuthenticatedAppSettingsRoute: AuthenticatedAppSettingsRoute,
+  AuthenticatedAppShareRoute: AuthenticatedAppShareRoute,
   AuthenticatedAppTaxesRoute: AuthenticatedAppTaxesRoute,
   AuthenticatedAppIndexRoute: AuthenticatedAppIndexRoute,
   AuthenticatedAppBillingVerifyRoute: AuthenticatedAppBillingVerifyRoute,
@@ -1102,6 +1327,14 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   SupportRoute: SupportRoute,
   TermsRoute: TermsRoute,
+  RReferralCodeRoute: RReferralCodeRoute,
+  ShareTokenRoute: ShareTokenRoute,
+  ToolsCashRunwayRoute: ToolsCashRunwayRoute,
+  ToolsInvoiceProfitRoute: ToolsInvoiceProfitRoute,
+  ToolsProfitCalculatorRoute: ToolsProfitCalculatorRoute,
+  ToolsSafeToSpendRoute: ToolsSafeToSpendRoute,
+  ToolsTaxReserveRoute: ToolsTaxReserveRoute,
+  ToolsIndexRoute: ToolsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

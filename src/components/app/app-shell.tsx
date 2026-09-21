@@ -14,9 +14,11 @@ import {
   FileText,
   Flag,
   Gauge,
+  Gift,
   LayoutDashboard,
   Lightbulb,
   LifeBuoy,
+  Link2,
   Lock,
   Menu,
   PanelLeftClose,
@@ -71,7 +73,9 @@ type NavItem = {
     | "/app/goals"
     | "/app/follow-ups"
     | "/app/forecast"
-    | "/app/calendar";
+    | "/app/calendar"
+    | "/app/share"
+    | "/app/referrals";
   label: string;
   icon: LucideIcon;
   /** When set, a lock icon is shown for users who lack this entitlement. */
@@ -173,6 +177,13 @@ const NAV: NavGroup[] = [
         to: "/app/audit",
         requiredEntitlement: "canAccessAudit",
       },
+    ],
+  },
+  {
+    label: "Distribution",
+    items: [
+      { label: "Share Center", icon: Link2, to: "/app/share" },
+      { label: "Referrals", icon: Gift, to: "/app/referrals" },
     ],
   },
 ];
@@ -349,7 +360,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* ── Desktop Sidebar ── */}
       <aside
         className={cn(
-          "sticky top-0 hidden h-screen flex-col border-r border-border/60 bg-sidebar lg:flex overflow-hidden",
+          "sticky top-0 hidden h-screen flex-col border-r border-border/60 bg-sidebar lg:flex overflow-hidden print:hidden",
           "transition-all duration-300 ease-in-out",
           isCollapsed ? "w-16" : "w-[240px]",
         )}
@@ -446,7 +457,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       {/* ── Mobile Top Header ── */}
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border/60 bg-background/95 px-4 py-3 backdrop-blur-md lg:hidden">
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border/60 bg-background/95 px-4 py-3 backdrop-blur-md lg:hidden print:hidden">
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon" aria-label="Open navigation" className="size-9">
@@ -507,7 +518,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       {/* ── Main Content ── */}
-      <main className="min-w-0 px-4 py-7 sm:px-8 sm:py-9">{children}</main>
+      <main className="min-w-0 px-4 py-7 sm:px-8 sm:py-9 print:p-0 print:m-0">{children}</main>
     </div>
   );
 }
