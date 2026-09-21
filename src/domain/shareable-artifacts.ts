@@ -147,9 +147,7 @@ export function buildRedactedArtifactSnapshot(
         total: Number(inv["total"] ?? 0),
         amountPaid: Number(inv["amount_paid"] ?? inv["amountPaid"] ?? 0),
         amountDue: Number(inv["amount_due"] ?? inv["amountDue"] ?? 0),
-        notes: config.hideNotes
-          ? null
-          : String(inv["notes"] ?? inv["payment_instructions"] ?? ""),
+        notes: config.hideNotes ? null : String(inv["notes"] ?? inv["payment_instructions"] ?? ""),
         lineItems: Array.isArray(inv["line_items"])
           ? inv["line_items"].map((item: Record<string, unknown>) => ({
               description: String(item["description"] ?? ""),

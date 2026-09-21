@@ -13,15 +13,29 @@ export const Route = createFileRoute("/tools/safe-to-spend")({
   head: () => ({
     meta: [
       { title: "Safe-to-Spend Estimator | SoloOS Free Tools" },
-      { name: "description", content: "Estimate how much cash you can safely spend today after accounting for tax reserves, obligations, and operating buffers." },
+      {
+        name: "description",
+        content:
+          "Estimate how much cash you can safely spend today after accounting for tax reserves, obligations, and operating buffers.",
+      },
     ],
   }),
   component: SafeToSpendPage,
 });
 
 function NumInput({
-  id, label, value, onChange, hint,
-}: { id: string; label: string; value: string; onChange: (v: string) => void; hint?: string }) {
+  id,
+  label,
+  value,
+  onChange,
+  hint,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  hint?: string;
+}) {
   return (
     <div className="space-y-1.5">
       <Label htmlFor={id}>{label}</Label>
@@ -31,7 +45,7 @@ function NumInput({
         min="0"
         step="any"
         value={value}
-        onChange={e => onChange(e.target.value)}
+        onChange={(e) => onChange(e.target.value)}
         placeholder="0.00"
         className="font-mono"
       />
@@ -41,7 +55,11 @@ function NumInput({
 }
 
 function fmt(n: number) {
-  return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 2 });
+  return n.toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 2,
+  });
 }
 
 function SafeToSpendPage() {
@@ -67,7 +85,10 @@ function SafeToSpendPage() {
       <div className="border-b border-border/50">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
           <Link to="/tools">
-            <Button variant="ghost" size="sm" id="back-to-tools"><ArrowLeft className="size-4 mr-1" />Tools</Button>
+            <Button variant="ghost" size="sm" id="back-to-tools">
+              <ArrowLeft className="size-4 mr-1" />
+              Tools
+            </Button>
           </Link>
           <span className="text-muted-foreground/50">/</span>
           <span className="text-sm font-medium">Safe-to-Spend Estimator</span>
@@ -83,18 +104,51 @@ function SafeToSpendPage() {
             <h1 className="text-2xl font-bold">Safe-to-Spend Estimator</h1>
           </div>
           <p className="text-sm text-muted-foreground">
-            Estimate how much cash you can safely spend today. Enter your inputs — all calculations happen in your browser.
+            Estimate how much cash you can safely spend today. Enter your inputs — all calculations
+            happen in your browser.
           </p>
         </div>
 
         <Card>
-          <CardHeader><CardTitle className="text-base">Your Inputs</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">Your Inputs</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-4">
-            <NumInput id="liquid-cash" label="Current Liquid Cash" value={liquidCash} onChange={setLiquidCash} hint="Total cash in business accounts today" />
-            <NumInput id="tax-reserve" label="Tax Reserve Set Aside" value={taxReserve} onChange={setTaxReserve} hint="Amount already reserved for taxes" />
-            <NumInput id="upcoming-obligations" label="Upcoming Obligations" value={upcomingObligations} onChange={setUpcomingObligations} hint="Bills, subscriptions, payroll due soon" />
-            <NumInput id="operating-buffer" label="Operating Buffer" value={operatingBuffer} onChange={setOperatingBuffer} hint="Minimum cash cushion you want to maintain" />
-            <NumInput id="expected-collections" label="Expected Collections" value={expectedCollections} onChange={setExpectedCollections} hint="Invoices or payments you expect to receive soon" />
+            <NumInput
+              id="liquid-cash"
+              label="Current Liquid Cash"
+              value={liquidCash}
+              onChange={setLiquidCash}
+              hint="Total cash in business accounts today"
+            />
+            <NumInput
+              id="tax-reserve"
+              label="Tax Reserve Set Aside"
+              value={taxReserve}
+              onChange={setTaxReserve}
+              hint="Amount already reserved for taxes"
+            />
+            <NumInput
+              id="upcoming-obligations"
+              label="Upcoming Obligations"
+              value={upcomingObligations}
+              onChange={setUpcomingObligations}
+              hint="Bills, subscriptions, payroll due soon"
+            />
+            <NumInput
+              id="operating-buffer"
+              label="Operating Buffer"
+              value={operatingBuffer}
+              onChange={setOperatingBuffer}
+              hint="Minimum cash cushion you want to maintain"
+            />
+            <NumInput
+              id="expected-collections"
+              label="Expected Collections"
+              value={expectedCollections}
+              onChange={setExpectedCollections}
+              hint="Invoices or payments you expect to receive soon"
+            />
             <Button
               id="calculate-safe-to-spend"
               className="w-full"
@@ -107,18 +161,32 @@ function SafeToSpendPage() {
         </Card>
 
         {calculated && (
-          <Card className={cn("border-2", isPositive ? "border-emerald-500/30 bg-emerald-500/5" : "border-destructive/30 bg-destructive/5")}>
+          <Card
+            className={cn(
+              "border-2",
+              isPositive
+                ? "border-emerald-500/30 bg-emerald-500/5"
+                : "border-destructive/30 bg-destructive/5",
+            )}
+          >
             <CardContent className="py-6 space-y-5">
               <div className="text-center">
                 <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium mb-1">
                   Estimated Safe-to-Spend (Planning Estimate)
                 </p>
-                <p className={cn("text-4xl font-bold", isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-destructive")}>
+                <p
+                  className={cn(
+                    "text-4xl font-bold",
+                    isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-destructive",
+                  )}
+                >
                   {fmt(result.estimatedSafeToSpend)}
                 </p>
               </div>
               <div className="space-y-2 border rounded-lg p-4 bg-background/60">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Breakdown</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+                  Breakdown
+                </p>
                 {[
                   ["Liquid Cash", fmt(parseFloat(liquidCash) || 0)],
                   ["− Tax Reserve", fmt(parseFloat(taxReserve) || 0)],
@@ -127,7 +195,13 @@ function SafeToSpendPage() {
                   ["= Net Available", fmt(result.netAvailableCash)],
                   ["+ Expected Collections", fmt(parseFloat(expectedCollections) || 0)],
                 ].map(([k = "", v = ""]) => (
-                  <div key={k} className={cn("flex justify-between text-sm", k.startsWith("=") && "font-semibold border-t pt-2 mt-1")}>
+                  <div
+                    key={k}
+                    className={cn(
+                      "flex justify-between text-sm",
+                      k.startsWith("=") && "font-semibold border-t pt-2 mt-1",
+                    )}
+                  >
                     <span className="text-muted-foreground">{k}</span>
                     <span className="font-mono">{v}</span>
                   </div>
@@ -142,9 +216,13 @@ function SafeToSpendPage() {
         )}
 
         <div className="text-center rounded-xl border border-primary/20 bg-primary/5 p-6 space-y-3">
-          <p className="text-sm font-semibold">Get this calculated automatically from your real accounts</p>
-          <p className="text-xs text-muted-foreground">SoloOS connects to your financial accounts and updates safe-to-spend in real-time.</p>
-          <Link to="/auth" search={{ mode: "signup" } as any}>
+          <p className="text-sm font-semibold">
+            Get this calculated automatically from your real accounts
+          </p>
+          <p className="text-xs text-muted-foreground">
+            SoloOS connects to your financial accounts and updates safe-to-spend in real-time.
+          </p>
+          <Link to="/auth" search={{ mode: "signup" as const }}>
             <Button size="sm" id="safe-to-spend-cta">
               Get Started Free <ArrowRight className="size-3.5 ml-1.5" />
             </Button>

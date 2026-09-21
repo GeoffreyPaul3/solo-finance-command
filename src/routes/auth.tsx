@@ -10,12 +10,20 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import logo from "@/assets/solo.png";
 
+import { recordReferralSignupServerFn } from "@/server/referrals";
+import { validateReferralCode } from "@/domain/referrals";
+
 type Mode = "signin" | "signup";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    mode: search["mode"] === "signup" ? ("signup" as const) : ("signin" as const),
-  }),
+  validateSearch: (search: Record<string, unknown>): { mode: Mode; ref?: string } => {
+    const mode: Mode = search["mode"] === "signup" ? "signup" : "signin";
+    const ref =
+      typeof search["ref"] === "string" && search["ref"].trim()
+        ? search["ref"].trim().toUpperCase()
+        : undefined;
+    return ref ? { mode, ref } : { mode };
+  },
   head: () => ({
     meta: [
       { title: "Sign in | SoloOS" },
@@ -43,7 +51,7 @@ function describeAuthError(message: string): string {
 }
 
 function AuthPage() {
-  const { mode } = Route.useSearch();
+  const { mode, ref: searchRef } = Route.useSearch();
   const navigate = useNavigate();
   const { session, isLoading } = useAuth();
 
@@ -65,7 +73,11 @@ function AuthPage() {
   function switchMode(next: Mode) {
     setError(null);
     setNotice(null);
-    navigate({ to: "/auth", search: { mode: next }, replace: true });
+    navigate({
+      to: "/auth",
+      search: searchRef ? { mode: next, ref: searchRef } : { mode: next },
+      replace: true,
+    });
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -81,15 +93,52 @@ function AuthPage() {
     setPending(true);
     try {
       if (isSignup) {
-        const { error: signUpError } = await supabase.auth.signUp({
+        // Determine active referral code: search param first, then localStorage fallback
+        let activeRefCode: string | undefined = undefined;
+        if (searchRef && validateReferralCode(searchRef)) {
+          activeRefCode = searchRef;
+        } else if (typeof localStorage !== "undefined") {
+          const stored = localStorage.getItem("solos_ref_code");
+          if (stored && validateReferralCode(stored)) {
+            activeRefCode = stored.toUpperCase();
+          }
+        }
+
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: email.trim(),
           password,
           options: {
             emailRedirectTo: `${window.location.origin}/app`,
-            ...(fullName.trim() ? { data: { full_name: fullName.trim() } } : {}),
+            data: {
+              ...(fullName.trim() ? { full_name: fullName.trim() } : {}),
+              ...(activeRefCode ? { referral_code: activeRefCode } : {}),
+            },
           },
         });
         if (signUpError) throw signUpError;
+
+        // Secure server-side attribution linking
+        if (signUpData.user?.id) {
+          let anonSessionId: string | undefined = undefined;
+          try {
+            anonSessionId = localStorage.getItem("solos_anon_session") || undefined;
+          } catch {
+            /* ignore */
+          }
+
+          try {
+            await recordReferralSignupServerFn({
+              data: {
+                userId: signUpData.user.id,
+                referralCode: activeRefCode,
+                anonymousSessionId: anonSessionId,
+              },
+            });
+          } catch {
+            /* non-blocking */
+          }
+        }
+
         setNotice("Account created. Please sign in.");
       } else {
         const { error: signInError } = await supabase.auth.signInWithPassword({

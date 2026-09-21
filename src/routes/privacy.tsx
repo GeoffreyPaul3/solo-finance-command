@@ -459,27 +459,47 @@ function PrivacyPage() {
                   <p>SoloOS believes in complete honesty regarding browser storage and tracking:</p>
                   <ul className="list-disc pl-5 space-y-1.5 text-xs">
                     <li>
-                      <strong className="text-foreground">Strictly Necessary Storage Only:</strong>{" "}
-                      We use browser <span className="font-mono text-[11px]">localStorage</span>{" "}
+                      <strong className="text-foreground">Strictly Necessary Storage:</strong> We
+                      use browser <span className="font-mono text-[11px]">localStorage</span>{" "}
                       exclusively to persist your authenticated user session (via Supabase Auth) and
                       remember your currently selected workspace across page reloads.
                     </li>
                     <li>
-                      <strong className="text-foreground">
-                        Zero Third-Party Tracking Cookies:
-                      </strong>{" "}
-                      SoloOS does not use third-party advertising cookies, marketing trackers, or
-                      cross-site profiling scripts.
+                      <strong className="text-foreground">Shareable Financial Artifacts:</strong>{" "}
+                      When you create a shareable financial artifact (e.g. invoice share or
+                      financial brief), SoloOS generates a cryptographically secure 256-bit unlisted
+                      bearer token. The resulting view displays a strictly redacted, read-only
+                      immutable snapshot frozen at the time of creation. Sensitive credentials,
+                      banking details, and internal IDs are stripped. You may revoke links at any
+                      time or set expiration bounds. Public share links emit{" "}
+                      <span className="font-mono text-[11px]">noindex, nofollow</span> headers to
+                      prevent search engine indexing.
                     </li>
                     <li>
-                      <strong className="text-foreground">No Invasive Analytics:</strong> We do not
-                      embed Google Analytics, Meta Pixel, PostHog, Hotjar, or third-party behavioral
-                      tracking software in the application.
+                      <strong className="text-foreground">Referral Attribution Cookies:</strong> If
+                      you visit SoloOS via an operator's referral link, a first-touch attribution
+                      cookie (<span className="font-mono text-[11px]">solos_ref</span>) is stored in
+                      your browser for 30 days to attribute subsequent signups. It contains solely
+                      the referral code and creation timestamp. We do not use cross-site tracking or
+                      commercial ad networks.
+                    </li>
+                    <li>
+                      <strong className="text-foreground">Free Public Calculators:</strong> Our
+                      public tools (Safe-to-Spend, Cash Runway, Profit Calculator, Invoice Profit,
+                      and Tax Reserve) execute 100% in your local browser runtime. Values entered
+                      into public calculators are never transmitted to or saved on our servers.
+                    </li>
+                    <li>
+                      <strong className="text-foreground">
+                        Zero Third-Party Advertising Trackers:
+                      </strong>{" "}
+                      SoloOS does not embed third-party advertising cookies, cross-site trackers,
+                      Meta Pixel, or invasive behavioral profiling software.
                     </li>
                   </ul>
                   <p className="text-xs">
-                    Because we do not use non-essential tracking cookies or ad profiling, we do not
-                    display deceptive cookie banners designed to coerce consent.
+                    Because we do not use advertising tracking cookies or ad profiling, we do not
+                    display deceptive cookie consent banners.
                   </p>
                 </div>
               </section>

@@ -22,13 +22,7 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -38,13 +32,24 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useWorkspace } from "@/components/app/workspace-context";
+import type { ArtifactType, ArtifactVisibility } from "@/domain/shareable-artifacts";
 import { supabase } from "@/integrations/supabase/client";
-import { createShareArtifactServerFn, revokeShareArtifactServerFn, sendShareEmailServerFn } from "@/server/share";
+import {
+  createShareArtifactServerFn,
+  revokeShareArtifactServerFn,
+  sendShareEmailServerFn,
+} from "@/server/share";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app/share")({
@@ -52,18 +57,29 @@ export const Route = createFileRoute("/_authenticated/app/share")({
 });
 
 const DEFAULT_ARTIFACT_META = { label: "Invoice", icon: FileText, color: "text-blue-500" };
-const ARTIFACT_TYPE_META: Record<string, { label: string; icon: React.ElementType; color: string }> = {
+const ARTIFACT_TYPE_META: Record<
+  string,
+  { label: string; icon: React.ElementType; color: string }
+> = {
   invoice: DEFAULT_ARTIFACT_META,
   financial_brief: { label: "Financial Brief", icon: TrendingUp, color: "text-emerald-500" },
   cashflow_report: { label: "Cash Flow Report", icon: Zap, color: "text-cyan-500" },
-  profitability_report: { label: "Profitability Report", icon: TrendingUp, color: "text-purple-500" },
+  profitability_report: {
+    label: "Profitability Report",
+    icon: TrendingUp,
+    color: "text-purple-500",
+  },
   client_report: { label: "Client Report", icon: Users, color: "text-orange-500" },
   project_report: { label: "Project Report", icon: FileText, color: "text-indigo-500" },
   tax_report: { label: "Tax Report", icon: Shield, color: "text-rose-500" },
 };
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return new Date(iso).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 function getShareUrl(token: string) {
@@ -98,11 +114,13 @@ function CreateShareDialog({ open, onClose, workspaceId }: CreateShareDialogProp
 
   const { mutate: createShare, isPending } = useMutation({
     mutationFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       return createShareArtifactServerFn({
         data: {
           workspaceId,
-          artifactType: artifactType as any,
+          artifactType: artifactType as ArtifactType,
           sourceEntityType: artifactType === "invoice" ? "invoice" : "workspace",
           sourceEntityId,
           title: title.trim(),
@@ -128,7 +146,11 @@ function CreateShareDialog({ open, onClose, workspaceId }: CreateShareDialogProp
 
   function handleClose() {
     setStep(1);
-    setTitle(""); setDescription(""); setArtifactType("invoice"); setCreatedToken(null); setCreatedUrl(null);
+    setTitle("");
+    setDescription("");
+    setArtifactType("invoice");
+    setCreatedToken(null);
+    setCreatedUrl(null);
     onClose();
   }
 
@@ -153,8 +175,14 @@ function CreateShareDialog({ open, onClose, workspaceId }: CreateShareDialogProp
 
         {/* Progress bar */}
         <div className="flex gap-1 mt-1 mb-4">
-          {([1,2,3,4,5] as WizardStep[]).map(s => (
-            <div key={s} className={cn("h-1 flex-1 rounded-full transition-colors", s <= step ? "bg-primary" : "bg-muted")} />
+          {([1, 2, 3, 4, 5] as WizardStep[]).map((s) => (
+            <div
+              key={s}
+              className={cn(
+                "h-1 flex-1 rounded-full transition-colors",
+                s <= step ? "bg-primary" : "bg-muted",
+              )}
+            />
           ))}
         </div>
 
@@ -183,7 +211,7 @@ function CreateShareDialog({ open, onClose, workspaceId }: CreateShareDialogProp
               <Input
                 id="share-title"
                 value={title}
-                onChange={e => setTitle(e.target.value)}
+                onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g. Q3 2026 Financial Brief"
                 maxLength={200}
               />
@@ -193,7 +221,7 @@ function CreateShareDialog({ open, onClose, workspaceId }: CreateShareDialogProp
               <Textarea
                 id="share-desc"
                 value={description}
-                onChange={e => setDescription(e.target.value)}
+                onChange={(e) => setDescription(e.target.value)}
                 placeholder="Additional context for the recipient..."
                 rows={3}
                 maxLength={1000}
@@ -213,13 +241,15 @@ function CreateShareDialog({ open, onClose, workspaceId }: CreateShareDialogProp
         {step === 2 && (
           <div className="space-y-5">
             <p className="text-sm text-muted-foreground">
-              These settings control what recipients can see in the shared view. The underlying financial
-              records in SoloOS are <strong>never modified</strong>.
+              These settings control what recipients can see in the shared view. The underlying
+              financial records in SoloOS are <strong>never modified</strong>.
             </p>
             <div className="flex items-center justify-between py-3 border rounded-lg px-4">
               <div>
                 <p className="text-sm font-medium">Hide Line-Item Pricing</p>
-                <p className="text-xs text-muted-foreground">Show totals only, no individual amounts</p>
+                <p className="text-xs text-muted-foreground">
+                  Show totals only, no individual amounts
+                </p>
               </div>
               <Switch
                 id="hide-line-pricing"
@@ -230,16 +260,16 @@ function CreateShareDialog({ open, onClose, workspaceId }: CreateShareDialogProp
             <div className="flex items-center justify-between py-3 border rounded-lg px-4">
               <div>
                 <p className="text-sm font-medium">Hide Internal Notes</p>
-                <p className="text-xs text-muted-foreground">Redact memo and note fields from view</p>
+                <p className="text-xs text-muted-foreground">
+                  Redact memo and note fields from view
+                </p>
               </div>
-              <Switch
-                id="hide-notes"
-                checked={hideNotes}
-                onCheckedChange={setHideNotes}
-              />
+              <Switch id="hide-notes" checked={hideNotes} onCheckedChange={setHideNotes} />
             </div>
             <div className="flex gap-3">
-              <Button variant="outline" className="flex-1" onClick={() => setStep(1)}>Back</Button>
+              <Button variant="outline" className="flex-1" onClick={() => setStep(1)}>
+                Back
+              </Button>
               <Button className="flex-1" onClick={() => setStep(3)} id="share-wizard-step2-next">
                 Next: Visibility
               </Button>
@@ -254,13 +284,17 @@ function CreateShareDialog({ open, onClose, workspaceId }: CreateShareDialogProp
               <div className="grid grid-cols-2 gap-3 mt-1">
                 {[
                   { value: "unlisted", label: "Unlisted", desc: "Anyone with the link" },
-                  { value: "workspace_only", label: "Workspace Only", desc: "Authenticated members only" },
-                ].map(opt => (
+                  {
+                    value: "workspace_only",
+                    label: "Workspace Only",
+                    desc: "Authenticated members only",
+                  },
+                ].map((opt) => (
                   <button
                     key={opt.value}
                     id={`visibility-${opt.value}`}
                     type="button"
-                    onClick={() => setVisibility(opt.value as any)}
+                    onClick={() => setVisibility(opt.value as ArtifactVisibility)}
                     className={cn(
                       "border rounded-lg p-3 text-left transition-colors",
                       visibility === opt.value
@@ -291,7 +325,9 @@ function CreateShareDialog({ open, onClose, workspaceId }: CreateShareDialogProp
               </Select>
             </div>
             <div className="flex gap-3">
-              <Button variant="outline" className="flex-1" onClick={() => setStep(2)}>Back</Button>
+              <Button variant="outline" className="flex-1" onClick={() => setStep(2)}>
+                Back
+              </Button>
               <Button className="flex-1" onClick={() => setStep(4)} id="share-wizard-step3-next">
                 Next: Review
               </Button>
@@ -302,12 +338,19 @@ function CreateShareDialog({ open, onClose, workspaceId }: CreateShareDialogProp
         {step === 4 && (
           <div className="space-y-4">
             <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Snapshot Preview</p>
+              <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Snapshot Preview
+              </p>
               <div className="space-y-2">
                 {[
                   ["Artifact Type", ARTIFACT_TYPE_META[artifactType]?.label],
                   ["Title", title],
-                  ["Visibility", visibility === "unlisted" ? "Unlisted (anyone with link)" : "Workspace members only"],
+                  [
+                    "Visibility",
+                    visibility === "unlisted"
+                      ? "Unlisted (anyone with link)"
+                      : "Workspace members only",
+                  ],
                   ["Expiration", expiresInDays ? `${expiresInDays} days` : "Never"],
                   ["Line-item pricing", hideLineItemPricing ? "Hidden" : "Visible"],
                   ["Notes", hideNotes ? "Redacted" : "Visible"],
@@ -321,11 +364,13 @@ function CreateShareDialog({ open, onClose, workspaceId }: CreateShareDialogProp
             </div>
             <p className="text-xs text-muted-foreground">
               <Shield className="inline size-3 mr-1 text-primary" />
-              This snapshot is <strong>immutable</strong>. Future changes to the source entity will not
-              affect this shared link.
+              This snapshot is <strong>immutable</strong>. Future changes to the source entity will
+              not affect this shared link.
             </p>
             <div className="flex gap-3">
-              <Button variant="outline" className="flex-1" onClick={() => setStep(3)}>Back</Button>
+              <Button variant="outline" className="flex-1" onClick={() => setStep(3)}>
+                Back
+              </Button>
               <Button
                 className="flex-1"
                 onClick={() => createShare()}
@@ -345,12 +390,16 @@ function CreateShareDialog({ open, onClose, workspaceId }: CreateShareDialogProp
                 <CheckCircle2 className="size-6 text-emerald-500" />
               </div>
               <p className="font-semibold text-lg">Share Link Generated</p>
-              <p className="text-sm text-muted-foreground">Your immutable, encrypted share link is ready.</p>
+              <p className="text-sm text-muted-foreground">
+                Your immutable, encrypted share link is ready.
+              </p>
             </div>
             <div className="rounded-lg border bg-muted/40 p-3 text-left">
               <p className="text-xs text-muted-foreground mb-1.5 font-medium">Secure Share URL</p>
               <div className="flex items-center gap-2">
-                <code className="flex-1 text-xs break-all text-foreground font-mono">{createdUrl}</code>
+                <code className="flex-1 text-xs break-all text-foreground font-mono">
+                  {createdUrl}
+                </code>
                 <Button
                   size="sm"
                   variant="outline"
@@ -390,7 +439,9 @@ function SendEmailDialog({ open, onClose, artifact, workspaceId }: SendEmailDial
 
   const { mutate, isPending } = useMutation({
     mutationFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       return sendShareEmailServerFn({
         data: {
           workspaceId,
@@ -410,7 +461,7 @@ function SendEmailDialog({ open, onClose, artifact, workspaceId }: SendEmailDial
   });
 
   return (
-    <Dialog open={open} onOpenChange={v => !v && onClose()}>
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -424,18 +475,38 @@ function SendEmailDialog({ open, onClose, artifact, workspaceId }: SendEmailDial
         <div className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="email-recipient">Recipient Email *</Label>
-            <Input id="email-recipient" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="accountant@firm.com" />
+            <Input
+              id="email-recipient"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="accountant@firm.com"
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="email-recipient-name">Recipient Name (optional)</Label>
-            <Input id="email-recipient-name" value={name} onChange={e => setName(e.target.value)} placeholder="Jane Smith" />
+            <Input
+              id="email-recipient-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Jane Smith"
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="email-message">Custom Message (optional)</Label>
-            <Textarea id="email-message" value={message} onChange={e => setMessage(e.target.value)} rows={3} maxLength={500} placeholder="Add a personal note..." />
+            <Textarea
+              id="email-message"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              rows={3}
+              maxLength={500}
+              placeholder="Add a personal note..."
+            />
           </div>
           <div className="flex gap-3">
-            <Button variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
+            <Button variant="outline" className="flex-1" onClick={onClose}>
+              Cancel
+            </Button>
             <Button
               className="flex-1"
               disabled={!email || isPending}
@@ -465,7 +536,9 @@ function ShareCenterPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("shareable_artifacts")
-        .select("id, title, description, artifact_type, visibility, status, share_token, view_count, created_at, expires_at, revoked_at")
+        .select(
+          "id, title, description, artifact_type, visibility, status, share_token, view_count, created_at, expires_at, revoked_at",
+        )
         .eq("workspace_id", workspaceId)
         .order("created_at", { ascending: false })
         .limit(50);
@@ -477,7 +550,9 @@ function ShareCenterPage() {
 
   const { mutate: revoke } = useMutation({
     mutationFn: async (artifactId: string) => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       return revokeShareArtifactServerFn({
         data: { workspaceId, artifactId, authToken: session?.access_token },
       });
@@ -489,8 +564,8 @@ function ShareCenterPage() {
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const active = artifacts.filter(a => a.status === "active");
-  const revoked = artifacts.filter(a => a.status !== "active");
+  const active = artifacts.filter((a) => a.status === "active");
+  const revoked = artifacts.filter((a) => a.status !== "active");
   const totalViews = active.reduce((sum, a) => sum + (a.view_count ?? 0), 0);
 
   return (
@@ -515,8 +590,13 @@ function ShareCenterPage() {
           { label: "Active Links", value: active.length, icon: Link2, color: "text-primary" },
           { label: "Total Views", value: totalViews, icon: Eye, color: "text-emerald-500" },
           { label: "Revoked", value: revoked.length, icon: X, color: "text-muted-foreground" },
-          { label: "All-time Links", value: artifacts.length, icon: FileText, color: "text-blue-500" },
-        ].map(s => (
+          {
+            label: "All-time Links",
+            value: artifacts.length,
+            icon: FileText,
+            color: "text-blue-500",
+          },
+        ].map((s) => (
           <Card key={s.label}>
             <CardContent className="pt-4 pb-3">
               <div className="flex items-center gap-2 mb-1">
@@ -540,19 +620,28 @@ function ShareCenterPage() {
             <CardContent className="py-12 text-center">
               <Link2 className="size-10 text-muted-foreground/30 mx-auto mb-3" />
               <p className="text-sm font-medium">No active share links</p>
-              <p className="text-xs text-muted-foreground mt-1">Create your first secure share to distribute financial artifacts.</p>
-              <Button size="sm" className="mt-4" onClick={() => setShowCreate(true)} id="create-first-share-btn">
+              <p className="text-xs text-muted-foreground mt-1">
+                Create your first secure share to distribute financial artifacts.
+              </p>
+              <Button
+                size="sm"
+                className="mt-4"
+                onClick={() => setShowCreate(true)}
+                id="create-first-share-btn"
+              >
                 <Plus className="size-3.5 mr-1.5" />
                 Create Share Link
               </Button>
             </CardContent>
           </Card>
         )}
-        {active.map(artifact => {
+        {active.map((artifact) => {
           const meta = ARTIFACT_TYPE_META[artifact.artifact_type] ?? DEFAULT_ARTIFACT_META;
           const Icon = meta.icon;
           const url = getShareUrl(artifact.share_token);
-          const isExpired = artifact.expires_at ? new Date(artifact.expires_at) < new Date() : false;
+          const isExpired = artifact.expires_at
+            ? new Date(artifact.expires_at) < new Date()
+            : false;
           return (
             <Card key={artifact.id} className={cn("border", isExpired && "opacity-60")}>
               <CardContent className="py-4">
@@ -573,11 +662,21 @@ function ShareCenterPage() {
                         >
                           {artifact.visibility === "unlisted" ? "Unlisted" : "Workspace"}
                         </Badge>
-                        {isExpired && <Badge variant="destructive" className="text-[10px] px-1.5 py-0">Expired</Badge>}
+                        {isExpired && (
+                          <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
+                            Expired
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex items-center gap-3 mt-0.5 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1"><Eye className="size-3" />{artifact.view_count ?? 0} views</span>
-                        <span className="flex items-center gap-1"><Clock className="size-3" />Created {formatDate(artifact.created_at)}</span>
+                        <span className="flex items-center gap-1">
+                          <Eye className="size-3" />
+                          {artifact.view_count ?? 0} views
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="size-3" />
+                          Created {formatDate(artifact.created_at)}
+                        </span>
                         {artifact.expires_at && (
                           <span className="flex items-center gap-1">
                             <AlertCircle className="size-3" />
@@ -614,7 +713,11 @@ function ShareCenterPage() {
                       className="text-destructive hover:text-destructive hover:bg-destructive/10"
                       id={`revoke-link-${artifact.id}`}
                       onClick={() => {
-                        if (confirm(`Revoke share link for "${artifact.title}"? Recipients will immediately lose access.`)) {
+                        if (
+                          confirm(
+                            `Revoke share link for "${artifact.title}"? Recipients will immediately lose access.`,
+                          )
+                        ) {
                           revoke(artifact.id);
                         }
                       }}
@@ -634,20 +737,28 @@ function ShareCenterPage() {
         <div className="space-y-3">
           <Separator />
           <h2 className="text-sm font-medium text-muted-foreground">Revoked & Expired Links</h2>
-          {revoked.map(artifact => {
+          {revoked.map((artifact) => {
             const meta = ARTIFACT_TYPE_META[artifact.artifact_type] ?? DEFAULT_ARTIFACT_META;
             const Icon = meta.icon;
             return (
-              <div key={artifact.id} className="flex items-center gap-3 px-4 py-3 rounded-lg border border-dashed opacity-50">
+              <div
+                key={artifact.id}
+                className="flex items-center gap-3 px-4 py-3 rounded-lg border border-dashed opacity-50"
+              >
                 <Icon className={cn("size-4", meta.color)} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm truncate">{artifact.title}</p>
                   <p className="text-xs text-muted-foreground">
-                    {artifact.status === "revoked" ? `Revoked ${artifact.revoked_at ? formatDate(artifact.revoked_at) : ""}` : "Expired"}
-                    {" · "}{artifact.view_count ?? 0} total views
+                    {artifact.status === "revoked"
+                      ? `Revoked ${artifact.revoked_at ? formatDate(artifact.revoked_at) : ""}`
+                      : "Expired"}
+                    {" · "}
+                    {artifact.view_count ?? 0} total views
                   </p>
                 </div>
-                <Badge variant="outline" className="text-[10px] shrink-0">{artifact.status}</Badge>
+                <Badge variant="outline" className="text-[10px] shrink-0">
+                  {artifact.status}
+                </Badge>
               </div>
             );
           })}
@@ -664,15 +775,34 @@ function ShareCenterPage() {
         </CardHeader>
         <CardContent>
           <ul className="text-sm text-muted-foreground space-y-1.5">
-            <li className="flex items-start gap-2"><CheckCircle2 className="size-3.5 text-emerald-500 mt-0.5 shrink-0" />Every share is an <strong>immutable snapshot</strong> — source changes don&apos;t silently update existing links.</li>
-            <li className="flex items-start gap-2"><CheckCircle2 className="size-3.5 text-emerald-500 mt-0.5 shrink-0" />Links use <strong>256-bit cryptographic tokens</strong>. Search engines cannot index them (<code>noindex, nofollow</code>).</li>
-            <li className="flex items-start gap-2"><CheckCircle2 className="size-3.5 text-emerald-500 mt-0.5 shrink-0" />View counts are incremented <strong>server-side atomically</strong> — never client-controllable.</li>
-            <li className="flex items-start gap-2"><CheckCircle2 className="size-3.5 text-emerald-500 mt-0.5 shrink-0" />Revoke any link instantly. Recipients lose access immediately.</li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="size-3.5 text-emerald-500 mt-0.5 shrink-0" />
+              Every share is an <strong>immutable snapshot</strong> — source changes don&apos;t
+              silently update existing links.
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="size-3.5 text-emerald-500 mt-0.5 shrink-0" />
+              Links use <strong>256-bit cryptographic tokens</strong>. Search engines cannot index
+              them (<code>noindex, nofollow</code>).
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="size-3.5 text-emerald-500 mt-0.5 shrink-0" />
+              View counts are incremented <strong>server-side atomically</strong> — never
+              client-controllable.
+            </li>
+            <li className="flex items-start gap-2">
+              <CheckCircle2 className="size-3.5 text-emerald-500 mt-0.5 shrink-0" />
+              Revoke any link instantly. Recipients lose access immediately.
+            </li>
           </ul>
         </CardContent>
       </Card>
 
-      <CreateShareDialog open={showCreate} onClose={() => setShowCreate(false)} workspaceId={workspaceId} />
+      <CreateShareDialog
+        open={showCreate}
+        onClose={() => setShowCreate(false)}
+        workspaceId={workspaceId}
+      />
       {emailArtifact && (
         <SendEmailDialog
           open={!!emailArtifact}

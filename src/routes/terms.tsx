@@ -450,6 +450,21 @@ function TermsPage() {
                     transmit, and display your data to the extent necessary to provide the Service
                     to you and your authorized workspace members.
                   </p>
+                  <p>
+                    <strong className="text-foreground">Shared Financial Artifacts:</strong> When
+                    you generate an unlisted share link (such as for an invoice or financial brief),
+                    you authorize anyone possessing the secure token to view that frozen snapshot.
+                    You remain solely responsible for the distribution of your share links and may
+                    revoke them at any time through the Share Center.
+                  </p>
+                  <p>
+                    <strong className="text-foreground">Referral Program Terms:</strong> SoloOS
+                    provides a referral attribution feature for organic platform growth. Operators
+                    agree not to engage in self-referrals, automated referral link spamming, search
+                    engine ad bidding on SoloOS trademarks, or deceptive marketing practices. SoloOS
+                    reserves the right to void referral attributions obtained through fraud or
+                    abusive conduct.
+                  </p>
                 </div>
               </section>
 

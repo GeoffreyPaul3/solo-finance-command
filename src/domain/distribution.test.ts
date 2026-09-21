@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  aggregateWorkspaceDistribution,
-  type DistributionEventRecord,
-} from "./distribution";
+import { aggregateWorkspaceDistribution, type DistributionEventRecord } from "./distribution";
 
 describe("distribution domain model", () => {
   it("aggregates events and artifact counts accurately without fabrication", () => {

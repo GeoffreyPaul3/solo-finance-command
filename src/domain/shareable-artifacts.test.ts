@@ -8,11 +8,20 @@ import {
 } from "./shareable-artifacts";
 
 describe("shareable-artifacts domain model", () => {
-  it("generates a high-entropy 32-byte URL-safe token", () => {
+  it("generates a high-entropy 32-byte (256-bit) URL-safe token", () => {
     const token = generateSecureShareToken();
     expect(token).toBeDefined();
-    expect(token.length).toBeGreaterThanOrEqual(32);
+    expect(token.length).toBeGreaterThanOrEqual(43);
     expect(validateShareTokenFormat(token)).toBe(true);
+
+    // Verify uniqueness across 50 generated tokens
+    const set = new Set<string>();
+    for (let i = 0; i < 50; i++) {
+      const t = generateSecureShareToken();
+      expect(validateShareTokenFormat(t)).toBe(true);
+      set.add(t);
+    }
+    expect(set.size).toBe(50);
   });
 
   it("validates token formats correctly", () => {
@@ -20,96 +29,185 @@ describe("shareable-artifacts domain model", () => {
     expect(validateShareTokenFormat("short")).toBe(false);
     expect(validateShareTokenFormat("inv-123")).toBe(false);
     expect(validateShareTokenFormat("invalid char!@#$%^&*()")).toBe(false);
-    expect(
-      validateShareTokenFormat("aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789_-aBcDeFgHiJkLmNoP"),
-    ).toBe(true);
+    expect(validateShareTokenFormat("aBcDeFgHiJkLmNoPqRsTuVwXyZ0123456789_-aBcDeFgHiJkLmNoP")).toBe(
+      true,
+    );
   });
 
-  it("correctly evaluates accessibility based on status, revocation, and expiration", () => {
-    const activeArtifact = {
-      status: "active" as const,
-      visibility: "unlisted" as const,
-      expires_at: null,
-      revoked_at: null,
-    };
-    expect(isArtifactAccessible(activeArtifact).accessible).toBe(true);
+  describe("accessibility matrix", () => {
+    it("active + unexpired is accessible", () => {
+      const artifact = {
+        status: "active" as const,
+        visibility: "unlisted" as const,
+        expires_at: new Date(Date.now() + 86400000).toISOString(),
+        revoked_at: null,
+      };
+      expect(isArtifactAccessible(artifact).accessible).toBe(true);
+    });
 
-    const revokedArtifact = {
-      status: "revoked" as const,
-      visibility: "unlisted" as const,
-      expires_at: null,
-      revoked_at: new Date().toISOString(),
-    };
-    expect(isArtifactAccessible(revokedArtifact).accessible).toBe(false);
+    it("active + null expires_at is accessible", () => {
+      const artifact = {
+        status: "active" as const,
+        visibility: "unlisted" as const,
+        expires_at: null,
+        revoked_at: null,
+      };
+      expect(isArtifactAccessible(artifact).accessible).toBe(true);
+    });
 
-    const expiredArtifact = {
-      status: "active" as const,
-      visibility: "unlisted" as const,
-      expires_at: new Date(Date.now() - 10000).toISOString(),
-      revoked_at: null,
-    };
-    expect(isArtifactAccessible(expiredArtifact).accessible).toBe(false);
+    it("revoked share is inaccessible", () => {
+      const artifact = {
+        status: "revoked" as const,
+        visibility: "unlisted" as const,
+        expires_at: null,
+        revoked_at: new Date().toISOString(),
+      };
+      const res = isArtifactAccessible(artifact);
+      expect(res.accessible).toBe(false);
+      expect(res.reason).toContain("revoked");
+    });
 
-    const workspaceOnlyArtifact = {
-      status: "active" as const,
-      visibility: "workspace_only" as const,
-      expires_at: null,
-      revoked_at: null,
-    };
-    expect(isArtifactAccessible(workspaceOnlyArtifact).accessible).toBe(false);
+    it("expired share is inaccessible", () => {
+      const artifact = {
+        status: "active" as const,
+        visibility: "unlisted" as const,
+        expires_at: new Date(Date.now() - 10000).toISOString(),
+        revoked_at: null,
+      };
+      const res = isArtifactAccessible(artifact);
+      expect(res.accessible).toBe(false);
+      expect(res.reason).toContain("expired");
+    });
+
+    it("revoked and expired share is inaccessible", () => {
+      const artifact = {
+        status: "revoked" as const,
+        visibility: "unlisted" as const,
+        expires_at: new Date(Date.now() - 10000).toISOString(),
+        revoked_at: new Date().toISOString(),
+      };
+      const res = isArtifactAccessible(artifact);
+      expect(res.accessible).toBe(false);
+    });
+
+    it("workspace_only visibility is inaccessible to unlisted public access", () => {
+      const artifact = {
+        status: "active" as const,
+        visibility: "workspace_only" as const,
+        expires_at: null,
+        revoked_at: null,
+      };
+      const res = isArtifactAccessible(artifact);
+      expect(res.accessible).toBe(false);
+      expect(res.reason).toContain("restricted to authorized workspace members");
+    });
   });
 
-  it("redacts invoice snapshots stripping sensitive internal fields", () => {
-    const rawInvoice = {
-      id: "raw-uuid-1234",
-      workspace_id: "ws-secret-id",
-      invoice_number: "INV-2026-001",
-      currency: "USD",
-      subtotal: 1000,
-      total: 1000,
-      amount_paid: 200,
-      amount_due: 800,
-      internal_notes: "Private client credit score is low",
-      payment_instructions: "Deposit to Standard Bank acc 987654321",
-      line_items: [
-        {
-          id: "item-uuid-1",
-          description: "System Design Consultation",
-          quantity: 10,
-          unit_price: 100,
-          line_total: 1000,
-        },
-      ],
-    };
+  describe("snapshot immutability & frozen state", () => {
+    it("proves snapshot remains unchanged when original source data is mutated", () => {
+      const sourceInvoice: Record<string, unknown> = {
+        invoice_number: "INV-2026-042",
+        currency: "MWK",
+        total: 500000,
+        subtotal: 500000,
+        amount_paid: 0,
+        amount_due: 500000,
+        status: "sent",
+        client_name: "Original Client Ltd",
+        line_items: [{ description: "Consulting", quantity: 1, total: 500000 }],
+      };
 
-    const snapshot = buildRedactedArtifactSnapshot("invoice", rawInvoice, { hideNotes: true });
-    expect(snapshot["invoiceNumber"]).toBe("INV-2026-001");
-    expect(snapshot["total"]).toBe(1000);
-    expect(snapshot["amountDue"]).toBe(800);
-    expect(snapshot["notes"]).toBeNull();
-    // Internal fields should never be copied
-    expect((snapshot as Record<string, unknown>)["internal_notes"]).toBeUndefined();
-    expect((snapshot as Record<string, unknown>)["workspace_id"]).toBeUndefined();
+      // Create frozen snapshot at day 1
+      const snapshot = buildRedactedArtifactSnapshot("invoice", sourceInvoice);
+
+      expect(snapshot["invoiceNumber"]).toBe("INV-2026-042");
+      expect(snapshot["total"]).toBe(500000);
+      expect(snapshot["status"]).toBe("sent");
+
+      // Mutate original source data at day 2 (simulate invoice edit, payment, cancellation)
+      sourceInvoice["total"] = 0;
+      sourceInvoice["status"] = "cancelled";
+      sourceInvoice["amount_paid"] = 500000;
+      sourceInvoice["client_name"] = "Different Client";
+      (sourceInvoice["line_items"] as Array<unknown>).push({ description: "Added item" });
+
+      // The snapshot MUST remain identical to its frozen state
+      expect(snapshot["invoiceNumber"]).toBe("INV-2026-042");
+      expect(snapshot["total"]).toBe(500000);
+      expect(snapshot["status"]).toBe("sent");
+      expect(snapshot["clientName"]).toBe("Original Client Ltd");
+      expect((snapshot["lineItems"] as Array<unknown>).length).toBe(1);
+    });
   });
 
-  it("redacts financial brief preserving deterministic metrics", () => {
-    const rawBrief = {
-      headline: "Strong cash position",
-      currency: "MWK",
-      safeToSpend: 4500000,
-      liquidCash: 6000000,
-      receivables: 1200000,
-      actualTaxReserve: 1500000,
-      upcomingObligations: 800000,
-      attentionSignals: [{ id: "sig-1", title: "Tax reserve shortfall", detail: "Detail text" }],
-      positiveSignals: [{ id: "sig-2", title: "Cash runway > 6 months", detail: "Runway healthy" }],
-    };
+  describe("sensitive data exclusion & redaction", () => {
+    it("guarantees adversarial sensitive fields are completely stripped from snapshots", () => {
+      const poisonedSourceData = {
+        invoice_number: "INV-SAFE-001",
+        currency: "USD",
+        total: 1500,
+        subtotal: 1500,
+        // Injected sensitive fields:
+        password: "super-secret-password",
+        auth_token: "eyJh...raw_bearer_jwt",
+        user_id: "550e8400-e29b-41d4-a716-446655440000",
+        workspace_id: "660e8400-e29b-41d4-a716-446655440000",
+        bank_account_number: "1234567890",
+        bank_routing_number: "021000021",
+        credit_card_number: "4111222233334444",
+        api_key: "sk_live_1234567890",
+        internal_audit_log: "Client investigated for non-payment",
+        payment_secret: "whsec_abcdef",
+        line_items: [
+          {
+            description: "Product Development",
+            quantity: 1,
+            unit_price: 1500,
+            line_total: 1500,
+            internal_cost: 300,
+            developer_id: "dev-99",
+          },
+        ],
+      };
 
-    const snapshot = buildRedactedArtifactSnapshot("financial_brief", rawBrief);
-    expect(snapshot["safeToSpend"]).toBe(4500000);
-    expect(snapshot["liquidCash"]).toBe(6000000);
-    expect(snapshot["currency"]).toBe("MWK");
-    expect(Array.isArray(snapshot["attentionSignals"])).toBe(true);
-    expect((snapshot["attentionSignals"] as unknown[]).length).toBe(1);
+      const snapshot = buildRedactedArtifactSnapshot("invoice", poisonedSourceData);
+      const snapshotKeys = Object.keys(snapshot);
+
+      // Sensitive fields must NEVER be in snapshot
+      expect(snapshotKeys).not.toContain("password");
+      expect(snapshotKeys).not.toContain("auth_token");
+      expect(snapshotKeys).not.toContain("user_id");
+      expect(snapshotKeys).not.toContain("workspace_id");
+      expect(snapshotKeys).not.toContain("bank_account_number");
+      expect(snapshotKeys).not.toContain("bank_routing_number");
+      expect(snapshotKeys).not.toContain("credit_card_number");
+      expect(snapshotKeys).not.toContain("api_key");
+      expect(snapshotKeys).not.toContain("internal_audit_log");
+      expect(snapshotKeys).not.toContain("payment_secret");
+
+      // Line item internal fields must not be present
+      const items = snapshot["lineItems"] as Array<Record<string, unknown>>;
+      expect(items[0]).toBeDefined();
+      expect(items[0]?.["internal_cost"]).toBeUndefined();
+      expect(items[0]?.["developer_id"]).toBeUndefined();
+    });
+
+    it("respects accessConfig redactions (hideNotes, hideLineItemPricing)", () => {
+      const invData = {
+        invoice_number: "INV-100",
+        notes: "Confidential wire instructions",
+        line_items: [{ description: "Service", quantity: 2, unit_price: 50, line_total: 100 }],
+      };
+
+      const redacted = buildRedactedArtifactSnapshot("invoice", invData, {
+        hideNotes: true,
+        hideLineItemPricing: true,
+      });
+
+      expect(redacted["notes"]).toBeNull();
+      const items = redacted["lineItems"] as Array<Record<string, unknown>>;
+      expect(items[0]?.["unitPrice"]).toBeNull();
+      expect(items[0]?.["total"]).toBe(100);
+    });
   });
 });

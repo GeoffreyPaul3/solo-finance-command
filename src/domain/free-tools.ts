@@ -26,9 +26,7 @@ export interface PublicSafeToSpendResult {
   disclaimer: string;
 }
 
-export function calculatePublicSafeToSpend(
-  input: PublicSafeToSpendInput,
-): PublicSafeToSpendResult {
+export function calculatePublicSafeToSpend(input: PublicSafeToSpendInput): PublicSafeToSpendResult {
   const cash = Math.max(0, Number(input.liquidCash) || 0);
   const tax = Math.max(0, Number(input.taxReserve) || 0);
   const obligations = Math.max(0, Number(input.upcomingObligations) || 0);
@@ -196,9 +194,7 @@ export interface PublicTaxReserveResult {
   disclaimer: string;
 }
 
-export function calculatePublicTaxReserve(
-  input: PublicTaxReserveInput,
-): PublicTaxReserveResult {
+export function calculatePublicTaxReserve(input: PublicTaxReserveInput): PublicTaxReserveResult {
   const taxable = Math.max(0, Number(input.estimatedTaxableAmount) || 0);
   const rate = Math.max(0, Math.min(100, Number(input.planningRatePercent) || 0));
 

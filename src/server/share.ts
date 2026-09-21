@@ -276,20 +276,53 @@ export const getPublicShareArtifactServerFn = createServerFn({ method: "POST" })
       };
     }
 
-    // Atomic server-side view count increment via RPC
-    try {
-      await supabaseAdmin.rpc("increment_artifact_view", {
-        p_share_token: data.shareToken,
+    // 24-hour session deduplication for view counter integrity
+    let shouldCountView = true;
+    if (data.anonymousSessionId) {
+      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data: recentView } = await supabaseAdmin
+        .from("distribution_events")
+        .select("id")
+        .eq("artifact_id", artifact.id)
+        .eq("anonymous_session_id", data.anonymousSessionId)
+        .eq("event_type", "share_viewed")
+        .gte("created_at", since)
+        .limit(1)
+        .maybeSingle();
+
+      if (recentView) {
+        shouldCountView = false;
+      }
+    }
+
+    if (shouldCountView) {
+      // Atomic server-side view count increment via RPC
+      try {
+        await supabaseAdmin.rpc("increment_artifact_view", {
+          p_share_token: data.shareToken,
+        });
+      } catch {
+        // Fallback update if RPC not present
+        await supabaseAdmin
+          .from("shareable_artifacts")
+          .update({
+            view_count: (artifact.view_count || 0) + 1,
+            last_viewed_at: new Date().toISOString(),
+          })
+          .eq("id", artifact.id);
+      }
+
+      // Log public view event
+      await supabaseAdmin.from("distribution_events").insert({
+        workspace_id: artifact.workspace_id,
+        event_type: "share_viewed",
+        artifact_id: artifact.id,
+        anonymous_session_id: data.anonymousSessionId || null,
+        source: "shared_artifact",
+        metadata: {
+          artifactType: artifact.artifact_type,
+        },
       });
-    } catch {
-      // Fallback update if RPC not present
-      await supabaseAdmin
-        .from("shareable_artifacts")
-        .update({
-          view_count: (artifact.view_count || 0) + 1,
-          last_viewed_at: new Date().toISOString(),
-        })
-        .eq("id", artifact.id);
     }
 
     // Fetch workspace name for attribution without leaking internal metadata
@@ -298,18 +331,6 @@ export const getPublicShareArtifactServerFn = createServerFn({ method: "POST" })
       .select("name, currency")
       .eq("id", artifact.workspace_id)
       .maybeSingle();
-
-    // Log public view event
-    await supabaseAdmin.from("distribution_events").insert({
-      workspace_id: artifact.workspace_id,
-      event_type: "share_viewed",
-      artifact_id: artifact.id,
-      anonymous_session_id: data.anonymousSessionId || null,
-      source: "shared_artifact",
-      metadata: {
-        artifactType: artifact.artifact_type,
-      },
-    });
 
     return {
       found: true,

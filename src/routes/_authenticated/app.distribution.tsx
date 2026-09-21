@@ -39,7 +39,11 @@ const EVENT_META: Record<string, { label: string; icon: React.ElementType; color
 };
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return new Date(iso).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 function DistributionAnalyticsPage() {
@@ -83,7 +87,7 @@ function DistributionAnalyticsPage() {
   }, {});
 
   const totalViews = artifacts.reduce((sum, a) => sum + (a.view_count ?? 0), 0);
-  const activeArtifacts = artifacts.filter(a => a.status === "active").length;
+  const activeArtifacts = artifacts.filter((a) => a.status === "active").length;
   const shareCreated = eventCounts["share_created"] ?? 0;
   const emailsSent = eventCounts["share_email_sent"] ?? 0;
   const referralClicks = eventCounts["referral_clicked"] ?? 0;
@@ -107,7 +111,7 @@ function DistributionAnalyticsPage() {
           { label: "Emails Sent", value: emailsSent, icon: Mail, color: "text-indigo-500" },
           { label: "Referral Clicks", value: referralClicks, icon: Users, color: "text-amber-500" },
           { label: "CTA Clicks", value: ctaClicks, icon: TrendingUp, color: "text-emerald-500" },
-        ].map(m => (
+        ].map((m) => (
           <Card key={m.label}>
             <CardContent className="pt-4 pb-3">
               <m.icon className={cn("size-4 mb-1.5", m.color)} />
@@ -121,13 +125,22 @@ function DistributionAnalyticsPage() {
       {/* Event type breakdown */}
       {Object.keys(eventCounts).length > 0 && (
         <Card>
-          <CardHeader><CardTitle className="text-base flex items-center gap-2"><Activity className="size-4 text-primary" />Event Breakdown</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Activity className="size-4 text-primary" />
+              Event Breakdown
+            </CardTitle>
+          </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {Object.entries(eventCounts)
                 .sort(([, a], [, b]) => b - a)
                 .map(([type, count]) => {
-                  const meta = EVENT_META[type] ?? { label: type, icon: Activity, color: "text-muted-foreground" };
+                  const meta = EVENT_META[type] ?? {
+                    label: type,
+                    icon: Activity,
+                    color: "text-muted-foreground",
+                  };
                   const Icon = meta.icon;
                   const maxCount = Math.max(...Object.values(eventCounts));
                   const pct = maxCount > 0 ? Math.round((count / maxCount) * 100) : 0;
@@ -141,7 +154,10 @@ function DistributionAnalyticsPage() {
                         <span className="font-mono font-semibold">{count}</span>
                       </div>
                       <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div className={cn("h-full rounded-full", meta.color.replace("text-", "bg-"))} style={{ width: `${pct}%` }} />
+                        <div
+                          className={cn("h-full rounded-full", meta.color.replace("text-", "bg-"))}
+                          style={{ width: `${pct}%` }}
+                        />
                       </div>
                     </div>
                   );
@@ -154,27 +170,44 @@ function DistributionAnalyticsPage() {
       {/* Recent events */}
       <div className="space-y-3">
         <h2 className="text-base font-semibold">Recent Distribution Events</h2>
-        {isLoading && <div className="text-sm text-muted-foreground py-8 text-center">Loading events…</div>}
+        {isLoading && (
+          <div className="text-sm text-muted-foreground py-8 text-center">Loading events…</div>
+        )}
         {!isLoading && events.length === 0 && (
           <Card>
             <CardContent className="py-10 text-center">
               <Activity className="size-8 text-muted-foreground/30 mx-auto mb-3" />
               <p className="text-sm">No distribution events yet</p>
-              <p className="text-xs text-muted-foreground mt-1">Create share links and share your referral link to see events here.</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Create share links and share your referral link to see events here.
+              </p>
             </CardContent>
           </Card>
         )}
-        {events.slice(0, 30).map(event => {
-          const meta = EVENT_META[event.event_type] ?? { label: event.event_type, icon: Activity, color: "text-muted-foreground" };
+        {events.slice(0, 30).map((event) => {
+          const meta = EVENT_META[event.event_type] ?? {
+            label: event.event_type,
+            icon: Activity,
+            color: "text-muted-foreground",
+          };
           const Icon = meta.icon;
           return (
-            <div key={event.id} className="flex items-center gap-3 px-4 py-3 rounded-lg border hover:bg-muted/20 transition-colors">
-              <div className={cn("size-7 rounded-lg bg-muted/50 flex items-center justify-center shrink-0")}>
+            <div
+              key={event.id}
+              className="flex items-center gap-3 px-4 py-3 rounded-lg border hover:bg-muted/20 transition-colors"
+            >
+              <div
+                className={cn(
+                  "size-7 rounded-lg bg-muted/50 flex items-center justify-center shrink-0",
+                )}
+              >
                 <Icon className={cn("size-3.5", meta.color)} />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium">{meta.label}</p>
-                {event.source && <p className="text-xs text-muted-foreground">via {event.source}</p>}
+                {event.source && (
+                  <p className="text-xs text-muted-foreground">via {event.source}</p>
+                )}
               </div>
               <div className="text-right shrink-0">
                 <p className="text-xs text-muted-foreground">{formatDate(event.created_at)}</p>

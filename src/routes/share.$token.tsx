@@ -37,7 +37,11 @@ export const Route = createFileRoute("/share/$token")({
 
 function formatCurrency(amount: number, currency = "USD") {
   try {
-    return new Intl.NumberFormat("en-US", { style: "currency", currency, maximumFractionDigits: 2 }).format(amount);
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 2,
+    }).format(amount);
   } catch {
     return `${currency} ${amount.toFixed(2)}`;
   }
@@ -45,8 +49,14 @@ function formatCurrency(amount: number, currency = "USD") {
 
 function formatDate(iso: string) {
   try {
-    return new Date(iso).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-  } catch { return iso; }
+    return new Date(iso).toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch {
+    return iso;
+  }
 }
 
 function getAnonSessionId() {
@@ -61,22 +71,42 @@ function getAnonSessionId() {
 
 // ─── Artifact Renderers ───────────────────────────────────────────────────────
 
-function MetricCard({ label, value, sub, accent = false }: {
-  label: string; value: string; sub?: string | undefined; accent?: boolean | undefined;
+function MetricCard({
+  label,
+  value,
+  sub,
+  accent = false,
+}: {
+  label: string;
+  value: string;
+  sub?: string | undefined;
+  accent?: boolean | undefined;
 }) {
   return (
-    <div className={cn(
-      "rounded-xl border p-4",
-      accent ? "border-primary/30 bg-primary/5" : "border-border bg-card",
-    )}>
-      <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-1">{label}</p>
-      <p className={cn("text-xl font-bold", accent ? "text-primary" : "text-foreground")}>{value}</p>
+    <div
+      className={cn(
+        "rounded-xl border p-4",
+        accent ? "border-primary/30 bg-primary/5" : "border-border bg-card",
+      )}
+    >
+      <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium mb-1">
+        {label}
+      </p>
+      <p className={cn("text-xl font-bold", accent ? "text-primary" : "text-foreground")}>
+        {value}
+      </p>
       {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
     </div>
   );
 }
 
-function InvoiceArtifactView({ data, currency }: { data: Record<string, unknown>; currency: string }) {
+function InvoiceArtifactView({
+  data,
+  currency,
+}: {
+  data: Record<string, unknown>;
+  currency: string;
+}) {
   const fields = data as {
     clientName?: string;
     invoiceNumber?: string;
@@ -95,7 +125,11 @@ function InvoiceArtifactView({ data, currency }: { data: Record<string, unknown>
         {fields.invoiceNumber && <MetricCard label="Invoice #" value={fields.invoiceNumber} />}
         {fields.issueDate && <MetricCard label="Issued" value={formatDate(fields.issueDate)} />}
         {fields.totalAmount != null && (
-          <MetricCard label="Total Amount" value={formatCurrency(fields.totalAmount, currency)} accent />
+          <MetricCard
+            label="Total Amount"
+            value={formatCurrency(fields.totalAmount, currency)}
+            accent
+          />
         )}
       </div>
       {fields.lineItems && fields.lineItems.length > 0 && (
@@ -103,7 +137,9 @@ function InvoiceArtifactView({ data, currency }: { data: Record<string, unknown>
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr>
-                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Description</th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                  Description
+                </th>
                 <th className="text-right py-3 px-4 font-medium text-muted-foreground">Qty</th>
                 <th className="text-right py-3 px-4 font-medium text-muted-foreground">Amount</th>
               </tr>
@@ -113,13 +149,17 @@ function InvoiceArtifactView({ data, currency }: { data: Record<string, unknown>
                 <tr key={i}>
                   <td className="py-3 px-4">{item.description}</td>
                   <td className="py-3 px-4 text-right text-muted-foreground">{item.quantity}</td>
-                  <td className="py-3 px-4 text-right font-medium">{formatCurrency(item.amount, currency)}</td>
+                  <td className="py-3 px-4 text-right font-medium">
+                    {formatCurrency(item.amount, currency)}
+                  </td>
                 </tr>
               ))}
             </tbody>
             <tfoot className="bg-muted/30">
               <tr>
-                <td className="py-3 px-4 font-semibold" colSpan={2}>Total</td>
+                <td className="py-3 px-4 font-semibold" colSpan={2}>
+                  Total
+                </td>
                 <td className="py-3 px-4 text-right font-bold text-primary">
                   {formatCurrency(fields.totalAmount ?? 0, currency)}
                 </td>
@@ -138,7 +178,13 @@ function InvoiceArtifactView({ data, currency }: { data: Record<string, unknown>
   );
 }
 
-function FinancialBriefView({ data, currency }: { data: Record<string, unknown>; currency: string }) {
+function FinancialBriefView({
+  data,
+  currency,
+}: {
+  data: Record<string, unknown>;
+  currency: string;
+}) {
   const d = data as {
     totalRevenue?: number;
     totalExpenses?: number;
@@ -153,8 +199,12 @@ function FinancialBriefView({ data, currency }: { data: Record<string, unknown>;
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-        {d.totalRevenue != null && <MetricCard label="Total Revenue" value={formatCurrency(d.totalRevenue, currency)} />}
-        {d.totalExpenses != null && <MetricCard label="Total Expenses" value={formatCurrency(d.totalExpenses, currency)} />}
+        {d.totalRevenue != null && (
+          <MetricCard label="Total Revenue" value={formatCurrency(d.totalRevenue, currency)} />
+        )}
+        {d.totalExpenses != null && (
+          <MetricCard label="Total Expenses" value={formatCurrency(d.totalExpenses, currency)} />
+        )}
         {d.netProfit != null && (
           <MetricCard
             label="Net Profit"
@@ -163,8 +213,15 @@ function FinancialBriefView({ data, currency }: { data: Record<string, unknown>;
             accent={d.netProfit > 0}
           />
         )}
-        {d.cashBalance != null && <MetricCard label="Cash Balance" value={formatCurrency(d.cashBalance, currency)} />}
-        {d.outstandingInvoices != null && <MetricCard label="Outstanding Invoices" value={formatCurrency(d.outstandingInvoices, currency)} />}
+        {d.cashBalance != null && (
+          <MetricCard label="Cash Balance" value={formatCurrency(d.cashBalance, currency)} />
+        )}
+        {d.outstandingInvoices != null && (
+          <MetricCard
+            label="Outstanding Invoices"
+            value={formatCurrency(d.outstandingInvoices, currency)}
+          />
+        )}
         {d.overdueInvoices != null && d.overdueInvoices > 0 && (
           <MetricCard label="Overdue" value={formatCurrency(d.overdueInvoices, currency)} />
         )}
@@ -173,24 +230,42 @@ function FinancialBriefView({ data, currency }: { data: Record<string, unknown>;
   );
 }
 
-function GenericReportView({ data, currency }: { data: Record<string, unknown>; currency: string }) {
+function GenericReportView({
+  data,
+  currency,
+}: {
+  data: Record<string, unknown>;
+  currency: string;
+}) {
   const entries = Object.entries(data).filter(([, v]) => v != null && typeof v !== "object");
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
       {entries.map(([k, v]) => (
         <MetricCard
           key={k}
-          label={k.replace(/([A-Z])/g, " $1").replace(/_/g, " ").trim()}
-          value={typeof v === "number" && k.toLowerCase().includes("amount") || k.toLowerCase().includes("revenue") || k.toLowerCase().includes("profit") || k.toLowerCase().includes("cash")
-            ? formatCurrency(v as number, currency)
-            : String(v)}
+          label={k
+            .replace(/([A-Z])/g, " $1")
+            .replace(/_/g, " ")
+            .trim()}
+          value={
+            (typeof v === "number" && k.toLowerCase().includes("amount")) ||
+            k.toLowerCase().includes("revenue") ||
+            k.toLowerCase().includes("profit") ||
+            k.toLowerCase().includes("cash")
+              ? formatCurrency(v as number, currency)
+              : String(v)
+          }
         />
       ))}
     </div>
   );
 }
 
-function ArtifactRenderer({ type, data, currency }: {
+function ArtifactRenderer({
+  type,
+  data,
+  currency,
+}: {
   type: string;
   data: Record<string, unknown>;
   currency: string;
@@ -240,7 +315,11 @@ function PublicSharePage() {
     async function load() {
       try {
         let anonSessionId: string | undefined;
-        try { anonSessionId = getAnonSessionId(); } catch { /* no localStorage in SSR */ }
+        try {
+          anonSessionId = getAnonSessionId();
+        } catch {
+          /* no localStorage in SSR */
+        }
         const result = await getPublicShareArtifactServerFn({
           data: { shareToken: token, anonymousSessionId: anonSessionId },
         });
@@ -280,9 +359,13 @@ function PublicSharePage() {
             <p className="text-sm text-muted-foreground">{errorReason}</p>
           </div>
           <div className="flex flex-col items-center gap-3 pt-2">
-            <p className="text-xs text-muted-foreground">Powered by SoloOS Financial Operating System</p>
+            <p className="text-xs text-muted-foreground">
+              Powered by SoloOS Financial Operating System
+            </p>
             <Button variant="outline" asChild size="sm" id="explore-from-error">
-              <a href="/">Explore SoloOS <ArrowRight className="size-3.5 ml-1.5" /></a>
+              <a href="/">
+                Explore SoloOS <ArrowRight className="size-3.5 ml-1.5" />
+              </a>
             </Button>
           </div>
         </div>
@@ -320,12 +403,18 @@ function PublicSharePage() {
         {/* Artifact Header */}
         <div className="space-y-4">
           <div className="flex items-start gap-4">
-            <div className={cn("size-12 rounded-xl border bg-muted/50 flex items-center justify-center shrink-0")}>
+            <div
+              className={cn(
+                "size-12 rounded-xl border bg-muted/50 flex items-center justify-center shrink-0",
+              )}
+            >
               <Icon className={cn("size-5", meta.color)} />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-1">
-                <Badge variant="outline" className="text-[10px]">{meta.label}</Badge>
+                <Badge variant="outline" className="text-[10px]">
+                  {meta.label}
+                </Badge>
                 {artifact.expiresAt && (
                   <Badge variant="secondary" className="text-[10px] gap-1">
                     <Clock className="size-2.5" />
@@ -338,7 +427,9 @@ function PublicSharePage() {
                 <p className="text-sm text-muted-foreground mt-1.5">{artifact.description}</p>
               )}
               <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                <span>Shared by <strong>{artifact.workspaceName}</strong></span>
+                <span>
+                  Shared by <strong>{artifact.workspaceName}</strong>
+                </span>
                 <span>·</span>
                 <span>Created {formatDate(artifact.createdAt)}</span>
               </div>
@@ -349,7 +440,7 @@ function PublicSharePage() {
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
             <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
             <p className="text-xs text-muted-foreground">
-              This is an <strong className="text-foreground">immutable read-only snapshot</strong>. 
+              This is an <strong className="text-foreground">immutable read-only snapshot</strong>.
               Financial records in SoloOS are unchanged. Link cannot be indexed by search engines.
             </p>
           </div>
@@ -379,7 +470,8 @@ function PublicSharePage() {
               </h2>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto">
                 This financial view was created with SoloOS — the financial operating system built
-                for independent operators. Invoices, cash flow, tax reserve, and live financial intelligence.
+                for independent operators. Invoices, cash flow, tax reserve, and live financial
+                intelligence.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
                 <Button asChild size="lg" id="recipient-cta-get-started">
@@ -403,9 +495,19 @@ function PublicSharePage() {
         <div className="text-center text-xs text-muted-foreground pb-8 space-y-1">
           <p>This secure link is private and cannot be indexed by search engines.</p>
           <p>
-            <a href="/privacy" className="underline underline-offset-2 hover:text-foreground transition-colors">Privacy Policy</a>
+            <a
+              href="/privacy"
+              className="underline underline-offset-2 hover:text-foreground transition-colors"
+            >
+              Privacy Policy
+            </a>
             {" · "}
-            <a href="/terms" className="underline underline-offset-2 hover:text-foreground transition-colors">Terms of Service</a>
+            <a
+              href="/terms"
+              className="underline underline-offset-2 hover:text-foreground transition-colors"
+            >
+              Terms of Service
+            </a>
           </p>
         </div>
       </div>

@@ -48,15 +48,133 @@ export interface ReferralMetrics {
   conversionRatePercent: number;
 }
 
+export const REFERRAL_ATTRIBUTION_WINDOW_DAYS = 30;
+export const REFERRAL_ATTRIBUTION_WINDOW_MS =
+  REFERRAL_ATTRIBUTION_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+
+export interface StoredReferralAttribution {
+  code: string;
+  timestamp: number;
+}
+
+/**
+ * Parses a referral cookie string ("solos_ref=CODE") or stored JSON.
+ */
+export function parseReferralCookie(cookieStr: string): StoredReferralAttribution | null {
+  if (!cookieStr || typeof cookieStr !== "string") return null;
+  const match = cookieStr.match(/(?:^|;\s*)solos_ref=([^;]+)/);
+  if (!match || !match[1]) return null;
+
+  try {
+    const rawVal = decodeURIComponent(match[1].trim());
+    // Supports either plain code "ACME-8F2K" or combined "CODE:TIMESTAMP"
+    if (rawVal.includes(":")) {
+      const [code, tsStr] = rawVal.split(":");
+      const ts = Number(tsStr);
+      if (code && validateReferralCode(code) && !isNaN(ts) && ts > 0) {
+        return { code: code.toUpperCase(), timestamp: ts };
+      }
+    } else if (validateReferralCode(rawVal)) {
+      return { code: rawVal.toUpperCase(), timestamp: Date.now() };
+    }
+  } catch {
+    /* ignore malformed values */
+  }
+  return null;
+}
+
+/**
+ * Formats a secure referral cookie value with code and timestamp.
+ */
+export function formatReferralCookie(code: string, timestamp: number = Date.now()): string {
+  const sanitized = code.trim().toUpperCase();
+  const expires = new Date(timestamp + REFERRAL_ATTRIBUTION_WINDOW_MS);
+  return `solos_ref=${encodeURIComponent(`${sanitized}:${timestamp}`)}; path=/; expires=${expires.toUTCString()}; SameSite=Lax`;
+}
+
+/**
+ * Checks whether an attribution is still active within the 30-day window.
+ */
+export function isReferralAttributionActive(
+  attribution: StoredReferralAttribution | null,
+  asOf: Date | number = Date.now(),
+): boolean {
+  if (!attribution || !attribution.code || !attribution.timestamp) return false;
+  if (!validateReferralCode(attribution.code)) return false;
+  const nowMs = typeof asOf === "number" ? asOf : asOf.getTime();
+  const elapsed = nowMs - attribution.timestamp;
+  return elapsed >= 0 && elapsed < REFERRAL_ATTRIBUTION_WINDOW_MS;
+}
+
+/**
+ * Resolves referral attribution using the 30-day first-touch model:
+ * 1. If incoming code is invalid -> ignore.
+ * 2. If no existing attribution or existing attribution is expired (> 30 days) -> incoming code wins.
+ * 3. If an existing attribution is currently active -> existing attribution WINS (first-touch preserved).
+ */
+export function resolveReferralAttribution(params: {
+  existing: StoredReferralAttribution | null;
+  incomingCode: string;
+  asOf?: Date | number;
+}): {
+  shouldUpdate: boolean;
+  activeCode: string | null;
+  reason: "first_touch" | "preserved_existing" | "expired_replaced" | "invalid_incoming";
+} {
+  const { existing, incomingCode, asOf = Date.now() } = params;
+  if (!validateReferralCode(incomingCode)) {
+    const existingActive = isReferralAttributionActive(existing, asOf);
+    return {
+      shouldUpdate: false,
+      activeCode: existingActive && existing ? existing.code : null,
+      reason: "invalid_incoming",
+    };
+  }
+
+  const cleanIncoming = incomingCode.trim().toUpperCase();
+  const isExistingActive = isReferralAttributionActive(existing, asOf);
+
+  if (!isExistingActive || !existing) {
+    return {
+      shouldUpdate: true,
+      activeCode: cleanIncoming,
+      reason: existing ? "expired_replaced" : "first_touch",
+    };
+  }
+
+  // Active existing attribution wins (first-touch principle)
+  return {
+    shouldUpdate: false,
+    activeCode: existing.code,
+    reason: "preserved_existing",
+  };
+}
+
+/**
+ * Validates deterministic lifecycle progression:
+ * visited -> signed_up -> activated -> converted
+ */
+export function isReferralStatusTransitionValid(from: ReferralStatus, to: ReferralStatus): boolean {
+  const order: Record<ReferralStatus, number> = {
+    visited: 0,
+    signed_up: 1,
+    activated: 2,
+    converted: 3,
+  };
+  // Can stay at current (idempotent) or progress forward
+  return order[to] >= order[from];
+}
+
 /**
  * Generates a clean, readable, collision-resistant referral code from a workspace name.
  * Format: PREFIX-XXXX (e.g. ACME-8F2K)
  */
 export function generateReferralCode(workspaceName: string): string {
-  const sanitized = workspaceName
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, "")
-    .slice(0, 6) || "SOLO";
+  const sanitized =
+    workspaceName
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .slice(0, 6) || "SOLO";
 
   const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
   return `${sanitized}-${randomSuffix}`;
@@ -87,10 +205,7 @@ export function isSelfReferral(params: {
   ) {
     return true;
   }
-  if (
-    params.referredWorkspaceId &&
-    params.referrerWorkspaceId === params.referredWorkspaceId
-  ) {
+  if (params.referredWorkspaceId && params.referrerWorkspaceId === params.referredWorkspaceId) {
     return true;
   }
   return false;

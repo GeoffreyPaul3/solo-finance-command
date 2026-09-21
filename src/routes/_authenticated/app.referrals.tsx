@@ -49,7 +49,9 @@ function FunnelStep({
 }) {
   const pct = total > 0 ? Math.round((value / total) * 100) : 0;
   return (
-    <div className={cn("rounded-xl border p-5 space-y-3", accent && "border-primary/30 bg-primary/5")}>
+    <div
+      className={cn("rounded-xl border p-5 space-y-3", accent && "border-primary/30 bg-primary/5")}
+    >
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{label}</p>
         <Badge variant={accent ? "default" : "secondary"} className="text-xs">
@@ -59,7 +61,10 @@ function FunnelStep({
       <p className={cn("text-3xl font-bold", color)}>{value}</p>
       <div className="h-1.5 bg-muted rounded-full overflow-hidden">
         <div
-          className={cn("h-full rounded-full transition-all duration-700", accent ? "bg-primary" : "bg-current")}
+          className={cn(
+            "h-full rounded-full transition-all duration-700",
+            accent ? "bg-primary" : "bg-current",
+          )}
           style={{ width: `${pct}%`, color: "inherit" }}
         />
       </div>
@@ -75,7 +80,9 @@ function ReferralsPage() {
   const { data: profileData, isLoading: profileLoading } = useQuery({
     queryKey: ["referral-profile", workspaceId],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       return getReferralProfileServerFn({
         data: { workspaceId, authToken: session?.access_token },
       });
@@ -86,7 +93,9 @@ function ReferralsPage() {
   const { data: funnelData, isLoading: funnelLoading } = useQuery({
     queryKey: ["referral-funnel", workspaceId],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       return getReferralFunnelServerFn({
         data: { workspaceId, authToken: session?.access_token },
       });
@@ -95,9 +104,7 @@ function ReferralsPage() {
   });
 
   const referralCode = profileData?.profile?.referral_code ?? null;
-  const referralUrl = referralCode
-    ? `${window.location.origin}/r/${referralCode}`
-    : null;
+  const referralUrl = referralCode ? `${window.location.origin}/r/${referralCode}` : null;
 
   const funnel = funnelData?.funnel;
   const attributions = funnelData?.attributions ?? [];
@@ -128,8 +135,8 @@ function ReferralsPage() {
             Your Unique Referral Link
           </CardTitle>
           <CardDescription>
-            Share this link with other independent operators and freelancers.
-            Your referrals are tracked via first-touch attribution.
+            Share this link with other independent operators and freelancers. Your referrals are
+            tracked via first-touch attribution.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -143,12 +150,21 @@ function ReferralsPage() {
               <Button
                 id="copy-referral-link-btn"
                 onClick={copyReferralLink}
-                className={cn("shrink-0 gap-2", copySuccess && "bg-emerald-500 hover:bg-emerald-600")}
+                className={cn(
+                  "shrink-0 gap-2",
+                  copySuccess && "bg-emerald-500 hover:bg-emerald-600",
+                )}
               >
                 {copySuccess ? (
-                  <><CheckCircle2 className="size-4" />Copied!</>
+                  <>
+                    <CheckCircle2 className="size-4" />
+                    Copied!
+                  </>
                 ) : (
-                  <><Copy className="size-4" />Copy Link</>
+                  <>
+                    <Copy className="size-4" />
+                    Copy Link
+                  </>
                 )}
               </Button>
             </div>
@@ -157,7 +173,8 @@ function ReferralsPage() {
           )}
           {referralCode && (
             <p className="text-xs text-muted-foreground">
-              Referral Code: <code className="font-mono font-semibold text-foreground">{referralCode}</code>
+              Referral Code:{" "}
+              <code className="font-mono font-semibold text-foreground">{referralCode}</code>
             </p>
           )}
         </CardContent>
@@ -176,23 +193,46 @@ function ReferralsPage() {
         </div>
         {funnelLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {[1,2,3,4].map(i => (
+            {[1, 2, 3, 4].map((i) => (
               <div key={i} className="h-28 bg-muted/50 animate-pulse rounded-xl" />
             ))}
           </div>
         ) : funnel ? (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <FunnelStep label="Visited" value={funnel.totalClicks} total={funnel.totalClicks} color="text-blue-500" />
-            <FunnelStep label="Signed Up" value={funnel.totalSignups} total={funnel.totalClicks} color="text-amber-500" />
-            <FunnelStep label="Activated" value={funnel.totalActivated} total={funnel.totalClicks} color="text-emerald-500" />
-            <FunnelStep label="Converted" value={funnel.totalConverted} total={funnel.totalClicks} color="text-primary" accent />
+            <FunnelStep
+              label="Visited"
+              value={funnel.totalClicks}
+              total={funnel.totalClicks}
+              color="text-blue-500"
+            />
+            <FunnelStep
+              label="Signed Up"
+              value={funnel.totalSignups}
+              total={funnel.totalClicks}
+              color="text-amber-500"
+            />
+            <FunnelStep
+              label="Activated"
+              value={funnel.totalActivated}
+              total={funnel.totalClicks}
+              color="text-emerald-500"
+            />
+            <FunnelStep
+              label="Converted"
+              value={funnel.totalConverted}
+              total={funnel.totalClicks}
+              color="text-primary"
+              accent
+            />
           </div>
         ) : (
           <Card>
             <CardContent className="py-10 text-center">
               <Users className="size-8 text-muted-foreground/30 mx-auto mb-3" />
               <p className="text-sm font-medium">No referral data yet</p>
-              <p className="text-xs text-muted-foreground mt-1">Share your referral link to start tracking.</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Share your referral link to start tracking.
+              </p>
             </CardContent>
           </Card>
         )}
@@ -206,10 +246,18 @@ function ReferralsPage() {
             <table className="w-full text-sm">
               <thead className="bg-muted/30">
                 <tr>
-                  <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs uppercase tracking-wide">Visited</th>
-                  <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs uppercase tracking-wide">Status</th>
-                  <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs uppercase tracking-wide">Signed Up</th>
-                  <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs uppercase tracking-wide">Activated</th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs uppercase tracking-wide">
+                    Visited
+                  </th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs uppercase tracking-wide">
+                    Status
+                  </th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs uppercase tracking-wide">
+                    Signed Up
+                  </th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground text-xs uppercase tracking-wide">
+                    Activated
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -218,7 +266,10 @@ function ReferralsPage() {
                   return (
                     <tr key={attr.id} className="hover:bg-muted/20 transition-colors">
                       <td className="py-3 px-4 text-muted-foreground">
-                        {new Date(attr.landing_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        {new Date(attr.landing_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
                       </td>
                       <td className="py-3 px-4">
                         <Badge variant="outline" className={cn("text-xs", sm.color)}>
@@ -226,10 +277,20 @@ function ReferralsPage() {
                         </Badge>
                       </td>
                       <td className="py-3 px-4 text-muted-foreground">
-                        {attr.signup_at ? new Date(attr.signup_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
+                        {attr.signup_at
+                          ? new Date(attr.signup_at).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                            })
+                          : "—"}
                       </td>
                       <td className="py-3 px-4 text-muted-foreground">
-                        {attr.activated_at ? new Date(attr.activated_at).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
+                        {attr.activated_at
+                          ? new Date(attr.activated_at).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                            })
+                          : "—"}
                       </td>
                     </tr>
                   );
@@ -251,11 +312,27 @@ function ReferralsPage() {
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
-              { step: "1", title: "Share Your Link", desc: "Share your unique referral URL with other independent operators." },
-              { step: "2", title: "They Visit", desc: "First-touch attribution is recorded. 30-day attribution window." },
-              { step: "3", title: "They Sign Up", desc: "Referral advances to 'Signed Up' when they create an account." },
-              { step: "4", title: "They Activate", desc: "Advances to 'Activated' when they connect accounts + transactions." },
-            ].map(s => (
+              {
+                step: "1",
+                title: "Share Your Link",
+                desc: "Share your unique referral URL with other independent operators.",
+              },
+              {
+                step: "2",
+                title: "They Visit",
+                desc: "First-touch attribution is recorded. 30-day attribution window.",
+              },
+              {
+                step: "3",
+                title: "They Sign Up",
+                desc: "Referral advances to 'Signed Up' when they create an account.",
+              },
+              {
+                step: "4",
+                title: "They Activate",
+                desc: "Advances to 'Activated' when they connect accounts + transactions.",
+              },
+            ].map((s) => (
               <div key={s.step} className="flex gap-3">
                 <div className="size-7 rounded-full bg-primary/10 text-primary text-sm font-bold flex items-center justify-center shrink-0">
                   {s.step}
@@ -268,8 +345,8 @@ function ReferralsPage() {
             ))}
           </div>
           <div className="mt-4 pt-4 border-t text-xs text-muted-foreground">
-            <strong>Attribution model:</strong> First-touch. One attribution record per referred workspace.
-            Self-referrals are prevented. Attribution window: 30 days from first click.
+            <strong>Attribution model:</strong> First-touch. One attribution record per referred
+            workspace. Self-referrals are prevented. Attribution window: 30 days from first click.
           </div>
         </CardContent>
       </Card>

@@ -319,7 +319,9 @@ function InvoiceDetailPage() {
             onClick={async () => {
               setIsSharing(true);
               try {
-                const { data: { session } } = await supabase.auth.getSession();
+                const {
+                  data: { session },
+                } = await supabase.auth.getSession();
                 const res = await createShareArtifactServerFn({
                   data: {
                     workspaceId: workspace.id,
@@ -356,7 +358,11 @@ function InvoiceDetailPage() {
             }}
             className="h-9"
           >
-            {isSharing ? <Loader2 className="mr-1.5 size-4 animate-spin" /> : <Share2 className="mr-1.5 size-4" />}
+            {isSharing ? (
+              <Loader2 className="mr-1.5 size-4 animate-spin" />
+            ) : (
+              <Share2 className="mr-1.5 size-4" />
+            )}
             Share
           </Button>
 
