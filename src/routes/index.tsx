@@ -245,6 +245,15 @@ function LandingPage() {
               How it works
             </a>
             <Link
+              to="/tools"
+              className="text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1.5"
+            >
+              <span>Free Tools</span>
+              <span className="rounded-full bg-primary/10 px-1.5 py-0.2 text-[10px] font-bold text-primary">
+                5
+              </span>
+            </Link>
+            <Link
               to="/pricing"
               className="text-xs sm:text-sm font-medium text-muted-foreground hover:text-foreground transition-colors hidden sm:inline-flex"
             >
@@ -302,6 +311,17 @@ function LandingPage() {
               <Button asChild size="lg" variant="outline" className="text-base px-6 h-12">
                 <Link to="/auth" search={{ mode: "signin" }}>
                   <span>Sign in to Workspace</span>
+                </Link>
+              </Button>
+              <Button
+                asChild
+                size="lg"
+                variant="ghost"
+                className="text-base px-5 h-12 gap-2 text-muted-foreground hover:text-foreground border border-border/70 hover:bg-muted/50"
+              >
+                <Link to="/tools">
+                  <Calculator className="size-4 text-primary" aria-hidden />
+                  <span>Try Free Tools</span>
                 </Link>
               </Button>
             </div>
@@ -831,6 +851,202 @@ function LandingPage() {
           </div>
         </section>
 
+        {/* ── Free Interactive Financial Calculators ── */}
+        <section
+          id="free-tools"
+          className="border-t border-border py-24 bg-card/60 relative overflow-hidden scroll-mt-14"
+        >
+          <div className="mx-auto max-w-6xl px-5">
+            <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+              <div className="max-w-2xl">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary mb-3">
+                  <Calculator className="size-3.5" aria-hidden />
+                  <span>Free Interactive Calculators</span>
+                </div>
+                <h2 className="text-display text-3xl font-bold tracking-tight sm:text-4xl">
+                  Test-drive SoloOS algorithms right now.
+                </h2>
+                <p className="mt-3 text-muted-foreground text-sm sm:text-base">
+                  No sign-up required. Completely private and computed directly in your browser.
+                  Experience how authoritative financial modeling clarifies your solo business.
+                </p>
+              </div>
+              <div>
+                <Button asChild variant="outline" className="gap-2">
+                  <Link to="/tools">
+                    <span>View all 5 tools</span>
+                    <ArrowRight className="size-4" aria-hidden />
+                  </Link>
+                </Button>
+              </div>
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {/* Tool 1: Safe-to-Spend */}
+              <Link
+                to="/tools/safe-to-spend"
+                className="group relative rounded-2xl border border-border bg-card p-6 shadow-sm hover:shadow-md transition-all hover:border-primary/40 flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="size-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <Zap className="size-5" />
+                    </div>
+                    <span className="text-[11px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                      Planning & Cash
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-foreground text-base group-hover:text-primary transition-colors">
+                    Safe-to-Spend Estimator
+                  </h3>
+                  <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+                    Estimate what you can safely withdraw after accounting for tax reserves, debt
+                    obligations, and cash buffers.
+                  </p>
+                </div>
+                <div className="mt-5 pt-3 border-t border-border/50 flex items-center justify-between text-xs font-medium text-primary">
+                  <span>Launch calculator</span>
+                  <ArrowRight className="size-3.5 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </Link>
+
+              {/* Tool 2: Cash Runway */}
+              <Link
+                to="/tools/cash-runway"
+                className="group relative rounded-2xl border border-border bg-card p-6 shadow-sm hover:shadow-md transition-all hover:border-primary/40 flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="size-10 rounded-xl bg-cyan-500/10 text-cyan-500 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <TrendingUp className="size-5" />
+                    </div>
+                    <span className="text-[11px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                      Runway & Survival
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-foreground text-base group-hover:text-primary transition-colors">
+                    Cash Runway Calculator
+                  </h3>
+                  <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+                    Determine exactly how many months your liquid reserves can sustain current
+                    operational burn without new client income.
+                  </p>
+                </div>
+                <div className="mt-5 pt-3 border-t border-border/50 flex items-center justify-between text-xs font-medium text-primary">
+                  <span>Launch calculator</span>
+                  <ArrowRight className="size-3.5 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </Link>
+
+              {/* Tool 3: Tax Reserve */}
+              <Link
+                to="/tools/tax-reserve"
+                className="group relative rounded-2xl border border-border bg-card p-6 shadow-sm hover:shadow-md transition-all hover:border-primary/40 flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="size-10 rounded-xl bg-rose-500/10 text-rose-500 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <Shield className="size-5" />
+                    </div>
+                    <span className="text-[11px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                      Taxes & Reserves
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-foreground text-base group-hover:text-primary transition-colors">
+                    Tax Reserve Calculator
+                  </h3>
+                  <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+                    Compute effective quarterly tax quarantine amounts to eliminate surprise tax
+                    liabilities at filing time.
+                  </p>
+                </div>
+                <div className="mt-5 pt-3 border-t border-border/50 flex items-center justify-between text-xs font-medium text-primary">
+                  <span>Launch calculator</span>
+                  <ArrowRight className="size-3.5 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </Link>
+
+              {/* Tool 4: Invoice Net Profit */}
+              <Link
+                to="/tools/invoice-profit"
+                className="group relative rounded-2xl border border-border bg-card p-6 shadow-sm hover:shadow-md transition-all hover:border-primary/40 flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="size-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <FileText className="size-5" />
+                    </div>
+                    <span className="text-[11px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                      Invoicing & Fees
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-foreground text-base group-hover:text-primary transition-colors">
+                    Invoice Profit Estimator
+                  </h3>
+                  <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+                    Isolate true take-home earnings on an invoice after accounting for processing
+                    fees, contractor costs, and tax withholdings.
+                  </p>
+                </div>
+                <div className="mt-5 pt-3 border-t border-border/50 flex items-center justify-between text-xs font-medium text-primary">
+                  <span>Launch calculator</span>
+                  <ArrowRight className="size-3.5 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </Link>
+
+              {/* Tool 5: Project Profitability */}
+              <Link
+                to="/tools/profit-calculator"
+                className="group relative rounded-2xl border border-border bg-card p-6 shadow-sm hover:shadow-md transition-all hover:border-primary/40 flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="size-10 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center group-hover:scale-105 transition-transform">
+                      <PieChart className="size-5" />
+                    </div>
+                    <span className="text-[11px] font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                      Margins & Viability
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-foreground text-base group-hover:text-primary transition-colors">
+                    Profit Margin Calculator
+                  </h3>
+                  <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+                    Calculate gross vs. net margin across revenue, direct fulfillment costs, and
+                    overhead to verify contract viability.
+                  </p>
+                </div>
+                <div className="mt-5 pt-3 border-t border-border/50 flex items-center justify-between text-xs font-medium text-primary">
+                  <span>Launch calculator</span>
+                  <ArrowRight className="size-3.5 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </Link>
+
+              {/* All Tools Hub Card */}
+              <div className="rounded-2xl border border-dashed border-primary/40 bg-primary/[0.03] p-6 flex flex-col justify-between">
+                <div>
+                  <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-4">
+                    <Sparkles className="size-5" />
+                  </div>
+                  <h3 className="font-bold text-foreground text-base">All Free Tools</h3>
+                  <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+                    Access all 5 standalone calculators, or create a permanent free workspace for
+                    automated multi-currency tracking.
+                  </p>
+                </div>
+                <div className="mt-5 pt-3">
+                  <Button asChild size="sm" className="w-full gap-2">
+                    <Link to="/tools">
+                      <span>Explore Tools Hub</span>
+                      <ArrowRight className="size-3.5" />
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ── Embedded Pricing Section ── */}
         <section id="pricing" className="border-t border-border py-24 bg-muted/15 scroll-mt-14">
           <div className="mx-auto max-w-6xl px-5">
@@ -1122,7 +1338,7 @@ function LandingPage() {
       {/* ── Comprehensive Footer ── */}
       <footer className="border-t border-border bg-background py-12">
         <div className="mx-auto max-w-6xl px-5">
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 pb-12 border-b border-border/60 text-xs">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-5 pb-12 border-b border-border/60 text-xs">
             <div>
               <div className="flex items-center gap-2.5 mb-3">
                 <img src={logo} width={80} height={28} alt="SoloOS" className="rounded" />
@@ -1156,6 +1372,57 @@ function LandingPage() {
                 <li>
                   <Link to="/support" className="hover:text-foreground transition-colors">
                     Help & Support
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <p className="font-semibold text-foreground mb-3 uppercase tracking-wider text-[11px]">
+                Free Tools
+              </p>
+              <ul className="space-y-2 text-muted-foreground">
+                <li>
+                  <Link
+                    to="/tools"
+                    className="text-foreground hover:text-primary transition-colors font-medium inline-flex items-center gap-1"
+                  >
+                    <span>Tools Hub</span>
+                    <ArrowRight className="size-3" />
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/tools/safe-to-spend"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Safe-to-Spend
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/tools/cash-runway" className="hover:text-foreground transition-colors">
+                    Cash Runway
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/tools/tax-reserve" className="hover:text-foreground transition-colors">
+                    Tax Reserve
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/tools/invoice-profit"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Invoice Profit
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/tools/profit-calculator"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    Profit Margin
                   </Link>
                 </li>
               </ul>
@@ -1226,6 +1493,9 @@ function LandingPage() {
           <div className="pt-6 flex flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground border-t border-border/60">
             <p>© {new Date().getFullYear()} SoloOS. All rights reserved.</p>
             <div className="flex flex-wrap items-center gap-4">
+              <Link to="/tools" className="hover:text-foreground transition-colors font-medium">
+                Free Tools
+              </Link>
               <Link to="/privacy" className="hover:text-foreground transition-colors">
                 Privacy
               </Link>
