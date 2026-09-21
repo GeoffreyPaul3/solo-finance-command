@@ -25,7 +25,7 @@ import {
   TrendingUp,
   Wallet,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { RecordPaymentDialog } from "@/components/app/record-payment-dialog";
@@ -62,6 +62,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MoneyInput } from "@/components/ui/money-input";
 import { MoneyValue } from "@/components/ui/money-value";
+import { CurrencySelect } from "@/components/ui/currency-select";
+import { formatMoney } from "@/lib/money";
 import {
   Select,
   SelectContent,
@@ -550,7 +552,7 @@ function InvoicesPage() {
                       </div>
                       {inv.amount_due > 0 && (
                         <span className="text-[11px] text-amber-500 font-medium">
-                          Due: {inv.currency} {inv.amount_due.toFixed(2)}
+                          Due: {formatMoney(inv.amount_due, inv.currency)}
                         </span>
                       )}
                     </div>
@@ -668,7 +670,13 @@ function CreateInvoiceDialog({
 
   const [clientId, setClientId] = useState<string>("");
   const [projectId, setProjectId] = useState<string>("none");
-  const [currency, setCurrency] = useState<string>(defaultCurrency);
+  const [currency, setCurrency] = useState<string>(defaultCurrency || "USD");
+
+  useEffect(() => {
+    if (isOpen) {
+      setCurrency(defaultCurrency || "USD");
+    }
+  }, [isOpen, defaultCurrency]);
   const [issueDate, setIssueDate] = useState<string>(todayStr);
   const [dueDate, setDueDate] = useState<string>(in30Days);
   const [discountAmount, setDiscountAmount] = useState<string>("0");
@@ -821,12 +829,7 @@ function CreateInvoiceDialog({
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Currency *</Label>
-              <Input
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value.toUpperCase())}
-                maxLength={3}
-                className="h-9 text-xs font-mono uppercase"
-              />
+              <CurrencySelect value={currency} onChange={setCurrency} />
             </div>
           </div>
 
@@ -929,27 +932,21 @@ function CreateInvoiceDialog({
             <div className="rounded-md bg-muted/40 p-3 text-xs space-y-1.5 flex flex-col justify-center border border-border">
               <div className="flex justify-between text-muted-foreground">
                 <span>Subtotal:</span>
-                <span className="font-mono">
-                  {currency} {Number(subtotal).toFixed(2)}
-                </span>
+                <span className="font-mono">{formatMoney(subtotal, currency)}</span>
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>Discount:</span>
                 <span className="font-mono text-rose-500">
-                  -{currency} {Number(discountAmount || 0).toFixed(2)}
+                  -{formatMoney(discountAmount || 0, currency)}
                 </span>
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>Tax:</span>
-                <span className="font-mono">
-                  +{currency} {Number(taxAmount || 0).toFixed(2)}
-                </span>
+                <span className="font-mono">+{formatMoney(taxAmount || 0, currency)}</span>
               </div>
               <div className="border-t border-border pt-1.5 flex justify-between font-bold text-foreground text-sm">
                 <span>Total:</span>
-                <span className="font-mono">
-                  {currency} {Number(total).toFixed(2)}
-                </span>
+                <span className="font-mono">{formatMoney(total, currency)}</span>
               </div>
             </div>
           </div>

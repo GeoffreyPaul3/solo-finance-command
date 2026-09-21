@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CurrencySelect } from "@/components/ui/currency-select";
 import { Label } from "@/components/ui/label";
 import { MoneyInput } from "@/components/ui/money-input";
 import { calculatePublicProfit } from "@/domain/free-tools";
@@ -23,10 +24,10 @@ export const Route = createFileRoute("/tools/profit-calculator")({
   component: ProfitCalculatorPage,
 });
 
-function fmt(n: number) {
+function fmt(n: number, currency: string) {
   return n.toLocaleString("en-US", {
     style: "currency",
-    currency: "USD",
+    currency,
     maximumFractionDigits: 2,
   });
 }
@@ -55,6 +56,7 @@ function MarginBar({ label, pct, color }: { label: string; pct: number; color: s
 }
 
 function ProfitCalculatorPage() {
+  const [currency, setCurrency] = useState("USD");
   const [revenue, setRevenue] = useState("");
   const [directExpenses, setDirectExpenses] = useState("");
   const [operatingExpenses, setOperatingExpenses] = useState("");
@@ -101,6 +103,10 @@ function ProfitCalculatorPage() {
             <CardTitle className="text-base">Your Inputs</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="pc-currency">Currency</Label>
+              <CurrencySelect id="pc-currency" value={currency} onChange={setCurrency} />
+            </div>
             {[
               {
                 id: "revenue",
@@ -133,7 +139,13 @@ function ProfitCalculatorPage() {
             ].map((f) => (
               <div key={f.id} className="space-y-1.5">
                 <Label htmlFor={f.id}>{f.label}</Label>
-                <MoneyInput id={f.id} value={f.value} onChange={f.set} placeholder="0.00" />
+                <MoneyInput
+                  id={f.id}
+                  value={f.value}
+                  onChange={f.set}
+                  placeholder="0.00"
+                  currency={currency}
+                />
                 <p className="text-xs text-muted-foreground">{f.hint}</p>
               </div>
             ))}
@@ -149,20 +161,24 @@ function ProfitCalculatorPage() {
             <CardContent className="py-6 space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { label: "Revenue", value: fmt(result.revenue), color: "text-foreground" },
+                  {
+                    label: "Revenue",
+                    value: fmt(result.revenue, currency),
+                    color: "text-foreground",
+                  },
                   {
                     label: "Total Expenses",
-                    value: fmt(result.totalExpenses),
+                    value: fmt(result.totalExpenses, currency),
                     color: "text-muted-foreground",
                   },
                   {
                     label: "Gross Profit",
-                    value: fmt(result.grossProfit),
+                    value: fmt(result.grossProfit, currency),
                     color: result.grossProfit >= 0 ? "text-emerald-600" : "text-destructive",
                   },
                   {
                     label: "Net Profit",
-                    value: fmt(result.netProfit),
+                    value: fmt(result.netProfit, currency),
                     color:
                       result.netProfit >= 0
                         ? "text-primary font-bold"

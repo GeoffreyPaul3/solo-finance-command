@@ -12,6 +12,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CurrencySelect } from "@/components/ui/currency-select";
 import { Label } from "@/components/ui/label";
 import { MoneyInput } from "@/components/ui/money-input";
 import { calculatePublicCashRunway } from "@/domain/free-tools";
@@ -31,10 +32,10 @@ export const Route = createFileRoute("/tools/cash-runway")({
   component: CashRunwayPage,
 });
 
-function fmt(n: number) {
+function fmt(n: number, currency: string) {
   return n.toLocaleString("en-US", {
     style: "currency",
-    currency: "USD",
+    currency,
     maximumFractionDigits: 2,
   });
 }
@@ -67,6 +68,7 @@ const STATUS_CONFIG = {
 };
 
 function CashRunwayPage() {
+  const [currency, setCurrency] = useState("USD");
   const [currentCash, setCurrentCash] = useState("");
   const [monthlyExpenses, setMonthlyExpenses] = useState("");
   const [upcomingObligations, setUpcomingObligations] = useState("");
@@ -116,6 +118,10 @@ function CashRunwayPage() {
             <CardTitle className="text-base">Your Inputs</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="cr-currency">Currency</Label>
+              <CurrencySelect id="cr-currency" value={currency} onChange={setCurrency} />
+            </div>
             {[
               {
                 id: "current-cash",
@@ -148,7 +154,13 @@ function CashRunwayPage() {
             ].map((f) => (
               <div key={f.id} className="space-y-1.5">
                 <Label htmlFor={f.id}>{f.label}</Label>
-                <MoneyInput id={f.id} value={f.value} onChange={f.set} placeholder="0.00" />
+                <MoneyInput
+                  id={f.id}
+                  value={f.value}
+                  onChange={f.set}
+                  placeholder="0.00"
+                  currency={currency}
+                />
                 <p className="text-xs text-muted-foreground">{f.hint}</p>
               </div>
             ))}
@@ -187,11 +199,11 @@ function CashRunwayPage() {
                   Breakdown
                 </p>
                 {[
-                  ["Current Cash", fmt(parseFloat(currentCash) || 0)],
-                  ["− Upcoming Obligations", fmt(parseFloat(upcomingObligations) || 0)],
-                  ["+ Expected Collections", fmt(parseFloat(expectedCollections) || 0)],
-                  ["= Net Available Cash", fmt(result.netAvailableCash)],
-                  ["÷ Monthly Burn", fmt(parseFloat(monthlyExpenses) || 0)],
+                  ["Current Cash", fmt(parseFloat(currentCash) || 0, currency)],
+                  ["− Upcoming Obligations", fmt(parseFloat(upcomingObligations) || 0, currency)],
+                  ["+ Expected Collections", fmt(parseFloat(expectedCollections) || 0, currency)],
+                  ["= Net Available Cash", fmt(result.netAvailableCash, currency)],
+                  ["÷ Monthly Burn", fmt(parseFloat(monthlyExpenses) || 0, currency)],
                 ].map(([k = "", v = ""]) => (
                   <div
                     key={k}

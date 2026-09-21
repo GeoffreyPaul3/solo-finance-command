@@ -81,9 +81,6 @@ function PricingPage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
           <Link to="/" className="flex items-center gap-2.5 group">
             <img src={logo} width={44} height={44} alt="SoloOS Logo" />
-            <span className="text-lg font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
-              SoloOS
-            </span>
           </Link>
           <nav className="flex items-center gap-1 sm:gap-2">
             <Button asChild variant="ghost" size="sm">

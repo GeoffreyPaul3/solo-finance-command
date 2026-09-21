@@ -13,7 +13,7 @@ import {
   TrendingUp,
   Wallet,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { generateReportPdf } from "@/lib/pdf/report-pdf";
@@ -58,7 +58,8 @@ import {
   type ReportType,
   type TaxPlanningReportItem,
 } from "@/domain/reports";
-import { formatMoney, formatPercent } from "@/lib/money";
+import { formatMoney, formatPercent, CURRENCIES } from "@/lib/money";
+import { CurrencySelect } from "@/components/ui/currency-select";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app/reports")({
@@ -120,8 +121,14 @@ function ReportsContent() {
   const [reportType, setReportType] = useState<ReportType>("income");
   const [dateFrom, setDateFrom] = useState(defaults.from);
   const [dateTo, setDateTo] = useState(defaults.to);
-  const [currency, setCurrency] = useState<string>("all");
+  const [currency, setCurrency] = useState<string>(workspace.currency);
   const [taxYear, setTaxYear] = useState(() => new Date().getFullYear());
+
+  useEffect(() => {
+    if (workspace.currency) {
+      setCurrency(workspace.currency);
+    }
+  }, [workspace.currency]);
 
   const currencyFilter = currency === "all" ? undefined : currency;
 
@@ -252,15 +259,24 @@ function ReportsContent() {
             metrics: [
               {
                 label: "Total Billed",
-                value: formatMoney(totals.totalBilled, currency === "all" ? "USD" : currency),
+                value: formatMoney(
+                  totals.totalBilled,
+                  currency === "all" ? workspace.currency : currency,
+                ),
               },
               {
                 label: "Total Collected",
-                value: formatMoney(totals.totalCollected, currency === "all" ? "USD" : currency),
+                value: formatMoney(
+                  totals.totalCollected,
+                  currency === "all" ? workspace.currency : currency,
+                ),
               },
               {
                 label: "Total Outstanding",
-                value: formatMoney(totals.totalOutstanding, currency === "all" ? "USD" : currency),
+                value: formatMoney(
+                  totals.totalOutstanding,
+                  currency === "all" ? workspace.currency : currency,
+                ),
               },
               { label: "Total Invoices", value: String(totals.invoiceCount) },
             ],
@@ -303,11 +319,17 @@ function ReportsContent() {
             metrics: [
               {
                 label: "Total Spent",
-                value: formatMoney(totals.totalAmount, currency === "all" ? "USD" : currency),
+                value: formatMoney(
+                  totals.totalAmount,
+                  currency === "all" ? workspace.currency : currency,
+                ),
               },
               {
                 label: "Tax Deductible",
-                value: formatMoney(totals.totalDeductible, currency === "all" ? "USD" : currency),
+                value: formatMoney(
+                  totals.totalDeductible,
+                  currency === "all" ? workspace.currency : currency,
+                ),
               },
               { label: "Total Expenses", value: String(totals.expenseCount) },
             ],
@@ -375,27 +397,45 @@ function ReportsContent() {
             metrics: [
               {
                 label: "Current",
-                value: formatMoney(buckets.current, currency === "all" ? "USD" : currency),
+                value: formatMoney(
+                  buckets.current,
+                  currency === "all" ? workspace.currency : currency,
+                ),
               },
               {
                 label: "1-30 Days",
-                value: formatMoney(buckets.bucket1_30, currency === "all" ? "USD" : currency),
+                value: formatMoney(
+                  buckets.bucket1_30,
+                  currency === "all" ? workspace.currency : currency,
+                ),
               },
               {
                 label: "31-60 Days",
-                value: formatMoney(buckets.bucket31_60, currency === "all" ? "USD" : currency),
+                value: formatMoney(
+                  buckets.bucket31_60,
+                  currency === "all" ? workspace.currency : currency,
+                ),
               },
               {
                 label: "61-90 Days",
-                value: formatMoney(buckets.bucket61_90, currency === "all" ? "USD" : currency),
+                value: formatMoney(
+                  buckets.bucket61_90,
+                  currency === "all" ? workspace.currency : currency,
+                ),
               },
               {
                 label: "90+ Days",
-                value: formatMoney(buckets.bucket90_plus, currency === "all" ? "USD" : currency),
+                value: formatMoney(
+                  buckets.bucket90_plus,
+                  currency === "all" ? workspace.currency : currency,
+                ),
               },
               {
                 label: "Total Due",
-                value: formatMoney(buckets.totalDue, currency === "all" ? "USD" : currency),
+                value: formatMoney(
+                  buckets.totalDue,
+                  currency === "all" ? workspace.currency : currency,
+                ),
               },
             ],
             tables: [
@@ -437,30 +477,45 @@ function ReportsContent() {
             metrics: [
               {
                 label: "Actual Income",
-                value: formatMoney(totals.totalIncome, currency === "all" ? "USD" : currency),
+                value: formatMoney(
+                  totals.totalIncome,
+                  currency === "all" ? workspace.currency : currency,
+                ),
               },
               {
                 label: "Actual Expenses",
-                value: formatMoney(totals.totalExpenses, currency === "all" ? "USD" : currency),
+                value: formatMoney(
+                  totals.totalExpenses,
+                  currency === "all" ? workspace.currency : currency,
+                ),
               },
               {
                 label: "Taxable Basis",
-                value: formatMoney(totals.totalTaxableBasis, currency === "all" ? "USD" : currency),
+                value: formatMoney(
+                  totals.totalTaxableBasis,
+                  currency === "all" ? workspace.currency : currency,
+                ),
               },
               {
                 label: "Estimated Tax",
-                value: formatMoney(totals.totalEstimatedTax, currency === "all" ? "USD" : currency),
+                value: formatMoney(
+                  totals.totalEstimatedTax,
+                  currency === "all" ? workspace.currency : currency,
+                ),
               },
               {
                 label: "Tracked Reserve",
                 value: formatMoney(
                   totals.totalTrackedReserve,
-                  currency === "all" ? "USD" : currency,
+                  currency === "all" ? workspace.currency : currency,
                 ),
               },
               {
                 label: "Shortfall",
-                value: formatMoney(totals.totalShortfall, currency === "all" ? "USD" : currency),
+                value: formatMoney(
+                  totals.totalShortfall,
+                  currency === "all" ? workspace.currency : currency,
+                ),
               },
             ],
             tables: [
@@ -612,19 +667,14 @@ function ReportsContent() {
           <Label htmlFor="report-currency" className="text-sm font-medium shrink-0">
             Currency
           </Label>
-          <Select value={currency} onValueChange={setCurrency}>
-            <SelectTrigger id="report-currency" className="w-28">
-              <SelectValue placeholder="All" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All</SelectItem>
-              {["USD", "EUR", "GBP", "CAD", "AUD", "CHF"].map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <CurrencySelect
+            id="report-currency"
+            value={currency}
+            onChange={setCurrency}
+            includeAll={true}
+            allLabel="All Currencies"
+            className="w-52"
+          />
         </div>
       </div>
 
@@ -645,11 +695,19 @@ function ReportsContent() {
       )}
 
       {/* Income report */}
-      {!isLoading && reportType === "income" && <IncomeReportView data={incomeQuery.data ?? []} />}
+      {!isLoading && reportType === "income" && (
+        <IncomeReportView
+          data={incomeQuery.data ?? []}
+          currency={currency === "all" ? workspace.currency : currency}
+        />
+      )}
 
       {/* Expenses report */}
       {!isLoading && reportType === "expenses" && (
-        <ExpenseReportView data={expenseQuery.data ?? []} />
+        <ExpenseReportView
+          data={expenseQuery.data ?? []}
+          currency={currency === "all" ? workspace.currency : currency}
+        />
       )}
 
       {/* Cashflow report */}
@@ -659,7 +717,10 @@ function ReportsContent() {
 
       {/* Receivables aging */}
       {!isLoading && reportType === "receivables" && (
-        <ReceivablesAgingView data={receivablesQuery.data ?? []} />
+        <ReceivablesAgingView
+          data={receivablesQuery.data ?? []}
+          currency={currency === "all" ? workspace.currency : currency}
+        />
       )}
 
       {/* Tax Planning report */}
@@ -668,6 +729,7 @@ function ReportsContent() {
           data={taxPlanningQuery.data ?? []}
           taxYear={taxYear}
           onYearChange={setTaxYear}
+          currency={currency === "all" ? workspace.currency : currency}
         />
       )}
     </div>
@@ -676,26 +738,28 @@ function ReportsContent() {
 
 // ─── Report sub-views ────────────────────────────────────────────────────────
 
-function IncomeReportView({ data }: { data: IncomeReportItem[] }) {
+function IncomeReportView({ data, currency }: { data: IncomeReportItem[]; currency?: string }) {
   const totals = calculateIncomeReportTotals(data);
   if (data.length === 0) return <EmptyState label="income" />;
+
+  const displayCurrency = currency || data[0]?.currency || "USD";
 
   return (
     <div className="space-y-4">
       {/* Summary cards */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <SummaryCard label="Invoices" value={String(totals.invoiceCount)} />
-        <SummaryCard label="Gross Billed" value={totals.totalBilled} currency={data[0]?.currency} />
+        <SummaryCard label="Gross Billed" value={totals.totalBilled} currency={displayCurrency} />
         <SummaryCard
           label="Gross Collected"
           value={totals.totalCollected}
-          currency={data[0]?.currency}
+          currency={displayCurrency}
           highlight
         />
         <SummaryCard
           label="Outstanding"
           value={totals.totalOutstanding}
-          currency={data[0]?.currency}
+          currency={displayCurrency}
           isWarning={totals.totalOutstanding > 0}
         />
       </div>
@@ -745,9 +809,11 @@ function IncomeReportView({ data }: { data: IncomeReportItem[] }) {
   );
 }
 
-function ExpenseReportView({ data }: { data: ExpenseReportItem[] }) {
+function ExpenseReportView({ data, currency }: { data: ExpenseReportItem[]; currency?: string }) {
   const totals = calculateExpenseReportTotals(data);
   if (data.length === 0) return <EmptyState label="expenses" />;
+
+  const displayCurrency = currency || data[0]?.currency || "USD";
 
   return (
     <div className="space-y-4">
@@ -755,13 +821,13 @@ function ExpenseReportView({ data }: { data: ExpenseReportItem[] }) {
         <SummaryCard
           label="Total Expenses"
           value={totals.totalAmount}
-          currency={data[0]?.currency}
+          currency={displayCurrency}
           isWarning
         />
         <SummaryCard
           label="Tax Deductible"
           value={totals.totalDeductible}
-          currency={data[0]?.currency}
+          currency={displayCurrency}
           highlight
         />
         <SummaryCard label="Expense Count" value={String(totals.expenseCount)} />
@@ -880,9 +946,17 @@ const BUCKET_BADGE_CLASS: Record<string, string> = {
   "90_plus": "bg-rose-500/10 text-rose-700 border-rose-500/30",
 };
 
-function ReceivablesAgingView({ data }: { data: ReceivablesAgingItem[] }) {
+function ReceivablesAgingView({
+  data,
+  currency,
+}: {
+  data: ReceivablesAgingItem[];
+  currency?: string;
+}) {
   const summary = calculateReceivablesAgingBuckets(data);
   if (data.length === 0) return <EmptyState label="outstanding receivables" />;
+
+  const displayCurrency = currency || data[0]?.currency || "USD";
 
   return (
     <div className="space-y-4">
@@ -907,7 +981,7 @@ function ReceivablesAgingView({ data }: { data: ReceivablesAgingItem[] }) {
             >
               <p className="text-xs text-muted-foreground">{b.label}</p>
               <p className={cn("mt-1 text-base font-bold", b.className)}>
-                {formatMoney(amount, data[0]?.currency ?? "USD")}
+                {formatMoney(amount, displayCurrency)}
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">{Math.round(pct)}%</p>
             </div>
@@ -1025,10 +1099,12 @@ function TaxPlanningReportView({
   data,
   taxYear,
   onYearChange,
+  currency,
 }: {
   data: TaxPlanningReportItem[];
   taxYear: number;
   onYearChange: (y: number) => void;
+  currency?: string;
 }) {
   const now = new Date().getFullYear();
   const years = [now, now - 1, now - 2];
@@ -1066,6 +1142,7 @@ function TaxPlanningReportView({
   }
 
   const totals = calculateTaxPlanningTotals(data);
+  const displayCurrency = currency || data[0]?.currency || "USD";
 
   const HEALTH_STYLE: Record<
     "funded" | "shortfall" | "overfunded",
@@ -1093,36 +1170,32 @@ function TaxPlanningReportView({
 
       {/* Summary strip */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <SummaryCard
-          label="Actual Income"
-          value={totals.totalIncome}
-          currency={data[0]?.currency}
-        />
+        <SummaryCard label="Actual Income" value={totals.totalIncome} currency={displayCurrency} />
         <SummaryCard
           label="Actual Expenses"
           value={totals.totalExpenses}
-          currency={data[0]?.currency}
+          currency={displayCurrency}
         />
         <SummaryCard
           label="Taxable Basis"
           value={totals.totalTaxableBasis}
-          currency={data[0]?.currency}
+          currency={displayCurrency}
           highlight
         />
         <SummaryCard
           label="Estimated Tax"
           value={totals.totalEstimatedTax}
-          currency={data[0]?.currency}
+          currency={displayCurrency}
         />
         <SummaryCard
           label="Tracked Reserve"
           value={totals.totalTrackedReserve}
-          currency={data[0]?.currency}
+          currency={displayCurrency}
         />
         <SummaryCard
           label="Shortfall"
           value={totals.totalShortfall > 0 ? totals.totalShortfall : "None"}
-          currency={totals.totalShortfall > 0 ? data[0]?.currency : undefined}
+          currency={totals.totalShortfall > 0 ? displayCurrency : undefined}
           isWarning={totals.totalShortfall > 0}
         />
       </div>

@@ -26,7 +26,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CurrencySelect } from "@/components/ui/currency-select";
 import { MoneyInput } from "@/components/ui/money-input";
+import { parseMoneyInput } from "@/lib/money";
 import {
   Table,
   TableBody,
@@ -56,7 +58,7 @@ import {
 } from "@/domain/workspace";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { parseMoneyInput } from "@/lib/money";
+
 import {
   CANONICAL_PRICES,
   PLAN_DETAILS,
@@ -86,7 +88,6 @@ export const Route = createFileRoute("/_authenticated/app/settings")({
   component: SettingsPage,
 });
 
-const CURRENCIES = ["USD", "EUR", "GBP", "MWK", "ZAR", "KES", "NGN", "CAD", "AUD"] as const;
 const MONTHS = [
   "January",
   "February",
@@ -643,18 +644,7 @@ function SettingsPage() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="s-currency">Primary Operating Currency</Label>
-                      <select
-                        id="s-currency"
-                        className={fieldClass()}
-                        value={currency}
-                        onChange={(e) => setCurrency(e.target.value)}
-                      >
-                        {CURRENCIES.map((c) => (
-                          <option key={c} value={c}>
-                            {c}
-                          </option>
-                        ))}
-                      </select>
+                      <CurrencySelect id="s-currency" value={currency} onChange={setCurrency} />
                     </div>
                     <div className="space-y-2 sm:col-span-2">
                       <Label htmlFor="s-fiscal">Financial Year Starts</Label>

@@ -34,6 +34,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MoneyInput } from "@/components/ui/money-input";
+import { CurrencySelect } from "@/components/ui/currency-select";
 import {
   Select,
   SelectContent,
@@ -697,12 +698,7 @@ export function ObligationsPage() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="obl-currency">Currency</Label>
-                <Input
-                  id="obl-currency"
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value.toUpperCase())}
-                  maxLength={3}
-                />
+                <CurrencySelect id="obl-currency" value={currency} onChange={setCurrency} />
               </div>
             </div>
 
@@ -809,12 +805,7 @@ export function ObligationsPage() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="rec-currency">Currency</Label>
-                <Input
-                  id="rec-currency"
-                  value={recCurrency}
-                  onChange={(e) => setRecCurrency(e.target.value.toUpperCase())}
-                  maxLength={3}
-                />
+                <CurrencySelect id="rec-currency" value={recCurrency} onChange={setRecCurrency} />
               </div>
             </div>
 

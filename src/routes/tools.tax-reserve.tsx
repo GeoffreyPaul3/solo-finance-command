@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CurrencySelect } from "@/components/ui/currency-select";
 import { Label } from "@/components/ui/label";
 import { MoneyInput } from "@/components/ui/money-input";
 import { Slider } from "@/components/ui/slider";
@@ -24,15 +25,16 @@ export const Route = createFileRoute("/tools/tax-reserve")({
   component: TaxReservePage,
 });
 
-function fmt(n: number) {
+function fmt(n: number, currency: string) {
   return n.toLocaleString("en-US", {
     style: "currency",
-    currency: "USD",
+    currency,
     maximumFractionDigits: 2,
   });
 }
 
 function TaxReservePage() {
+  const [currency, setCurrency] = useState("USD");
   const [taxableAmount, setTaxableAmount] = useState("");
   const [ratePercent, setRatePercent] = useState(25);
   const [calculated, setCalculated] = useState(false);
@@ -91,12 +93,17 @@ function TaxReservePage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-1.5">
+              <Label htmlFor="tr-currency">Currency</Label>
+              <CurrencySelect id="tr-currency" value={currency} onChange={setCurrency} />
+            </div>
+            <div className="space-y-1.5">
               <Label htmlFor="taxable-amount">Estimated Taxable Amount</Label>
               <MoneyInput
                 id="taxable-amount"
                 value={taxableAmount}
                 onChange={setTaxableAmount}
                 placeholder="0.00"
+                currency={currency}
               />
               <p className="text-xs text-muted-foreground">
                 Your estimated taxable income or revenue for the period
@@ -147,7 +154,7 @@ function TaxReservePage() {
                     Set Aside
                   </p>
                   <p className="text-2xl font-bold text-rose-600 dark:text-rose-400 font-mono">
-                    {fmt(result.estimatedReserveAmount)}
+                    {fmt(result.estimatedReserveAmount, currency)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {reservePct}% of taxable amount
@@ -158,7 +165,7 @@ function TaxReservePage() {
                     Effective Take-Home
                   </p>
                   <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 font-mono">
-                    {fmt(result.effectiveTakeHome)}
+                    {fmt(result.effectiveTakeHome, currency)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {100 - reservePct}% retained

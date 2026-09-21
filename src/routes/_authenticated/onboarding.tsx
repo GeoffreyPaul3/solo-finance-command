@@ -15,6 +15,7 @@ import {
   upsertProfile,
 } from "@/domain/workspace";
 import { useAuth } from "@/lib/auth";
+import { CurrencySelect } from "@/components/ui/currency-select";
 import { MoneyInput } from "@/components/ui/money-input";
 import { parseMoneyInput } from "@/lib/money";
 
@@ -37,8 +38,6 @@ const BUSINESS_TYPES = [
   "Agency",
   "Other",
 ] as const;
-
-const CURRENCIES = ["USD", "EUR", "GBP", "MWK", "ZAR", "KES", "NGN", "CAD", "AUD"] as const;
 
 const MONTHS = [
   "January",
@@ -228,18 +227,7 @@ function OnboardingPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="ws-currency">Default currency</Label>
-              <select
-                id="ws-currency"
-                className={fieldClass()}
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-              >
-                {CURRENCIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
+              <CurrencySelect id="ws-currency" value={currency} onChange={setCurrency} />
             </div>
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="ws-fiscal">Financial year starts</Label>

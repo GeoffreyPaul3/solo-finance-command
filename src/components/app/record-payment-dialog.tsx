@@ -1,7 +1,8 @@
 import { useMutation } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { formatMoney } from "@/lib/money";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -65,6 +66,13 @@ export function RecordPaymentDialog({
   const [reference, setReference] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
 
+  useEffect(() => {
+    if (isOpen) {
+      setAmount(String(invoice.amount_due));
+      setFinancialAccountId(eligibleAccounts[0]?.id ?? "");
+    }
+  }, [isOpen, invoice.id, invoice.amount_due, eligibleAccounts]);
+
   const paymentMutation = useMutation({
     mutationFn: async () => {
       const numAmount = Number(amount);
@@ -73,7 +81,7 @@ export function RecordPaymentDialog({
       }
       if (numAmount > invoice.amount_due) {
         throw new Error(
-          `Payment cannot exceed outstanding balance of ${invoice.currency} ${invoice.amount_due.toFixed(2)}`,
+          `Payment cannot exceed outstanding balance of ${formatMoney(invoice.amount_due, invoice.currency)}`,
         );
       }
       if (!financialAccountId) {
@@ -115,7 +123,7 @@ export function RecordPaymentDialog({
           <div className="p-3 bg-muted/40 rounded-md border border-border flex justify-between items-center">
             <span className="text-muted-foreground">Outstanding Amount:</span>
             <span className="font-bold text-sm font-mono text-amber-500">
-              {invoice.currency} {invoice.amount_due.toFixed(2)}
+              {formatMoney(invoice.amount_due, invoice.currency)}
             </span>
           </div>
 

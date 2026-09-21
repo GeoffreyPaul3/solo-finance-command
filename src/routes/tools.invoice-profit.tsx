@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CurrencySelect } from "@/components/ui/currency-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MoneyInput } from "@/components/ui/money-input";
@@ -24,15 +25,16 @@ export const Route = createFileRoute("/tools/invoice-profit")({
   component: InvoiceProfitPage,
 });
 
-function fmt(n: number) {
+function fmt(n: number, currency: string) {
   return n.toLocaleString("en-US", {
     style: "currency",
-    currency: "USD",
+    currency,
     maximumFractionDigits: 2,
   });
 }
 
 function InvoiceProfitPage() {
+  const [currency, setCurrency] = useState("USD");
   const [invoiceAmount, setInvoiceAmount] = useState("");
   const [directCosts, setDirectCosts] = useState("");
   const [projectCosts, setProjectCosts] = useState("");
@@ -81,6 +83,10 @@ function InvoiceProfitPage() {
             <CardTitle className="text-base">Invoice Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="ip-currency">Currency</Label>
+              <CurrencySelect id="ip-currency" value={currency} onChange={setCurrency} />
+            </div>
             {[
               {
                 id: "invoice-amount",
@@ -125,7 +131,13 @@ function InvoiceProfitPage() {
                     className="font-mono"
                   />
                 ) : (
-                  <MoneyInput id={f.id} value={f.value} onChange={f.set} placeholder="0.00" />
+                  <MoneyInput
+                    id={f.id}
+                    value={f.value}
+                    onChange={f.set}
+                    placeholder="0.00"
+                    currency={currency}
+                  />
                 )}
                 <p className="text-xs text-muted-foreground">{f.hint}</p>
               </div>
@@ -161,7 +173,7 @@ function InvoiceProfitPage() {
                     isProfit ? "text-blue-600 dark:text-blue-400" : "text-destructive",
                   )}
                 >
-                  {fmt(result.estimatedProfit)}
+                  {fmt(result.estimatedProfit, currency)}
                 </p>
                 <p
                   className={cn("text-sm mt-1", isProfit ? "text-emerald-600" : "text-destructive")}
@@ -171,11 +183,11 @@ function InvoiceProfitPage() {
               </div>
               <div className="space-y-2 border rounded-lg p-4 bg-background/60">
                 {[
-                  ["Invoice Amount", fmt(result.invoiceAmount)],
-                  ["− Direct Costs", fmt(parseFloat(directCosts) || 0)],
-                  ["− Project Overhead", fmt(parseFloat(projectCosts) || 0)],
-                  [`− Processing Fee (${feePercent}%)`, fmt(result.processingFeeAmount)],
-                  ["= Total Costs", fmt(result.totalCost)],
+                  ["Invoice Amount", fmt(result.invoiceAmount, currency)],
+                  ["− Direct Costs", fmt(parseFloat(directCosts) || 0, currency)],
+                  ["− Project Overhead", fmt(parseFloat(projectCosts) || 0, currency)],
+                  [`− Processing Fee (${feePercent}%)`, fmt(result.processingFeeAmount, currency)],
+                  ["= Total Costs", fmt(result.totalCost, currency)],
                 ].map(([k = "", v = ""]) => (
                   <div
                     key={k}

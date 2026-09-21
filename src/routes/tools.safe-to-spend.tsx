@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CurrencySelect } from "@/components/ui/currency-select";
 import { Label } from "@/components/ui/label";
 import { MoneyInput } from "@/components/ui/money-input";
 import { calculatePublicSafeToSpend } from "@/domain/free-tools";
@@ -29,31 +30,40 @@ function NumInput({
   value,
   onChange,
   hint,
+  currency,
 }: {
   id: string;
   label: string;
   value: string;
   onChange: (v: string) => void;
   hint?: string;
+  currency?: string;
 }) {
   return (
     <div className="space-y-1.5">
       <Label htmlFor={id}>{label}</Label>
-      <MoneyInput id={id} value={value} onChange={onChange} placeholder="0.00" />
+      <MoneyInput
+        id={id}
+        value={value}
+        onChange={onChange}
+        placeholder="0.00"
+        currency={currency}
+      />
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>
   );
 }
 
-function fmt(n: number) {
+function fmt(n: number, currency: string) {
   return n.toLocaleString("en-US", {
     style: "currency",
-    currency: "USD",
+    currency,
     maximumFractionDigits: 2,
   });
 }
 
 function SafeToSpendPage() {
+  const [currency, setCurrency] = useState("USD");
   const [liquidCash, setLiquidCash] = useState("");
   const [taxReserve, setTaxReserve] = useState("");
   const [upcomingObligations, setUpcomingObligations] = useState("");
@@ -105,12 +115,17 @@ function SafeToSpendPage() {
             <CardTitle className="text-base">Your Inputs</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="sts-currency">Currency</Label>
+              <CurrencySelect id="sts-currency" value={currency} onChange={setCurrency} />
+            </div>
             <NumInput
               id="liquid-cash"
               label="Current Liquid Cash"
               value={liquidCash}
               onChange={setLiquidCash}
               hint="Total cash in business accounts today"
+              currency={currency}
             />
             <NumInput
               id="tax-reserve"
@@ -118,6 +133,7 @@ function SafeToSpendPage() {
               value={taxReserve}
               onChange={setTaxReserve}
               hint="Amount already reserved for taxes"
+              currency={currency}
             />
             <NumInput
               id="upcoming-obligations"
@@ -125,6 +141,7 @@ function SafeToSpendPage() {
               value={upcomingObligations}
               onChange={setUpcomingObligations}
               hint="Bills, subscriptions, payroll due soon"
+              currency={currency}
             />
             <NumInput
               id="operating-buffer"
@@ -132,6 +149,7 @@ function SafeToSpendPage() {
               value={operatingBuffer}
               onChange={setOperatingBuffer}
               hint="Minimum cash cushion you want to maintain"
+              currency={currency}
             />
             <NumInput
               id="expected-collections"
@@ -139,6 +157,7 @@ function SafeToSpendPage() {
               value={expectedCollections}
               onChange={setExpectedCollections}
               hint="Invoices or payments you expect to receive soon"
+              currency={currency}
             />
             <Button
               id="calculate-safe-to-spend"
@@ -171,7 +190,7 @@ function SafeToSpendPage() {
                     isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-destructive",
                   )}
                 >
-                  {fmt(result.estimatedSafeToSpend)}
+                  {fmt(result.estimatedSafeToSpend, currency)}
                 </p>
               </div>
               <div className="space-y-2 border rounded-lg p-4 bg-background/60">
@@ -179,12 +198,12 @@ function SafeToSpendPage() {
                   Breakdown
                 </p>
                 {[
-                  ["Liquid Cash", fmt(parseFloat(liquidCash) || 0)],
-                  ["− Tax Reserve", fmt(parseFloat(taxReserve) || 0)],
-                  ["− Upcoming Obligations", fmt(parseFloat(upcomingObligations) || 0)],
-                  ["− Operating Buffer", fmt(parseFloat(operatingBuffer) || 0)],
-                  ["= Net Available", fmt(result.netAvailableCash)],
-                  ["+ Expected Collections", fmt(parseFloat(expectedCollections) || 0)],
+                  ["Liquid Cash", fmt(parseFloat(liquidCash) || 0, currency)],
+                  ["− Tax Reserve", fmt(parseFloat(taxReserve) || 0, currency)],
+                  ["− Upcoming Obligations", fmt(parseFloat(upcomingObligations) || 0, currency)],
+                  ["− Operating Buffer", fmt(parseFloat(operatingBuffer) || 0, currency)],
+                  ["= Net Available", fmt(result.netAvailableCash, currency)],
+                  ["+ Expected Collections", fmt(parseFloat(expectedCollections) || 0, currency)],
                 ].map(([k = "", v = ""]) => (
                   <div
                     key={k}

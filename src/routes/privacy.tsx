@@ -61,9 +61,6 @@ function PrivacyPage() {
           <Link to="/" className="flex items-center gap-2.5 group">
             <img src={logo} width={38} height={38} alt="SoloOS Logo" className="rounded-md" />
             <div className="flex flex-col">
-              <span className="text-display text-lg font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
-                SoloOS
-              </span>
               <span className="text-[10px] uppercase font-mono tracking-wider text-muted-foreground">
                 Legal & Trust
               </span>

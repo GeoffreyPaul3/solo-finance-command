@@ -18,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MoneyInput } from "@/components/ui/money-input";
+import { CurrencySelect } from "@/components/ui/currency-select";
 import { Progress } from "@/components/ui/progress";
 import {
   Select,
@@ -381,13 +382,10 @@ function GoalFormDialog({
 
             <div className="space-y-1.5">
               <Label htmlFor="goal-currency">Currency</Label>
-              <Input
+              <CurrencySelect
                 id="goal-currency"
-                placeholder="USD"
-                maxLength={3}
-                className="uppercase"
                 value={form.currency}
-                onChange={(e) => set("currency", e.target.value.toUpperCase())}
+                onChange={(code) => set("currency", code)}
               />
             </div>
           </div>

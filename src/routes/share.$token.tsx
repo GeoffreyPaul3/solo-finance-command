@@ -452,7 +452,9 @@ function PublicSharePage() {
         <ArtifactRenderer
           type={artifact.artifactType}
           data={(artifact.snapshotData ?? {}) as Record<string, unknown>}
-          currency={artifact.workspaceCurrency}
+          currency={
+            (artifact.snapshotData?.["currency"] as string) || artifact.workspaceCurrency || "USD"
+          }
         />
 
         <Separator />

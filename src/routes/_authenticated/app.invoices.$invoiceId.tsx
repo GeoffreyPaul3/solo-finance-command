@@ -86,6 +86,7 @@ import {
   computeTotal,
 } from "@/lib/invoice-calculations";
 import { cn } from "@/lib/utils";
+import { formatMoney } from "@/lib/money";
 import { createShareArtifactServerFn } from "@/server/share";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -535,7 +536,7 @@ function InvoiceDetailPage() {
                               isReversed ? "line-through text-muted-foreground" : "text-emerald-500"
                             }
                           >
-                            {invoice.currency} {Number(p.amount).toFixed(2)}
+                            {formatMoney(p.amount, invoice.currency)}
                           </span>
                         </TableCell>
                         <TableCell className="text-center">
@@ -772,9 +773,7 @@ function ReversePaymentDialog({
           <DialogTitle>Reverse Payment</DialogTitle>
           <DialogDescription>
             Reversing this payment of{" "}
-            <span className="font-mono font-bold">
-              {currency} {Number(payment.amount).toFixed(2)}
-            </span>{" "}
+            <span className="font-mono font-bold">{formatMoney(payment.amount, currency)}</span>{" "}
             will create a reversal transaction in the financial ledger and restore the invoice
             balance.
           </DialogDescription>
@@ -1033,27 +1032,21 @@ function EditInvoiceDialog({
             <div className="rounded-md bg-muted/40 p-3 text-xs space-y-1.5 flex flex-col justify-center border border-border">
               <div className="flex justify-between text-muted-foreground">
                 <span>Subtotal:</span>
-                <span className="font-mono">
-                  {invoice.currency} {Number(subtotal).toFixed(2)}
-                </span>
+                <span className="font-mono">{formatMoney(subtotal, invoice.currency)}</span>
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>Discount:</span>
                 <span className="font-mono text-rose-500">
-                  -{invoice.currency} {Number(discountAmount || 0).toFixed(2)}
+                  -{formatMoney(discountAmount || 0, invoice.currency)}
                 </span>
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>Tax:</span>
-                <span className="font-mono">
-                  +{invoice.currency} {Number(taxAmount || 0).toFixed(2)}
-                </span>
+                <span className="font-mono">+{formatMoney(taxAmount || 0, invoice.currency)}</span>
               </div>
               <div className="border-t border-border pt-1.5 flex justify-between font-bold text-foreground text-sm">
                 <span>Total:</span>
-                <span className="font-mono">
-                  {invoice.currency} {Number(total).toFixed(2)}
-                </span>
+                <span className="font-mono">{formatMoney(total, invoice.currency)}</span>
               </div>
             </div>
           </div>
