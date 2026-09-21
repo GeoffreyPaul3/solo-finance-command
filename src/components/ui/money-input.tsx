@@ -90,8 +90,8 @@ export function MoneyInput({
 
       // Format for display (but preserve trailing dot for ongoing decimal entry)
       const formatted = endsWithDot
-        ? formatMoneyInput(canonical) + "."
-        : formatMoneyInput(canonical || raw);
+        ? formatMoneyInput(canonical, { showZero: true }) + "."
+        : formatMoneyInput(canonical || raw, { showZero: true });
 
       // Cursor position correction: after formatting inserts commas the cursor
       // shifts. Preserve position relative to the end of the string.
@@ -158,7 +158,7 @@ export function MoneyInput({
 
       lastCanonical.current = canonical;
       onChange(canonical);
-      setDisplayValue(formatMoneyInput(canonical));
+      setDisplayValue(formatMoneyInput(canonical, { showZero: true }));
     },
     [allowNegative, onChange],
   );
@@ -167,7 +167,7 @@ export function MoneyInput({
     // On blur, normalize: e.g. "1000." → "1,000"
     const canonical = parseMoneyInput(displayValue);
     if (canonical) {
-      setDisplayValue(formatMoneyInput(canonical));
+      setDisplayValue(formatMoneyInput(canonical, { showZero: true }));
     } else {
       setDisplayValue("");
     }

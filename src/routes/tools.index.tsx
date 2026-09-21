@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, BarChart3, Calculator, FileText, Shield, TrendingUp, Zap } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import logo from "@/assets/solo.png";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const Route = createFileRoute("/tools/")({
@@ -77,8 +78,7 @@ function ToolsHubPage() {
       <div className="border-b border-border/50">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="text-sm font-semibold flex items-center gap-2">
-            <Calculator className="size-4 text-primary" />
-            SoloOS
+            <img src={logo} width={65} height={26} alt="SoloOS" />
           </Link>
           <div className="flex items-center gap-3">
             <Link to="/auth" search={{ mode: "signin" as const }}>

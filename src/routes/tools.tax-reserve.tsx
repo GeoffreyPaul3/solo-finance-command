@@ -4,8 +4,8 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Slider } from "@/components/ui/slider";
 import { calculatePublicTaxReserve } from "@/domain/free-tools";
 import { cn } from "@/lib/utils";
@@ -92,15 +92,11 @@ function TaxReservePage() {
           <CardContent className="space-y-6">
             <div className="space-y-1.5">
               <Label htmlFor="taxable-amount">Estimated Taxable Amount</Label>
-              <Input
+              <MoneyInput
                 id="taxable-amount"
-                type="number"
-                min="0"
-                step="any"
                 value={taxableAmount}
-                onChange={(e) => setTaxableAmount(e.target.value)}
+                onChange={setTaxableAmount}
                 placeholder="0.00"
-                className="font-mono"
               />
               <p className="text-xs text-muted-foreground">
                 Your estimated taxable income or revenue for the period

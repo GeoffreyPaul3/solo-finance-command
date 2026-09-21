@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MoneyInput } from "@/components/ui/money-input";
 import { Progress } from "@/components/ui/progress";
 import {
   Select,
@@ -39,7 +40,7 @@ import {
   type GoalCategory,
   type GoalStatus,
 } from "@/domain/goals";
-import { formatMoney } from "@/lib/money";
+import { formatMoney, parseMoneyInput } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/app/goals")({
@@ -285,8 +286,8 @@ function GoalFormDialog({
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const targetAmount = parseFloat(form.targetAmount);
-      const currentAmount = parseFloat(form.currentAmount) || 0;
+      const targetAmount = parseFloat(parseMoneyInput(form.targetAmount));
+      const currentAmount = parseFloat(parseMoneyInput(form.currentAmount)) || 0;
       if (!form.name.trim()) throw new Error("Goal name is required.");
       if (isNaN(targetAmount) || targetAmount <= 0)
         throw new Error("Target amount must be greater than zero.");
@@ -394,28 +395,24 @@ function GoalFormDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="goal-target-amount">Target Amount</Label>
-              <Input
+              <MoneyInput
                 id="goal-target-amount"
-                type="number"
-                min={0}
-                step="0.01"
                 placeholder="0.00"
                 value={form.targetAmount}
-                onChange={(e) => set("targetAmount", e.target.value)}
+                onChange={(v) => set("targetAmount", v)}
+                currency={form.currency}
                 required
               />
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="goal-current-amount">Designated So Far</Label>
-              <Input
+              <MoneyInput
                 id="goal-current-amount"
-                type="number"
-                min={0}
-                step="0.01"
                 placeholder="0.00"
                 value={form.currentAmount}
-                onChange={(e) => set("currentAmount", e.target.value)}
+                onChange={(v) => set("currentAmount", v)}
+                currency={form.currency}
               />
               <p className="text-[10px] text-muted-foreground">
                 For tracking only — does not affect accounts.

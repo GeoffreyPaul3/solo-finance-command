@@ -4,8 +4,8 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MoneyInput } from "@/components/ui/money-input";
 import { calculatePublicSafeToSpend } from "@/domain/free-tools";
 import { cn } from "@/lib/utils";
 
@@ -39,16 +39,7 @@ function NumInput({
   return (
     <div className="space-y-1.5">
       <Label htmlFor={id}>{label}</Label>
-      <Input
-        id={id}
-        type="number"
-        min="0"
-        step="any"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="0.00"
-        className="font-mono"
-      />
+      <MoneyInput id={id} value={value} onChange={onChange} placeholder="0.00" />
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>
   );

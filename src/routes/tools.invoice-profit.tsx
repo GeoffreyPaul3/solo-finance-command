@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MoneyInput } from "@/components/ui/money-input";
 import { calculatePublicInvoiceProfit } from "@/domain/free-tools";
 import { cn } from "@/lib/utils";
 
@@ -112,16 +113,20 @@ function InvoiceProfitPage() {
             ].map((f) => (
               <div key={f.id} className="space-y-1.5">
                 <Label htmlFor={f.id}>{f.label}</Label>
-                <Input
-                  id={f.id}
-                  type="number"
-                  min="0"
-                  step="any"
-                  value={f.value}
-                  onChange={(e) => f.set(e.target.value)}
-                  placeholder="0.00"
-                  className="font-mono"
-                />
+                {f.id === "fee-percent" ? (
+                  <Input
+                    id={f.id}
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={f.value}
+                    onChange={(e) => f.set(e.target.value)}
+                    placeholder="0.00"
+                    className="font-mono"
+                  />
+                ) : (
+                  <MoneyInput id={f.id} value={f.value} onChange={f.set} placeholder="0.00" />
+                )}
                 <p className="text-xs text-muted-foreground">{f.hint}</p>
               </div>
             ))}
