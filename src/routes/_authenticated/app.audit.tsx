@@ -119,6 +119,7 @@ type AuditLog = {
   entity_type: string;
   entity_id: string | null;
   actor_id: string | null;
+  actor_name: string | null;
   metadata: unknown;
   created_at: string;
   workspace_id: string;
@@ -139,11 +140,13 @@ function AuditContent() {
   // Apply filters
   const filtered = allLogs.filter((log) => {
     const matchesEntity = entityFilter === "all" || log.entity_type === entityFilter;
+    const q = search.toLowerCase();
     const matchesSearch =
       !search ||
-      log.action.toLowerCase().includes(search.toLowerCase()) ||
-      (log.entity_id?.toLowerCase().includes(search.toLowerCase()) ?? false) ||
-      (log.actor_id?.toLowerCase().includes(search.toLowerCase()) ?? false);
+      log.action.toLowerCase().includes(q) ||
+      (log.entity_id?.toLowerCase().includes(q) ?? false) ||
+      (log.actor_id?.toLowerCase().includes(q) ?? false) ||
+      (log.actor_name?.toLowerCase().includes(q) ?? false);
     return matchesEntity && matchesSearch;
   });
 
@@ -294,6 +297,18 @@ function AuditContent() {
                                 <p className="text-[11px] text-muted-foreground mt-0.5 font-mono truncate">
                                   ID: {log.entity_id}
                                 </p>
+                              )}
+
+                              {/* Actor display: real name + UUID */}
+                              {log.actor_id && (
+                                <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                                  <span className="text-[11px] font-medium text-foreground">
+                                    {log.actor_name ?? "Unknown"}
+                                  </span>
+                                  <span className="font-mono text-[10px] text-muted-foreground/70 bg-muted px-1 py-0.5 rounded">
+                                    {log.actor_id}
+                                  </span>
+                                </div>
                               )}
 
                               {/* Expandable metadata */}

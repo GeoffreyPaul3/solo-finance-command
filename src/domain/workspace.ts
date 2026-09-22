@@ -128,9 +128,29 @@ export const auditLogQueryOptions = (workspaceId: string | undefined, limit = 20
         .order("created_at", { ascending: false })
         .limit(limit);
       if (error) throw new Error(error.message);
-      return data ?? [];
+
+      const rawLogs = data ?? [];
+
+      // Resolve actor_id → human-readable name
+      const actorIds = [...new Set(rawLogs.map((l) => l.actor_id).filter(Boolean))] as string[];
+      if (actorIds.length === 0) return rawLogs.map((l) => ({ ...l, actor_name: null }));
+
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", actorIds);
+
+      const profileMap = new Map<string, string>(
+        (profiles ?? []).map((p) => [p.id, p.full_name ?? p.email ?? p.id]),
+      );
+
+      return rawLogs.map((log) => ({
+        ...log,
+        actor_name: log.actor_id ? (profileMap.get(log.actor_id) ?? null) : null,
+      }));
     },
   });
+
 
 // ---- Mutations -------------------------------------------------------------
 
