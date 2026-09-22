@@ -1563,6 +1563,11 @@ function LandingPage() {
                     Contact Support
                   </Link>
                 </li>
+                <li>
+                  <Link to="/app/creator" className="hover:text-foreground transition-colors">
+                    Creator Program
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>
