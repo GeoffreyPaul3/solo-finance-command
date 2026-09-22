@@ -14,6 +14,7 @@ import {
   Shield,
   ShieldAlert,
   ShieldCheck,
+  Sparkles,
   Users,
 } from "lucide-react";
 
@@ -36,6 +37,7 @@ interface NavItem {
 const ADMIN_NAV: NavItem[] = [
   { label: "Overview", to: "/admin", icon: LayoutDashboard },
   { label: "Analytics", to: "/admin/analytics", icon: BarChart3 },
+  { label: "Creators", to: "/admin/creators", icon: Sparkles },
   { label: "Users", to: "/admin/users", icon: Users },
   { label: "Workspaces", to: "/admin/workspaces", icon: Shield },
   { label: "Subscriptions", to: "/admin/subscriptions", icon: CreditCard },

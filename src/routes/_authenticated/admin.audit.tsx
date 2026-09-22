@@ -263,28 +263,33 @@ function AdminAuditPage() {
                             {log.workspace_id ? (
                               <div>
                                 <span className="text-xs font-medium text-foreground">
-                                  {(log as {workspace_name?: string|null}).workspace_name ?? "—"}
+                                  {(log as { workspace_name?: string | null }).workspace_name ??
+                                    "—"}
                                 </span>
                                 <div className="font-mono text-[10px] text-muted-foreground/60 mt-0.5">
                                   {log.workspace_id}
                                 </div>
                               </div>
                             ) : (
-                              <span className="text-muted-foreground/60 italic text-xs">System</span>
+                              <span className="text-muted-foreground/60 italic text-xs">
+                                System
+                              </span>
                             )}
                           </TableCell>
                           <TableCell>
                             {log.actor_id ? (
                               <div>
                                 <span className="text-xs font-medium text-foreground">
-                                  {(log as {actor_name?: string|null}).actor_name ?? "Unknown"}
+                                  {(log as { actor_name?: string | null }).actor_name ?? "Unknown"}
                                 </span>
                                 <div className="font-mono text-[10px] text-muted-foreground/60 mt-0.5">
                                   {log.actor_id}
                                 </div>
                               </div>
                             ) : (
-                              <span className="text-muted-foreground/60 italic text-xs">System</span>
+                              <span className="text-muted-foreground/60 italic text-xs">
+                                System
+                              </span>
                             )}
                           </TableCell>
                           <TableCell className="text-right">

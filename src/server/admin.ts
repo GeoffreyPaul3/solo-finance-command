@@ -356,14 +356,14 @@ export async function adminListAuditLogsFn({ data }: { data: z.infer<typeof audi
 
   // ── Resolve actor UUIDs → human-readable names ───────────────────────────
   const actorIds = [...new Set(rawLogs.map((l) => l.actor_id).filter(Boolean))] as string[];
-  const workspaceIds = [
-    ...new Set(rawLogs.map((l) => l.workspace_id).filter(Boolean)),
-  ] as string[];
+  const workspaceIds = [...new Set(rawLogs.map((l) => l.workspace_id).filter(Boolean))] as string[];
 
   const [profilesRes, workspacesRes] = await Promise.all([
     actorIds.length > 0
       ? supabase.from("profiles").select("id, full_name, email").in("id", actorIds)
-      : Promise.resolve({ data: [] as { id: string; full_name: string | null; email: string | null }[] }),
+      : Promise.resolve({
+          data: [] as { id: string; full_name: string | null; email: string | null }[],
+        }),
     workspaceIds.length > 0
       ? supabase.from("workspaces").select("id, name").in("id", workspaceIds)
       : Promise.resolve({ data: [] as { id: string; name: string }[] }),
@@ -379,9 +379,7 @@ export async function adminListAuditLogsFn({ data }: { data: z.infer<typeof audi
   const enrichedLogs = rawLogs.map((log) => ({
     ...log,
     actor_name: log.actor_id
-      ? (profileMap.get(log.actor_id)?.full_name ??
-        profileMap.get(log.actor_id)?.email ??
-        null)
+      ? (profileMap.get(log.actor_id)?.full_name ?? profileMap.get(log.actor_id)?.email ?? null)
       : null,
     workspace_name: log.workspace_id ? (workspaceMap.get(log.workspace_id) ?? null) : null,
   }));

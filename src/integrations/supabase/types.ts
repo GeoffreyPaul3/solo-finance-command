@@ -509,14 +509,16 @@ export type Database = {
         Row: {
           activated_at: string | null;
           anonymous_session_id: string | null;
+          campaign_id: string | null;
           converted_at: string | null;
           created_at: string;
+          creator_id: string | null;
           id: string;
           landing_at: string;
-          referral_code: string;
+          referral_code: string | null;
           referred_user_id: string | null;
           referred_workspace_id: string | null;
-          referrer_workspace_id: string;
+          referrer_workspace_id: string | null;
           signup_at: string | null;
           status: string;
           updated_at: string;
@@ -524,14 +526,16 @@ export type Database = {
         Insert: {
           activated_at?: string | null;
           anonymous_session_id?: string | null;
+          campaign_id?: string | null;
           converted_at?: string | null;
           created_at?: string;
+          creator_id?: string | null;
           id?: string;
           landing_at?: string;
-          referral_code: string;
+          referral_code?: string | null;
           referred_user_id?: string | null;
           referred_workspace_id?: string | null;
-          referrer_workspace_id: string;
+          referrer_workspace_id?: string | null;
           signup_at?: string | null;
           status?: string;
           updated_at?: string;
@@ -539,14 +543,16 @@ export type Database = {
         Update: {
           activated_at?: string | null;
           anonymous_session_id?: string | null;
+          campaign_id?: string | null;
           converted_at?: string | null;
           created_at?: string;
+          creator_id?: string | null;
           id?: string;
           landing_at?: string;
-          referral_code?: string;
+          referral_code?: string | null;
           referred_user_id?: string | null;
           referred_workspace_id?: string | null;
-          referrer_workspace_id?: string;
+          referrer_workspace_id?: string | null;
           signup_at?: string | null;
           status?: string;
           updated_at?: string;
@@ -1834,6 +1840,440 @@ export type Database = {
         };
         Relationships: [];
       };
+      creator_assets: {
+        Row: {
+          asset_type: string;
+          created_at: string;
+          description: string | null;
+          download_url: string;
+          file_format: string;
+          file_size_bytes: number | null;
+          id: string;
+          name: string;
+          thumbnail_url: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          asset_type: string;
+          created_at?: string;
+          description?: string | null;
+          download_url: string;
+          file_format: string;
+          file_size_bytes?: number | null;
+          id?: string;
+          name: string;
+          thumbnail_url?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          asset_type?: string;
+          created_at?: string;
+          description?: string | null;
+          download_url?: string;
+          file_format?: string;
+          file_size_bytes?: number | null;
+          id?: string;
+          name?: string;
+          thumbnail_url?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      creator_campaigns: {
+        Row: {
+          archived_at: string | null;
+          campaign_code: string;
+          created_at: string;
+          creator_id: string;
+          destination_path: string;
+          id: string;
+          name: string;
+          platform: string | null;
+          status: string;
+        };
+        Insert: {
+          archived_at?: string | null;
+          campaign_code: string;
+          created_at?: string;
+          creator_id: string;
+          destination_path?: string;
+          id?: string;
+          name: string;
+          platform?: string | null;
+          status?: string;
+        };
+        Update: {
+          archived_at?: string | null;
+          campaign_code?: string;
+          created_at?: string;
+          creator_id?: string;
+          destination_path?: string;
+          id?: string;
+          name?: string;
+          platform?: string | null;
+          status?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "creator_campaigns_creator_id_fkey";
+            columns: ["creator_id"];
+            isOneToOne: false;
+            referencedRelation: "creator_profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      creator_channels: {
+        Row: {
+          created_at: string;
+          creator_id: string;
+          follower_count: number | null;
+          handle: string | null;
+          id: string;
+          is_verified: boolean;
+          platform: string;
+          url: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          creator_id: string;
+          follower_count?: number | null;
+          handle?: string | null;
+          id?: string;
+          is_verified?: boolean;
+          platform: string;
+          url?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          creator_id?: string;
+          follower_count?: number | null;
+          handle?: string | null;
+          id?: string;
+          is_verified?: boolean;
+          platform?: string;
+          url?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "creator_channels_creator_id_fkey";
+            columns: ["creator_id"];
+            isOneToOne: false;
+            referencedRelation: "creator_profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      creator_commission_rules: {
+        Row: {
+          applies_to_plan_id: string | null;
+          commission_rate_bps: number;
+          commission_window_months: number;
+          created_at: string;
+          description: string | null;
+          id: string;
+          is_active: boolean;
+          name: string;
+        };
+        Insert: {
+          applies_to_plan_id?: string | null;
+          commission_rate_bps: number;
+          commission_window_months?: number;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_active?: boolean;
+          name: string;
+        };
+        Update: {
+          applies_to_plan_id?: string | null;
+          commission_rate_bps?: number;
+          commission_window_months?: number;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_active?: boolean;
+          name?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "creator_commission_rules_applies_to_plan_id_fkey";
+            columns: ["applies_to_plan_id"];
+            isOneToOne: false;
+            referencedRelation: "subscription_plans";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      creator_commissions: {
+        Row: {
+          approved_at: string | null;
+          approved_by: string | null;
+          attribution_id: string;
+          billing_period_label: string;
+          commission_amount_cents: number;
+          commission_rate_bps: number;
+          commission_rule_id: string | null;
+          created_at: string;
+          creator_id: string;
+          currency: string;
+          flags: Json;
+          gross_amount_cents: number;
+          id: string;
+          paid_at: string | null;
+          referred_workspace_id: string;
+          reversal_reason: string | null;
+          reversed_at: string | null;
+          status: string;
+          subscription_payment_id: string;
+          updated_at: string;
+          window_months_snapshot: number;
+        };
+        Insert: {
+          approved_at?: string | null;
+          approved_by?: string | null;
+          attribution_id: string;
+          billing_period_label: string;
+          commission_amount_cents: number;
+          commission_rate_bps: number;
+          commission_rule_id?: string | null;
+          created_at?: string;
+          creator_id: string;
+          currency: string;
+          flags?: Json;
+          gross_amount_cents: number;
+          id?: string;
+          paid_at?: string | null;
+          referred_workspace_id: string;
+          reversal_reason?: string | null;
+          reversed_at?: string | null;
+          status?: string;
+          subscription_payment_id: string;
+          updated_at?: string;
+          window_months_snapshot: number;
+        };
+        Update: {
+          approved_at?: string | null;
+          approved_by?: string | null;
+          attribution_id?: string;
+          billing_period_label?: string;
+          commission_amount_cents?: number;
+          commission_rate_bps?: number;
+          commission_rule_id?: string | null;
+          created_at?: string;
+          creator_id?: string;
+          currency?: string;
+          flags?: Json;
+          gross_amount_cents?: number;
+          id?: string;
+          paid_at?: string | null;
+          referred_workspace_id?: string;
+          reversal_reason?: string | null;
+          reversed_at?: string | null;
+          status?: string;
+          subscription_payment_id?: string;
+          updated_at?: string;
+          window_months_snapshot?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "creator_commissions_attribution_id_fkey";
+            columns: ["attribution_id"];
+            isOneToOne: false;
+            referencedRelation: "referral_attributions";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "creator_commissions_commission_rule_id_fkey";
+            columns: ["commission_rule_id"];
+            isOneToOne: false;
+            referencedRelation: "creator_commission_rules";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "creator_commissions_creator_id_fkey";
+            columns: ["creator_id"];
+            isOneToOne: false;
+            referencedRelation: "creator_profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "creator_commissions_referred_workspace_id_fkey";
+            columns: ["referred_workspace_id"];
+            isOneToOne: false;
+            referencedRelation: "workspaces";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "creator_commissions_subscription_payment_id_fkey";
+            columns: ["subscription_payment_id"];
+            isOneToOne: false;
+            referencedRelation: "subscription_payments";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      creator_payouts: {
+        Row: {
+          amount_cents: number;
+          approved_at: string | null;
+          approved_by: string | null;
+          commission_ids: Json;
+          created_at: string;
+          creator_id: string;
+          currency: string;
+          failed_at: string | null;
+          failure_reason: string | null;
+          id: string;
+          paid_at: string | null;
+          payout_reference: string;
+          requested_at: string;
+          status: string;
+          updated_at: string;
+        };
+        Insert: {
+          amount_cents: number;
+          approved_at?: string | null;
+          approved_by?: string | null;
+          commission_ids?: Json;
+          created_at?: string;
+          creator_id: string;
+          currency: string;
+          failed_at?: string | null;
+          failure_reason?: string | null;
+          id?: string;
+          paid_at?: string | null;
+          payout_reference: string;
+          requested_at?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Update: {
+          amount_cents?: number;
+          approved_at?: string | null;
+          approved_by?: string | null;
+          commission_ids?: Json;
+          created_at?: string;
+          creator_id?: string;
+          currency?: string;
+          failed_at?: string | null;
+          failure_reason?: string | null;
+          id?: string;
+          paid_at?: string | null;
+          payout_reference?: string;
+          requested_at?: string;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "creator_payouts_creator_id_fkey";
+            columns: ["creator_id"];
+            isOneToOne: false;
+            referencedRelation: "creator_profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      creator_profiles: {
+        Row: {
+          admin_note: string | null;
+          application_note: string | null;
+          application_status: string;
+          approved_at: string | null;
+          approved_by: string | null;
+          bio: string | null;
+          created_at: string;
+          creator_status: string | null;
+          display_name: string;
+          email: string;
+          estimated_audience: number | null;
+          id: string;
+          primary_platform: string;
+          public_handle: string;
+          referral_code: string;
+          rejected_at: string | null;
+          suspended_at: string | null;
+          updated_at: string;
+          user_id: string | null;
+          website_url: string | null;
+        };
+        Insert: {
+          admin_note?: string | null;
+          application_note?: string | null;
+          application_status?: string;
+          approved_at?: string | null;
+          approved_by?: string | null;
+          bio?: string | null;
+          created_at?: string;
+          creator_status?: string | null;
+          display_name: string;
+          email: string;
+          estimated_audience?: number | null;
+          id?: string;
+          primary_platform: string;
+          public_handle: string;
+          referral_code: string;
+          rejected_at?: string | null;
+          suspended_at?: string | null;
+          updated_at?: string;
+          user_id?: string | null;
+          website_url?: string | null;
+        };
+        Update: {
+          admin_note?: string | null;
+          application_note?: string | null;
+          application_status?: string;
+          approved_at?: string | null;
+          approved_by?: string | null;
+          bio?: string | null;
+          created_at?: string;
+          creator_status?: string | null;
+          display_name?: string;
+          email?: string;
+          estimated_audience?: number | null;
+          id?: string;
+          primary_platform?: string;
+          public_handle?: string;
+          referral_code?: string;
+          rejected_at?: string | null;
+          suspended_at?: string | null;
+          updated_at?: string;
+          user_id?: string | null;
+          website_url?: string | null;
+        };
+        Relationships: [];
+      };
+      platform_audit_logs: {
+        Row: {
+          action: string;
+          actor_id: string | null;
+          created_at: string;
+          entity_id: string | null;
+          entity_type: string;
+          id: number;
+          metadata: Json;
+        };
+        Insert: {
+          action: string;
+          actor_id?: string | null;
+          created_at?: string;
+          entity_id?: string | null;
+          entity_type: string;
+          id?: number;
+          metadata?: Json;
+        };
+        Update: {
+          action?: string;
+          actor_id?: string | null;
+          created_at?: string;
+          entity_id?: string | null;
+          entity_type?: string;
+          id?: number;
+          metadata?: Json;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -2409,6 +2849,26 @@ export type Database = {
           _workspace_id: string;
         };
         Returns: undefined;
+      };
+      generate_creator_commission: {
+        Args: {
+          p_subscription_payment_id: string;
+        };
+        Returns: string;
+      };
+      resolve_creator_by_code: {
+        Args: {
+          p_campaign_code?: string;
+          p_referral_code: string;
+        };
+        Returns: {
+          campaign_id: string;
+          campaign_name: string;
+          creator_id: string;
+          destination_path: string;
+          display_name: string;
+          primary_platform: string;
+        }[];
       };
     };
     Enums: {

@@ -262,3 +262,137 @@ export function renderInvoiceReminderEmail(params: {
 
   return { subject, html, text };
 }
+
+export function renderCreatorApplicationSubmittedEmail(params: {
+  displayName: string;
+  publicHandle: string;
+}): { subject: string; html: string; text: string } {
+  const subject = `SoloOS Creator Application Received: @${params.publicHandle}`;
+  const text = `Hi ${params.displayName},\n\nThank you for applying to the SoloOS Creator Program! We've received your application for @${params.publicHandle}.\n\nOur team reviews all creator applications within 2-3 business days. Once approved, you'll receive your unique referral link, campaign tracking dashboard, and access to partner resources.\n\nBest regards,\nThe SoloOS Team`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #09090b; color: #f4f4f5; border-radius: 12px; border: 1px solid #27272a;">
+      <h2 style="color: #ffffff; margin-top: 0; font-size: 20px;">Application Received</h2>
+      <p style="color: #a1a1aa; font-size: 15px; line-height: 1.5;">
+        Hi <strong style="color: #fafafa;">${params.displayName}</strong>,
+      </p>
+      <p style="color: #d4d4d8; font-size: 14px; line-height: 1.6;">
+        Thank you for applying to the SoloOS Creator Program! We've received your application for handle <strong style="color: #3b82f6;">@${params.publicHandle}</strong>.
+      </p>
+      <div style="background: #18181b; padding: 16px; border-radius: 8px; margin: 20px 0; border: 1px solid #27272a;">
+        <p style="margin: 4px 0; color: #d4d4d8; font-size: 14px;"><strong>Review Window:</strong> 2–3 business days</p>
+        <p style="margin: 4px 0; color: #d4d4d8; font-size: 14px;"><strong>Commercial Model:</strong> 20% recurring for 12 months</p>
+      </div>
+      <p style="color: #71717a; font-size: 13px;">
+        You'll receive an email as soon as your application is reviewed.
+      </p>
+    </div>
+  `;
+  return { subject, html, text };
+}
+
+export function renderCreatorApplicationApprovedEmail(params: {
+  displayName: string;
+  publicHandle: string;
+  referralLink: string;
+  dashboardLink: string;
+}): { subject: string; html: string; text: string } {
+  const subject = `Welcome to the SoloOS Creator Program, @${params.publicHandle}!`;
+  const text = `Hi ${params.displayName},\n\nCongratulations! Your application to the SoloOS Creator Program has been approved.\n\nYour Creator Referral Link:\n${params.referralLink}\n\nAccess your Creator Dashboard:\n${params.dashboardLink}\n\nYou'll earn a 20% recurring commission for 12 months on every paying customer you refer.\n\nBest regards,\nThe SoloOS Team`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #09090b; color: #f4f4f5; border-radius: 12px; border: 1px solid #27272a;">
+      <h2 style="color: #10b981; margin-top: 0; font-size: 22px;">You're Approved!</h2>
+      <p style="color: #a1a1aa; font-size: 15px; line-height: 1.5;">
+        Hi <strong style="color: #fafafa;">${params.displayName}</strong>, welcome to the SoloOS Creator Program as <strong style="color: #3b82f6;">@${params.publicHandle}</strong>.
+      </p>
+      <div style="background: #18181b; padding: 20px; border-radius: 8px; margin: 24px 0; border: 1px solid #27272a;">
+        <p style="margin: 0 0 8px; color: #a1a1aa; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em;">Your Referral Link</p>
+        <p style="margin: 0; font-family: monospace; font-size: 15px; color: #10b981; word-break: break-all;">${params.referralLink}</p>
+      </div>
+      <div style="margin: 28px 0;">
+        <a href="${params.dashboardLink}" style="background-color: #3b82f6; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-block;">
+          Open Creator Dashboard
+        </a>
+      </div>
+      <p style="color: #71717a; font-size: 13px;">
+        Earn 20% recurring commission for 12 months on every paid subscription.
+      </p>
+    </div>
+  `;
+  return { subject, html, text };
+}
+
+export function renderCreatorApplicationRejectedEmail(params: {
+  displayName: string;
+  reason?: string | undefined;
+}): { subject: string; html: string; text: string } {
+  const subject = `Update regarding your SoloOS Creator Application`;
+  const text = `Hi ${params.displayName},\n\nThank you for your interest in partnering with SoloOS. At this time, we are unable to accept your application into the Creator Program.${params.reason ? `\n\nNotes from our team:\n${params.reason}` : ""}\n\nYou are welcome to re-apply in the future.\n\nBest regards,\nThe SoloOS Team`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #09090b; color: #f4f4f5; border-radius: 12px; border: 1px solid #27272a;">
+      <h2 style="color: #ffffff; margin-top: 0; font-size: 20px;">Creator Application Update</h2>
+      <p style="color: #a1a1aa; font-size: 15px; line-height: 1.5;">
+        Hi <strong style="color: #fafafa;">${params.displayName}</strong>,
+      </p>
+      <p style="color: #d4d4d8; font-size: 14px; line-height: 1.6;">
+        Thank you for your interest in partnering with SoloOS. At this time, we are unable to accept your application into the Creator Program.
+      </p>
+      ${
+        params.reason
+          ? `
+      <div style="background: #18181b; padding: 16px; border-radius: 8px; margin: 20px 0; border: 1px solid #27272a;">
+        <p style="margin: 0; color: #d4d4d8; font-size: 13px;">${params.reason}</p>
+      </div>`
+          : ""
+      }
+      <p style="color: #71717a; font-size: 13px;">
+        You are welcome to re-apply as your platform audience grows.
+      </p>
+    </div>
+  `;
+  return { subject, html, text };
+}
+
+export function renderCreatorCommissionEarnedEmail(params: {
+  displayName: string;
+  amountFormatted: string;
+  currency: string;
+  periodLabel: string;
+}): { subject: string; html: string; text: string } {
+  const subject = `New Commission Earned: ${params.amountFormatted}`;
+  const text = `Hi ${params.displayName},\n\nGreat news! You earned a new commission of ${params.amountFormatted} (${params.currency}) for period ${params.periodLabel}.\n\nLog in to your Creator Dashboard to view your complete earnings breakdown.\n\nBest regards,\nThe SoloOS Team`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #09090b; color: #f4f4f5; border-radius: 12px; border: 1px solid #27272a;">
+      <h2 style="color: #10b981; margin-top: 0; font-size: 20px;">Commission Earned!</h2>
+      <p style="color: #a1a1aa; font-size: 15px; line-height: 1.5;">
+        Hi <strong style="color: #fafafa;">${params.displayName}</strong>,
+      </p>
+      <div style="background: #18181b; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #27272a;">
+        <p style="margin: 0 0 4px; color: #a1a1aa; font-size: 13px;">Commission Amount:</p>
+        <p style="margin: 0; font-size: 24px; font-weight: 700; color: #10b981;">${params.amountFormatted}</p>
+        <p style="margin: 8px 0 0; color: #71717a; font-size: 12px;">Period: ${params.periodLabel}</p>
+      </div>
+    </div>
+  `;
+  return { subject, html, text };
+}
+
+export function renderCreatorPayoutApprovedEmail(params: {
+  displayName: string;
+  amountFormatted: string;
+  reference: string;
+}): { subject: string; html: string; text: string } {
+  const subject = `Payout Processed: ${params.amountFormatted}`;
+  const text = `Hi ${params.displayName},\n\nYour payout of ${params.amountFormatted} (Ref: ${params.reference}) has been processed and paid.\n\nThank you for partnering with SoloOS!\n\nBest regards,\nThe SoloOS Team`;
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #09090b; color: #f4f4f5; border-radius: 12px; border: 1px solid #27272a;">
+      <h2 style="color: #10b981; margin-top: 0; font-size: 20px;">Payout Processed</h2>
+      <p style="color: #a1a1aa; font-size: 15px; line-height: 1.5;">
+        Hi <strong style="color: #fafafa;">${params.displayName}</strong>,
+      </p>
+      <p style="color: #d4d4d8; font-size: 14px; line-height: 1.6;">
+        Your payout of <strong style="color: #10b981;">${params.amountFormatted}</strong> has been marked as paid. Reference: <code style="color: #fafafa;">${params.reference}</code>.
+      </p>
+    </div>
+  `;
+  return { subject, html, text };
+}

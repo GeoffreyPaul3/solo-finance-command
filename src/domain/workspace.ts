@@ -151,7 +151,6 @@ export const auditLogQueryOptions = (workspaceId: string | undefined, limit = 20
     },
   });
 
-
 // ---- Mutations -------------------------------------------------------------
 
 export type CreateWorkspaceInput = {

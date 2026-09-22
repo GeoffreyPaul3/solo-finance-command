@@ -63,3 +63,18 @@ export async function sendEmailSafely(
     providerMessageId: result.messageId,
   };
 }
+
+/**
+ * Simple fire-and-forget send — no idempotency check, no DB logging.
+ * Suitable for one-off admin-triggered or server-side transactional emails.
+ */
+export async function sendEmail(options: SendEmailOptions): Promise<boolean> {
+  try {
+    const provider = getEmailProvider();
+    const result = await provider.sendEmail(options);
+    return result.success;
+  } catch (err) {
+    console.error("[sendEmail] Failed to send email:", err);
+    return false;
+  }
+}
