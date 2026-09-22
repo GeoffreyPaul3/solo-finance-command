@@ -1367,9 +1367,10 @@ function LandingPage() {
             </h2>
 
             <p className="mt-5 max-w-2xl mx-auto text-base sm:text-lg text-zinc-400 leading-relaxed">
-              SoloOS Creators earn a <span className="text-white font-semibold">20% recurring commission</span> on every
-              subscription they refer — for a full 12 months. If you create content for freelancers, consultants,
-              or digital nomads, your audience already needs SoloOS.
+              SoloOS Creators earn a{" "}
+              <span className="text-white font-semibold">20% recurring commission</span> on every
+              subscription they refer — for a full 12 months. If you create content for freelancers,
+              consultants, or digital nomads, your audience already needs SoloOS.
             </p>
 
             {/* Stats row */}
@@ -1395,13 +1396,18 @@ function LandingPage() {
                 size="lg"
                 className="h-12 px-8 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all"
               >
-                <Link to="/app/creator">
+                <Link to="/creator">
                   Apply to become a Creator
                   <ArrowRight className="ml-2 size-4" />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="ghost" className="h-12 px-6 text-sm text-zinc-400 hover:text-white">
-                <Link to="/app/creator">Learn how it works</Link>
+              <Button
+                asChild
+                size="lg"
+                variant="ghost"
+                className="h-12 px-6 text-sm text-zinc-400 hover:text-white"
+              >
+                <Link to="/creator">Learn how it works</Link>
               </Button>
             </div>
 
@@ -1564,7 +1570,7 @@ function LandingPage() {
                   </Link>
                 </li>
                 <li>
-                  <Link to="/app/creator" className="hover:text-foreground transition-colors">
+                  <Link to="/creator" className="hover:text-foreground transition-colors">
                     Creator Program
                   </Link>
                 </li>

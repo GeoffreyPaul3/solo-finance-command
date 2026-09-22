@@ -18,6 +18,40 @@ export type CampaignStatus = "active" | "paused" | "archived";
 export type CommissionStatus = "pending" | "approved" | "paid" | "reversed" | "ineligible";
 export type PayoutStatus = "pending" | "approved" | "processing" | "paid" | "failed" | "cancelled";
 
+export type PayoutMethod = "mobile_money" | "bank";
+export type MobileMoneyProvider = "airtel" | "tnm";
+
+// ─── Malawi Localization Constants ──────────────────────────────────────────
+
+export const MALAWI_BANKS = [
+  "National Bank of Malawi (NBM)",
+  "Standard Bank Malawi",
+  "FDH Bank",
+  "NBS Bank",
+  "Centenary Bank",
+  "First Capital Bank (FCB)",
+  "Ecobank Malawi",
+  "CDH Investment Bank",
+  "Opportunity Bank Malawi",
+] as const;
+
+export const MALAWI_MOBILE_PROVIDERS = [
+  { id: "airtel" as const, name: "Airtel Money", prefixes: ["099", "098", "090"] },
+  { id: "tnm" as const, name: "TNM Mpamba", prefixes: ["088", "089", "080"] },
+] as const;
+
+export const MALAWI_CITIES = [
+  "Lilongwe",
+  "Blantyre",
+  "Mzuzu",
+  "Zomba",
+  "Kasungu",
+  "Mangochi",
+  "Salima",
+  "Karonga",
+  "Other (Malawi)",
+] as const;
+
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
 export interface CreatorProfile {
@@ -34,6 +68,18 @@ export interface CreatorProfile {
   creator_status: CreatorStatus | null;
   application_note: string | null;
   admin_note: string | null;
+  country: string;
+  phone: string | null;
+  city: string | null;
+  payout_method: PayoutMethod | null;
+  mobile_money_provider: MobileMoneyProvider | null;
+  mobile_money_number: string | null;
+  mobile_money_account_name: string | null;
+  bank_name: string | null;
+  bank_account_number: string | null;
+  bank_account_name: string | null;
+  bank_branch: string | null;
+  payout_details_updated_at: string | null;
   approved_at: string | null;
   approved_by: string | null;
   rejected_at: string | null;
@@ -97,6 +143,9 @@ export interface CreatorPayout {
   status: PayoutStatus;
   payout_reference: string | null;
   commission_ids: string[];
+  payout_method?: string | null;
+  payout_details?: Record<string, unknown> | null;
+  notes?: string | null;
   requested_at: string;
   approved_at: string | null;
   approved_by: string | null;
@@ -385,3 +434,45 @@ export const STANDARD_COMMISSION_RATE_BPS = 2000;
 
 /** The standard commission window in months. */
 export const STANDARD_COMMISSION_WINDOW_MONTHS = 12;
+
+// ─── Malawi Formatting & Validation ──────────────────────────────────────────
+
+/**
+ * Validates a Malawi mobile phone number (Airtel: 099/098/090, TNM: 088/089/080).
+ */
+export function validateMalawiPhone(phone: string): boolean {
+  if (!phone || typeof phone !== "string") return false;
+  const cleaned = phone.replace(/[\s\-()]/g, "");
+  // Matches +26599..., 26599..., 099..., 99... (9 or 10 or 12 digits)
+  return /^(\+?265|0)?[89]\d{8}$/.test(cleaned);
+}
+
+/**
+ * Formats a phone number cleanly as: +265 99 123 4567 or +265 88 123 4567
+ */
+export function formatMalawiPhone(phone: string): string {
+  if (!phone || typeof phone !== "string") return "";
+  let digits = phone.replace(/\D/g, "");
+  if (digits.startsWith("265")) digits = digits.slice(3);
+  if (digits.startsWith("0")) digits = digits.slice(1);
+  if (digits.length === 9) {
+    return `+265 ${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5)}`;
+  }
+  return phone;
+}
+
+/**
+ * Formats an amount in cents according to currency (defaults to MWK).
+ */
+export function formatCurrencyAmount(amountCents: number, currency: string = "MWK"): string {
+  const major = amountCents / 100;
+  const upper = (currency || "MWK").toUpperCase();
+  if (upper === "MWK") {
+    return `MWK ${major.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+  }
+  if (upper === "USD") {
+    return `$${major.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  return `${upper} ${major.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+

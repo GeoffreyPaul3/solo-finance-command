@@ -11,18 +11,45 @@ import { useAuth } from "@/lib/auth";
 import logo from "@/assets/solo.png";
 
 import { recordReferralSignupServerFn } from "@/server/referrals";
+import { recordCreatorSignupServerFn } from "@/server/creator";
 import { validateReferralCode } from "@/domain/referrals";
 
 type Mode = "signin" | "signup";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (search: Record<string, unknown>): { mode: Mode; ref?: string } => {
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): {
+    mode: Mode;
+    ref?: string;
+    creator?: string;
+    campaign?: string;
+    redirect?: string;
+  } => {
     const mode: Mode = search["mode"] === "signup" ? "signup" : "signin";
     const ref =
       typeof search["ref"] === "string" && search["ref"].trim()
         ? search["ref"].trim().toUpperCase()
         : undefined;
-    return ref ? { mode, ref } : { mode };
+    const creator =
+      typeof search["creator"] === "string" && search["creator"].trim()
+        ? search["creator"].trim().toLowerCase()
+        : undefined;
+    const campaign =
+      typeof search["campaign"] === "string" && search["campaign"].trim()
+        ? search["campaign"].trim().toLowerCase()
+        : undefined;
+    const redirect =
+      typeof search["redirect"] === "string" && search["redirect"].trim().startsWith("/")
+        ? search["redirect"].trim()
+        : undefined;
+    return {
+      mode,
+      ...(ref ? { ref } : {}),
+      ...(creator ? { creator } : {}),
+      ...(campaign ? { campaign } : {}),
+      ...(redirect ? { redirect } : {}),
+    };
   },
   head: () => ({
     meta: [
@@ -51,7 +78,13 @@ function describeAuthError(message: string): string {
 }
 
 function AuthPage() {
-  const { mode, ref: searchRef } = Route.useSearch();
+  const {
+    mode,
+    ref: searchRef,
+    creator: searchCreator,
+    campaign: searchCampaign,
+    redirect: searchRedirect,
+  } = Route.useSearch();
   const navigate = useNavigate();
   const { session, isLoading } = useAuth();
 
@@ -65,8 +98,11 @@ function AuthPage() {
   const [googlePending, setGooglePending] = useState(false);
 
   useEffect(() => {
-    if (!isLoading && session) navigate({ to: "/app", replace: true });
-  }, [isLoading, session, navigate]);
+    if (!isLoading && session) {
+      const target = searchRedirect || "/app";
+      navigate({ to: target, replace: true });
+    }
+  }, [isLoading, session, navigate, searchRedirect]);
 
   const isSignup = mode === "signup";
 
@@ -75,7 +111,13 @@ function AuthPage() {
     setNotice(null);
     navigate({
       to: "/auth",
-      search: searchRef ? { mode: next, ref: searchRef } : { mode: next },
+      search: {
+        mode: next,
+        ...(searchRef ? { ref: searchRef } : {}),
+        ...(searchCreator ? { creator: searchCreator } : {}),
+        ...(searchCampaign ? { campaign: searchCampaign } : {}),
+        ...(searchRedirect ? { redirect: searchRedirect } : {}),
+      },
       replace: true,
     });
   }
@@ -108,7 +150,7 @@ function AuthPage() {
           email: email.trim(),
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/app`,
+            emailRedirectTo: `${window.location.origin}${searchRedirect || "/app"}`,
             data: {
               ...(fullName.trim() ? { full_name: fullName.trim() } : {}),
               ...(activeRefCode ? { referral_code: activeRefCode } : {}),
@@ -120,12 +162,51 @@ function AuthPage() {
         // Secure server-side attribution linking
         if (signUpData.user?.id) {
           let anonSessionId: string | undefined = undefined;
+          let creatorId: string | undefined = undefined;
+          let creatorCode: string | undefined = searchCreator;
+          let campaignId: string | undefined = searchCampaign;
+
           try {
             anonSessionId = localStorage.getItem("solos_anon_session") || undefined;
+            if (!creatorCode) {
+              creatorCode = localStorage.getItem("solos_creator_code") || undefined;
+            }
+            creatorId = localStorage.getItem("solos_creator_id") || undefined;
+            if (!campaignId) {
+              campaignId = localStorage.getItem("solos_campaign_id") || undefined;
+            }
+
+            if (!creatorCode || !creatorId) {
+              const cookies = document.cookie.split(";").map((c) => c.trim());
+              for (const c of cookies) {
+                const parts = c.split("=");
+                const val = parts[1];
+                if (c.startsWith("solos_c_code=") && val) creatorCode = decodeURIComponent(val);
+                if (c.startsWith("solos_c_id=") && val) creatorId = decodeURIComponent(val);
+              }
+            }
           } catch {
             /* ignore */
           }
 
+          // Link creator referral attribution
+          if (creatorId || creatorCode) {
+            try {
+              await recordCreatorSignupServerFn({
+                data: {
+                  userId: signUpData.user.id,
+                  ...(creatorId ? { creatorId } : {}),
+                  ...(creatorCode ? { creatorCode } : {}),
+                  ...(campaignId ? { campaignId } : {}),
+                  ...(anonSessionId ? { anonymousSessionId: anonSessionId } : {}),
+                },
+              });
+            } catch (cErr) {
+              console.error("[Auth] Creator signup linking error:", cErr);
+            }
+          }
+
+          // Link workspace referral attribution
           try {
             await recordReferralSignupServerFn({
               data: {
@@ -141,11 +222,33 @@ function AuthPage() {
 
         setNotice("Account created. Please sign in.");
       } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email: email.trim(),
           password,
         });
         if (signInError) throw signInError;
+
+        // On signin, if there is a pending creator referral in storage, ensure it is linked
+        if (signInData.user?.id) {
+          try {
+            const creatorCode = searchCreator || localStorage.getItem("solos_creator_code") || undefined;
+            const creatorId = localStorage.getItem("solos_creator_id") || undefined;
+            const anonSessionId = localStorage.getItem("solos_anon_session") || undefined;
+
+            if (creatorId || creatorCode) {
+              await recordCreatorSignupServerFn({
+                data: {
+                  userId: signInData.user.id,
+                  ...(creatorId ? { creatorId } : {}),
+                  ...(creatorCode ? { creatorCode } : {}),
+                  ...(anonSessionId ? { anonymousSessionId: anonSessionId } : {}),
+                },
+              });
+            }
+          } catch {
+            /* non-blocking */
+          }
+        }
       }
     } catch (err) {
       setError(describeAuthError((err as Error).message));
@@ -161,7 +264,7 @@ function AuthPage() {
       const { error: oAuthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/app`,
+          redirectTo: `${window.location.origin}${searchRedirect || "/app"}`,
         },
       });
       if (oAuthError) throw oAuthError;

@@ -209,10 +209,10 @@ export const recordCreatorLandingServerFn = createServerFn({ method: "POST" })
         .limit(1)
         .maybeSingle();
 
-      if (existing) {
+      if (existing && existing.creator_id) {
         return {
           recorded: true,
-          creatorId: existing.creator_id || creator.id,
+          creatorId: existing.creator_id,
           campaignId: existing.campaign_id || campaign?.id || null,
           destinationPath: campaign?.destinationPath || "/",
           firstTouchPreserved: true,
@@ -247,6 +247,7 @@ export const recordCreatorLandingServerFn = createServerFn({ method: "POST" })
 const recordCreatorSignupSchema = z.object({
   userId: z.string().uuid(),
   creatorId: z.string().uuid().optional(),
+  creatorCode: z.string().optional(),
   campaignId: z.string().uuid().optional(),
   anonymousSessionId: z.string().optional(),
 });
@@ -256,28 +257,42 @@ export const recordCreatorSignupServerFn = createServerFn({ method: "POST" })
     recordCreatorSignupSchema.parse(data),
   )
   .handler(async ({ data }) => {
-    // 1. Check if user is already attributed
+    let targetCreatorId = data.creatorId || null;
+
+    if (!targetCreatorId && data.creatorCode) {
+      const code = data.creatorCode.trim().toLowerCase();
+      const { data: creator } = await supabaseAdmin
+        .from("creator_profiles")
+        .select("id")
+        .eq("referral_code", code)
+        .eq("creator_status", "active")
+        .maybeSingle();
+
+      if (creator) {
+        targetCreatorId = creator.id;
+      }
+    }
+
+    // 1. Check if user is already attributed to a creator
     const { data: alreadyAttributed } = await supabaseAdmin
       .from("referral_attributions")
       .select("id, status, creator_id")
       .eq("referred_user_id", data.userId)
       .maybeSingle();
 
-    if (alreadyAttributed) {
+    if (alreadyAttributed && alreadyAttributed.creator_id) {
       return { success: true, status: alreadyAttributed.status, alreadyLinked: true };
     }
 
-    // 2. Find attribution candidate by anonymousSessionId or creatorId
-    let candidateId: string | null = null;
-    let targetCreatorId = data.creatorId || null;
+    // 2. Find attribution candidate by anonymousSessionId
+    let candidateId: string | null = alreadyAttributed?.id || null;
 
-    if (data.anonymousSessionId) {
+    if (!candidateId && data.anonymousSessionId) {
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
       const { data: sessionCandidate } = await supabaseAdmin
         .from("referral_attributions")
         .select("id, creator_id, status")
         .eq("anonymous_session_id", data.anonymousSessionId)
-        .eq("status", "visited")
         .gte("created_at", thirtyDaysAgo)
         .order("created_at", { ascending: true })
         .limit(1)
@@ -310,6 +325,8 @@ export const recordCreatorSignupServerFn = createServerFn({ method: "POST" })
       await supabaseAdmin
         .from("referral_attributions")
         .update({
+          creator_id: targetCreatorId,
+          ...(data.campaignId ? { campaign_id: data.campaignId } : {}),
           status: "signed_up",
           referred_user_id: data.userId,
           signup_at: nowIso,
@@ -329,6 +346,44 @@ export const recordCreatorSignupServerFn = createServerFn({ method: "POST" })
     }
 
     return { success: true, status: "signed_up" as const };
+  });
+
+// ─────────────────────────────────────────────
+// 1d. Record Creator Workspace Activation
+// ─────────────────────────────────────────────
+
+const recordCreatorActivationSchema = z.object({
+  userId: z.string().uuid(),
+  workspaceId: z.string().uuid(),
+});
+
+export const recordCreatorActivationServerFn = createServerFn({ method: "POST" })
+  .validator((data: z.infer<typeof recordCreatorActivationSchema>) =>
+    recordCreatorActivationSchema.parse(data),
+  )
+  .handler(async ({ data }) => {
+    const nowIso = new Date().toISOString();
+    const { data: attr } = await supabaseAdmin
+      .from("referral_attributions")
+      .select("id, status, creator_id, referred_workspace_id")
+      .or(`referred_workspace_id.eq.${data.workspaceId},referred_user_id.eq.${data.userId}`)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (attr) {
+      await supabaseAdmin
+        .from("referral_attributions")
+        .update({
+          referred_workspace_id: data.workspaceId,
+          status: attr.status === "visited" || attr.status === "signed_up" ? "activated" : attr.status,
+          activated_at: nowIso,
+          updated_at: nowIso,
+        })
+        .eq("id", attr.id);
+      return { success: true };
+    }
+    return { success: false, reason: "No attribution found" };
   });
 
 // ─────────────────────────────────────────────
@@ -391,14 +446,11 @@ export const submitCreatorApplicationServerFn = createServerFn({ method: "POST" 
       throw new Error("Invalid handle format. Use 4-48 lowercase letters, numbers, or hyphens.");
     }
 
-    // Check if user already has an application
+    // Check if user already has an active creator profile
     const existing = await getCreatorProfileForUser(userId);
     if (existing) {
-      if (existing.application_status === "approved") {
+      if (existing.application_status === "approved" || existing.creator_status === "active") {
         throw new Error("You are already an approved SoloOS Creator.");
-      }
-      if (existing.application_status === "pending") {
-        throw new Error("You already have a pending Creator application under review.");
       }
     }
 
@@ -413,7 +465,7 @@ export const submitCreatorApplicationServerFn = createServerFn({ method: "POST" 
       throw new Error(`The handle "@${handle}" is already in use. Please choose another.`);
     }
 
-    // Insert creator profile
+    // Insert creator profile — auto-approved, instantly active
     const { data: profile, error: insertError } = await supabaseAdmin
       .from("creator_profiles")
       .insert({
@@ -425,8 +477,8 @@ export const submitCreatorApplicationServerFn = createServerFn({ method: "POST" 
         bio: data.bio?.trim() || null,
         website_url: data.websiteUrl?.trim() || null,
         primary_platform: data.primaryPlatform,
-        application_status: "pending",
-        creator_status: null,
+        application_status: "approved",
+        creator_status: "active",
         application_note: data.applicationNote?.trim() || null,
       })
       .select("*")
@@ -450,11 +502,14 @@ export const submitCreatorApplicationServerFn = createServerFn({ method: "POST" 
       await supabaseAdmin.from("creator_channels").insert(channelRows);
     }
 
-    // Send confirmation email
+    // Send welcome / activated email
     try {
-      const emailContent = renderCreatorApplicationSubmittedEmail({
+      const origin = process.env["APP_URL"] || "https://solofinance.app";
+      const emailContent = renderCreatorApplicationApprovedEmail({
         displayName: profile.display_name,
         publicHandle: profile.public_handle,
+        referralLink: `${origin}/c/${profile.referral_code}`,
+        dashboardLink: `${origin}/creator`,
       });
       await sendEmail({
         to: profile.email,
@@ -463,7 +518,7 @@ export const submitCreatorApplicationServerFn = createServerFn({ method: "POST" 
         text: emailContent.text,
       });
     } catch (e) {
-      console.error("[Creator] Failed to send submission email:", e);
+      console.error("[Creator] Failed to send activation email:", e);
     }
 
     return {
@@ -478,7 +533,7 @@ export const submitCreatorApplicationServerFn = createServerFn({ method: "POST" 
 // ─────────────────────────────────────────────
 
 export const getMyCreatorProfileServerFn = createServerFn({ method: "POST" })
-  .validator((data: { authToken?: string }) => data)
+  .validator((data: { authToken?: string | undefined }) => data)
   .handler(async ({ data }) => {
     const userId = await getAuthenticatedUserId(data.authToken);
     if (!userId) throw new Error("Unauthenticated: Please sign in.");
@@ -486,6 +541,41 @@ export const getMyCreatorProfileServerFn = createServerFn({ method: "POST" })
     const profile = await getCreatorProfileForUser(userId);
     if (!profile) {
       return { isCreator: false as const, profile: null };
+    }
+
+    // Auto-promote any legacy pending application to approved and active
+    if (profile && (profile.application_status === "pending" || !profile.creator_status)) {
+      const now = new Date().toISOString();
+      await supabaseAdmin
+        .from("creator_profiles")
+        .update({
+          application_status: "approved",
+          creator_status: "active",
+          approved_at: now,
+          updated_at: now,
+        })
+        .eq("id", profile.id);
+      profile.application_status = "approved";
+      profile.creator_status = "active";
+      profile.approved_at = now;
+
+      // Ensure default vanity campaign exists
+      const { data: existingCamp } = await supabaseAdmin
+        .from("creator_campaigns")
+        .select("id")
+        .eq("creator_id", profile.id)
+        .maybeSingle();
+
+      if (!existingCamp) {
+        await supabaseAdmin.from("creator_campaigns").insert({
+          creator_id: profile.id,
+          name: "Main Channel (Default)",
+          campaign_code: profile.public_handle,
+          platform: profile.primary_platform,
+          destination_path: "/",
+          status: "active",
+        });
+      }
     }
 
     // Fetch channels
@@ -630,7 +720,7 @@ export const updateCreatorCampaignServerFn = createServerFn({ method: "POST" })
 // ─────────────────────────────────────────────
 
 export const getCreatorEarningsServerFn = createServerFn({ method: "POST" })
-  .validator((data: { authToken?: string }) => data)
+  .validator((data: { authToken?: string | undefined }) => data)
   .handler(async ({ data }) => {
     const userId = await getAuthenticatedUserId(data.authToken);
     if (!userId) throw new Error("Unauthenticated: Please sign in.");
@@ -694,6 +784,7 @@ export const getCreatorAssetsServerFn = createServerFn({ method: "GET" }).handle
 // ─────────────────────────────────────────────
 
 const adminListCreatorsSchema = z.object({
+  authToken: z.string().optional(),
   page: z.number().int().min(1).default(1),
   pageSize: z.number().int().min(1).max(100).default(20),
   applicationStatus: z.enum(["pending", "approved", "rejected"]).optional(),
@@ -704,7 +795,7 @@ const adminListCreatorsSchema = z.object({
 export const adminListCreatorsServerFn = createServerFn({ method: "POST" })
   .validator((data: z.infer<typeof adminListCreatorsSchema>) => adminListCreatorsSchema.parse(data))
   .handler(async ({ data }) => {
-    const userId = await getAuthenticatedUserId();
+    const userId = await getAuthenticatedUserId(data.authToken);
     if (!userId) throw new Error("Unauthenticated");
     await requirePlatformAdmin(userId);
 
@@ -742,13 +833,14 @@ export const adminListCreatorsServerFn = createServerFn({ method: "POST" })
 // ─────────────────────────────────────────────
 
 const adminGetCreatorSchema = z.object({
+  authToken: z.string().optional(),
   creatorId: z.string().uuid(),
 });
 
 export const adminGetCreatorDetailsServerFn = createServerFn({ method: "POST" })
   .validator((data: z.infer<typeof adminGetCreatorSchema>) => adminGetCreatorSchema.parse(data))
   .handler(async ({ data }) => {
-    const userId = await getAuthenticatedUserId();
+    const userId = await getAuthenticatedUserId(data.authToken);
     if (!userId) throw new Error("Unauthenticated");
     await requirePlatformAdmin(userId);
 
@@ -799,6 +891,7 @@ export const adminGetCreatorDetailsServerFn = createServerFn({ method: "POST" })
 // ─────────────────────────────────────────────
 
 const reviewApplicationSchema = z.object({
+  authToken: z.string().optional(),
   creatorId: z.string().uuid(),
   decision: z.enum(["approved", "rejected"]),
   adminNote: z.string().max(500).optional(),
@@ -807,7 +900,7 @@ const reviewApplicationSchema = z.object({
 export const adminReviewCreatorApplicationServerFn = createServerFn({ method: "POST" })
   .validator((data: z.infer<typeof reviewApplicationSchema>) => reviewApplicationSchema.parse(data))
   .handler(async ({ data }) => {
-    const userId = await getAuthenticatedUserId();
+    const userId = await getAuthenticatedUserId(data.authToken);
     if (!userId) throw new Error("Unauthenticated");
     await requirePlatformAdmin(userId);
 
@@ -879,7 +972,7 @@ export const adminReviewCreatorApplicationServerFn = createServerFn({ method: "P
           displayName: updated.display_name,
           publicHandle: updated.public_handle,
           referralLink: `${origin}/c/${updated.referral_code}`,
-          dashboardLink: `${origin}/app/creator`,
+          dashboardLink: `${origin}/creator`,
         });
         await sendEmail({
           to: updated.email,
@@ -929,6 +1022,7 @@ export const adminReviewCreatorApplicationServerFn = createServerFn({ method: "P
 // ─────────────────────────────────────────────
 
 const updateCreatorStatusSchema = z.object({
+  authToken: z.string().optional(),
   creatorId: z.string().uuid(),
   status: z.enum(["active", "suspended", "closed"]),
   reason: z.string().max(500).optional(),
@@ -939,7 +1033,7 @@ export const adminUpdateCreatorStatusServerFn = createServerFn({ method: "POST" 
     updateCreatorStatusSchema.parse(data),
   )
   .handler(async ({ data }) => {
-    const userId = await getAuthenticatedUserId();
+    const userId = await getAuthenticatedUserId(data.authToken);
     if (!userId) throw new Error("Unauthenticated");
     await requirePlatformAdmin(userId);
 
@@ -979,6 +1073,7 @@ export const adminUpdateCreatorStatusServerFn = createServerFn({ method: "POST" 
 // ─────────────────────────────────────────────
 
 const adminListCommissionsSchema = z.object({
+  authToken: z.string().optional(),
   page: z.number().int().min(1).default(1),
   pageSize: z.number().int().min(1).max(100).default(20),
   status: z.enum(["pending", "approved", "paid", "reversed", "ineligible"]).optional(),
@@ -991,7 +1086,7 @@ export const adminListCommissionsServerFn = createServerFn({ method: "POST" })
     adminListCommissionsSchema.parse(data),
   )
   .handler(async ({ data }) => {
-    const userId = await getAuthenticatedUserId();
+    const userId = await getAuthenticatedUserId(data.authToken);
     if (!userId) throw new Error("Unauthenticated");
     await requirePlatformAdmin(userId);
 
@@ -1036,6 +1131,7 @@ export const adminListCommissionsServerFn = createServerFn({ method: "POST" })
 // ─────────────────────────────────────────────
 
 const adminReviewCommissionSchema = z.object({
+  authToken: z.string().optional(),
   commissionId: z.string().uuid(),
   decision: z.enum(["approved", "reversed"]),
   reason: z.string().max(500).optional(),
@@ -1046,7 +1142,7 @@ export const adminReviewCommissionServerFn = createServerFn({ method: "POST" })
     adminReviewCommissionSchema.parse(data),
   )
   .handler(async ({ data }) => {
-    const userId = await getAuthenticatedUserId();
+    const userId = await getAuthenticatedUserId(data.authToken);
     if (!userId) throw new Error("Unauthenticated");
     await requirePlatformAdmin(userId);
 
@@ -1096,6 +1192,7 @@ export const adminReviewCommissionServerFn = createServerFn({ method: "POST" })
 // ─────────────────────────────────────────────
 
 const adminListPayoutsSchema = z.object({
+  authToken: z.string().optional(),
   page: z.number().int().min(1).default(1),
   pageSize: z.number().int().min(1).max(100).default(20),
   status: z.enum(["pending", "approved", "processing", "paid", "failed", "cancelled"]).optional(),
@@ -1105,7 +1202,7 @@ const adminListPayoutsSchema = z.object({
 export const adminListPayoutsServerFn = createServerFn({ method: "POST" })
   .validator((data: z.infer<typeof adminListPayoutsSchema>) => adminListPayoutsSchema.parse(data))
   .handler(async ({ data }) => {
-    const userId = await getAuthenticatedUserId();
+    const userId = await getAuthenticatedUserId(data.authToken);
     if (!userId) throw new Error("Unauthenticated");
     await requirePlatformAdmin(userId);
 
@@ -1142,6 +1239,7 @@ export const adminListPayoutsServerFn = createServerFn({ method: "POST" })
   });
 
 const recordManualPayoutSchema = z.object({
+  authToken: z.string().optional(),
   creatorId: z.string().uuid(),
   currency: z.string().length(3),
   amountCents: z.number().int().positive(),
@@ -1154,7 +1252,7 @@ export const adminRecordManualPayoutServerFn = createServerFn({ method: "POST" }
     recordManualPayoutSchema.parse(data),
   )
   .handler(async ({ data }) => {
-    const userId = await getAuthenticatedUserId();
+    const userId = await getAuthenticatedUserId(data.authToken);
     if (!userId) throw new Error("Unauthenticated");
     await requirePlatformAdmin(userId);
 
@@ -1240,22 +1338,319 @@ export const adminRecordManualPayoutServerFn = createServerFn({ method: "POST" }
 // 15. Server-side Commission Trigger
 // ─────────────────────────────────────────────
 
+const triggerCommissionSchema = z.object({
+  subscriptionPaymentId: z.string().uuid(),
+});
+
+export const triggerCreatorCommissionForPaymentServerFn = createServerFn({ method: "POST" })
+  .validator((data: z.infer<typeof triggerCommissionSchema>) => triggerCommissionSchema.parse(data))
+  .handler(async ({ data }) => {
+    try {
+      const { data: rpcData, error } = await supabaseAdmin.rpc("generate_creator_commission", {
+        p_subscription_payment_id: data.subscriptionPaymentId,
+      });
+
+      if (error) {
+        console.error("[Creator] generate_creator_commission RPC error:", error);
+        return { commissionId: null };
+      }
+
+      return { commissionId: (rpcData as string) || null };
+    } catch (err) {
+      console.error("[Creator] Exception in triggerCreatorCommissionForPayment:", err);
+      return { commissionId: null };
+    }
+  });
+
 export async function triggerCreatorCommissionForPayment(
   subscriptionPaymentId: string,
 ): Promise<string | null> {
-  try {
-    const { data, error } = await supabaseAdmin.rpc("generate_creator_commission", {
-      p_subscription_payment_id: subscriptionPaymentId,
-    });
+  const res = await triggerCreatorCommissionForPaymentServerFn({
+    data: { subscriptionPaymentId },
+  });
+  return res.commissionId;
+}
 
-    if (error) {
-      console.error("[Creator] generate_creator_commission RPC error:", error);
-      return null;
+// ─────────────────────────────────────────────
+// 16. Creator: Update Payout Details (Malawi)
+// ─────────────────────────────────────────────
+
+const mobileMoneySchema = z.object({
+  payoutMethod: z.literal("mobile_money"),
+  mobileMoneyProvider: z.enum(["airtel", "tnm"]),
+  mobileMoneyNumber: z.string().min(9).max(15),
+  mobileMoneyAccountName: z.string().min(2).max(100),
+});
+
+const bankPayoutSchema = z.object({
+  payoutMethod: z.literal("bank"),
+  bankName: z.string().min(2).max(100),
+  bankAccountNumber: z.string().min(4).max(50),
+  bankAccountName: z.string().min(2).max(100),
+  bankBranch: z.string().max(100).optional(),
+});
+
+const updatePayoutDetailsSchema = z
+  .object({
+    authToken: z.string().optional(),
+    country: z.literal("MW"),
+    phone: z.string().max(20).optional(),
+    city: z.string().max(100).optional(),
+  })
+  .and(z.discriminatedUnion("payoutMethod", [mobileMoneySchema, bankPayoutSchema]));
+
+export const updateCreatorPayoutDetailsServerFn = createServerFn({ method: "POST" })
+  .validator((data: z.infer<typeof updatePayoutDetailsSchema>) =>
+    updatePayoutDetailsSchema.parse(data),
+  )
+  .handler(async ({ data }) => {
+    const userId = await getAuthenticatedUserId(data.authToken);
+    if (!userId) throw new Error("Unauthenticated: Please sign in.");
+
+    const profile = await getCreatorProfileForUser(userId);
+    if (!profile || profile.creator_status !== "active") {
+      throw new Error("Forbidden: Only active creators can update payout details.");
     }
 
-    return (data as string) || null;
-  } catch (err) {
-    console.error("[Creator] Exception in triggerCreatorCommissionForPayment:", err);
-    return null;
-  }
-}
+    const now = new Date().toISOString();
+
+    const base = {
+      country: data.country,
+      phone: data.phone?.trim() || null,
+      city: data.city?.trim() || null,
+      payout_method: data.payoutMethod,
+      payout_details_updated_at: now,
+      updated_at: now,
+    };
+
+    let specific: Record<string, string | null> = {};
+
+    if (data.payoutMethod === "mobile_money") {
+      specific = {
+        mobile_money_provider: data.mobileMoneyProvider,
+        mobile_money_number: data.mobileMoneyNumber.trim(),
+        mobile_money_account_name: data.mobileMoneyAccountName.trim(),
+        bank_name: null,
+        bank_account_number: null,
+        bank_account_name: null,
+        bank_branch: null,
+      };
+    } else {
+      specific = {
+        mobile_money_provider: null,
+        mobile_money_number: null,
+        mobile_money_account_name: null,
+        bank_name: data.bankName.trim(),
+        bank_account_number: data.bankAccountNumber.trim(),
+        bank_account_name: data.bankAccountName.trim(),
+        bank_branch: data.bankBranch?.trim() || null,
+      };
+    }
+
+    const { data: updated, error } = await supabaseAdmin
+      .from("creator_profiles")
+      .update({ ...base, ...specific })
+      .eq("id", profile.id)
+      .select("*")
+      .single();
+
+    if (error) throw new Error(error.message);
+
+    await supabaseAdmin.from("platform_audit_logs").insert({
+      actor_id: userId,
+      action: "creator.payout_details_updated",
+      entity_type: "creator_profile",
+      entity_id: profile.id,
+      metadata: { payout_method: data.payoutMethod, country: data.country },
+    });
+
+    return { profile: updated };
+  });
+
+// ─────────────────────────────────────────────
+// 17. Brand & Media Kit: Public Listing
+// ─────────────────────────────────────────────
+
+export const getBrandAssetsServerFn = createServerFn({ method: "GET" }).handler(async () => {
+  const { data: assets, error } = await supabaseAdmin
+    .from("creator_assets")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return { assets: assets ?? [] };
+});
+
+// ─────────────────────────────────────────────
+// 18. Admin: Manage Brand & Media Kit Assets
+// ─────────────────────────────────────────────
+
+const adminAddBrandAssetSchema = z.object({
+  authToken: z.string().optional(),
+  assetType: z.enum([
+    "logo",
+    "screenshot",
+    "social_graphic",
+    "video",
+    "copy_template",
+    "content_idea",
+    "product_description",
+    "campaign_asset",
+  ]),
+  title: z.string().min(1).max(200),
+  description: z.string().max(1000).optional(),
+  url: z.string().url().max(1000),
+  status: z.enum(["active", "archived"]).default("active"),
+});
+
+export const adminAddBrandAssetServerFn = createServerFn({ method: "POST" })
+  .validator((data: z.infer<typeof adminAddBrandAssetSchema>) =>
+    adminAddBrandAssetSchema.parse(data),
+  )
+  .handler(async ({ data }) => {
+    const userId = await getAuthenticatedUserId(data.authToken);
+    if (!userId) throw new Error("Unauthenticated");
+    await requirePlatformAdmin(userId);
+
+    const { data: asset, error } = await supabaseAdmin
+      .from("creator_assets")
+      .insert({
+        asset_type: data.assetType,
+        title: data.title.trim(),
+        description: data.description?.trim() || null,
+        url: data.url.trim(),
+        status: data.status,
+      })
+      .select("*")
+      .single();
+
+    if (error) throw new Error(error.message);
+
+    await supabaseAdmin.from("platform_audit_logs").insert({
+      actor_id: userId,
+      action: "admin.brand_asset_added",
+      entity_type: "creator_asset",
+      entity_id: asset.id,
+      metadata: { title: data.title, asset_type: data.assetType },
+    });
+
+    return { asset };
+  });
+
+const adminDeleteBrandAssetSchema = z.object({
+  authToken: z.string().optional(),
+  assetId: z.string().uuid(),
+});
+
+export const adminDeleteBrandAssetServerFn = createServerFn({ method: "POST" })
+  .validator((data: z.infer<typeof adminDeleteBrandAssetSchema>) =>
+    adminDeleteBrandAssetSchema.parse(data),
+  )
+  .handler(async ({ data }) => {
+    const userId = await getAuthenticatedUserId(data.authToken);
+    if (!userId) throw new Error("Unauthenticated");
+    await requirePlatformAdmin(userId);
+
+    const { error } = await supabaseAdmin
+      .from("creator_assets")
+      .delete()
+      .eq("id", data.assetId);
+
+    if (error) throw new Error(error.message);
+
+    await supabaseAdmin.from("platform_audit_logs").insert({
+      actor_id: userId,
+      action: "admin.brand_asset_deleted",
+      entity_type: "creator_asset",
+      entity_id: data.assetId,
+      metadata: {},
+    });
+
+    return { success: true };
+  });
+
+const adminUpdateBrandAssetSchema = z.object({
+  authToken: z.string().optional(),
+  assetId: z.string().uuid(),
+  assetType: z.enum([
+    "logo",
+    "screenshot",
+    "social_graphic",
+    "video",
+    "copy_template",
+    "content_idea",
+    "product_description",
+    "campaign_asset",
+  ]).optional(),
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().max(1000).optional(),
+  url: z.string().url().max(1000).optional(),
+  status: z.enum(["active", "archived"]).optional(),
+});
+
+export const adminUpdateBrandAssetServerFn = createServerFn({ method: "POST" })
+  .validator((data: z.infer<typeof adminUpdateBrandAssetSchema>) =>
+    adminUpdateBrandAssetSchema.parse(data),
+  )
+  .handler(async ({ data }) => {
+    const userId = await getAuthenticatedUserId(data.authToken);
+    if (!userId) throw new Error("Unauthenticated");
+    await requirePlatformAdmin(userId);
+
+    const updates: {
+      updated_at: string;
+      title?: string;
+      description?: string | null;
+      url?: string;
+      status?: string;
+      asset_type?: string;
+    } = { updated_at: new Date().toISOString() };
+    if (data.title !== undefined) updates.title = data.title.trim();
+    if (data.description !== undefined) updates.description = data.description.trim() || null;
+    if (data.url !== undefined) updates.url = data.url.trim();
+    if (data.status !== undefined) updates.status = data.status;
+    if (data.assetType !== undefined) updates.asset_type = data.assetType;
+
+    const { data: asset, error } = await supabaseAdmin
+      .from("creator_assets")
+      .update(updates)
+      .eq("id", data.assetId)
+      .select("*")
+      .single();
+
+    if (error) throw new Error(error.message);
+    return { asset };
+  });
+
+// ─────────────────────────────────────────────
+// 19. Admin: Get Creator Payout Details
+// ─────────────────────────────────────────────
+
+const adminGetCreatorPayoutDetailsSchema = z.object({
+  authToken: z.string().optional(),
+  creatorId: z.string().uuid(),
+});
+
+export const adminGetCreatorPayoutDetailsServerFn = createServerFn({ method: "POST" })
+  .validator((data: z.infer<typeof adminGetCreatorPayoutDetailsSchema>) =>
+    adminGetCreatorPayoutDetailsSchema.parse(data),
+  )
+  .handler(async ({ data }) => {
+    const userId = await getAuthenticatedUserId(data.authToken);
+    if (!userId) throw new Error("Unauthenticated");
+    await requirePlatformAdmin(userId);
+
+    const { data: profile, error } = await supabaseAdmin
+      .from("creator_profiles")
+      .select(
+        `id, display_name, public_handle, email, payout_method, mobile_money_provider,
+         mobile_money_number, mobile_money_account_name, bank_name, bank_account_number,
+         bank_account_name, bank_branch, country, phone, city, payout_details_updated_at`,
+      )
+      .eq("id", data.creatorId)
+      .single();
+
+    if (error) throw new Error(error.message);
+    return { profile };
+  });
+

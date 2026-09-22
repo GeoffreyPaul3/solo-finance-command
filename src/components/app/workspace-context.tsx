@@ -65,6 +65,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (memberships.isSuccess && rows.length === 0) {
+      if (
+        typeof window !== "undefined" &&
+        (window.location.pathname.startsWith("/app/creator") ||
+          window.location.pathname.startsWith("/creator") ||
+          window.location.pathname.startsWith("/admin"))
+      ) {
+        return;
+      }
       navigate({ to: "/onboarding", replace: true });
     }
   }, [memberships.isSuccess, rows.length, navigate]);

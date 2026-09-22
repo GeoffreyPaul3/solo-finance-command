@@ -5,6 +5,8 @@ import {
   computeCommissionCents,
   computeCreatorFunnel,
   formatBpsAsPercent,
+  formatCurrencyAmount,
+  formatMalawiPhone,
   isApplicationTransitionValid,
   isCommissionTransitionValid,
   isCreatorStatusTransitionValid,
@@ -15,6 +17,7 @@ import {
   STANDARD_COMMISSION_WINDOW_MONTHS,
   validateCampaignCode,
   validateCreatorCode,
+  validateMalawiPhone,
   type CommissionStatus,
   type CreatorCommission,
 } from "./creator";
@@ -429,5 +432,44 @@ describe("aggregateCommissions", () => {
     const result = aggregateCommissions(commissions);
     expect(result[0]!.reversedCents).toBe(500);
     expect(result[0]!.paidCents).toBe(0);
+  });
+});
+
+// ─── Malawi Localization Tests ───────────────────────────────────────────────
+
+describe("validateMalawiPhone", () => {
+  it("accepts valid Airtel and TNM phone formats", () => {
+    expect(validateMalawiPhone("+265991234567")).toBe(true);
+    expect(validateMalawiPhone("265991234567")).toBe(true);
+    expect(validateMalawiPhone("0991234567")).toBe(true);
+    expect(validateMalawiPhone("0881234567")).toBe(true);
+    expect(validateMalawiPhone("+265 88 123 4567")).toBe(true);
+    expect(validateMalawiPhone("0981234567")).toBe(true);
+    expect(validateMalawiPhone("0891234567")).toBe(true);
+  });
+
+  it("rejects invalid phone numbers", () => {
+    expect(validateMalawiPhone("")).toBe(false);
+    expect(validateMalawiPhone("12345")).toBe(false);
+    expect(validateMalawiPhone("0123456789")).toBe(false); // starts with 1
+    expect(validateMalawiPhone("+1234567890")).toBe(false);
+  });
+});
+
+describe("formatMalawiPhone", () => {
+  it("formats 10-digit local number to international format", () => {
+    expect(formatMalawiPhone("0991234567")).toBe("+265 99 123 4567");
+    expect(formatMalawiPhone("0887654321")).toBe("+265 88 765 4321");
+  });
+});
+
+describe("formatCurrencyAmount", () => {
+  it("formats MWK amounts correctly", () => {
+    expect(formatCurrencyAmount(1500000, "MWK")).toBe("MWK 15,000");
+    expect(formatCurrencyAmount(250000, "MWK")).toBe("MWK 2,500");
+  });
+
+  it("formats USD amounts correctly", () => {
+    expect(formatCurrencyAmount(2500, "USD")).toBe("$25.00");
   });
 });

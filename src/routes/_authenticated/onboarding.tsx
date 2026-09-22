@@ -18,6 +18,7 @@ import { useAuth } from "@/lib/auth";
 import { CurrencySelect } from "@/components/ui/currency-select";
 import { MoneyInput } from "@/components/ui/money-input";
 import { parseMoneyInput } from "@/lib/money";
+import { recordCreatorActivationServerFn } from "@/server/creator";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
   head: () => ({
@@ -134,7 +135,16 @@ function OnboardingPage() {
         operatingBuffer: parseFloat(parseMoneyInput(buffer)) || 0,
       });
     },
-    onSuccess: async () => {
+    onSuccess: async (workspaceId: string) => {
+      try {
+        if (user?.id && workspaceId) {
+          await recordCreatorActivationServerFn({
+            data: { userId: user.id, workspaceId },
+          });
+        }
+      } catch {
+        /* non-blocking */
+      }
       await queryClient.invalidateQueries();
       toast.success("Workspace created", { description: `${name.trim()} is ready.` });
       navigate({ to: "/app", replace: true });

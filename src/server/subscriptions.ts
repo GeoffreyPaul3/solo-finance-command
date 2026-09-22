@@ -7,6 +7,7 @@ import { sendEmailSafely } from "@/lib/email/send";
 import { renderSubscriptionEmail } from "@/lib/email/templates";
 import { payChangu } from "@/lib/payments/paychangu";
 import { CANONICAL_PRICES, type PlanTier, type PricingCurrency } from "@/lib/payments/pricing";
+import { triggerCreatorCommissionForPayment } from "@/server/creator";
 
 const createCheckoutSchema = z.object({
   workspaceId: z.string().uuid(),
@@ -171,6 +172,11 @@ export const verifyPaymentServerFn = createServerFn({ method: "POST" })
 
     // Idempotency: If already verified as successful, return existing status
     if (payment.status === "successful") {
+      try {
+        await triggerCreatorCommissionForPayment(payment.id);
+      } catch {
+        /* non-blocking */
+      }
       return {
         status: "successful",
         alreadyVerified: true,
@@ -238,6 +244,48 @@ export const verifyPaymentServerFn = createServerFn({ method: "POST" })
         .from("workspaces")
         .update({ plan: payment.plan_id })
         .eq("id", data.workspaceId);
+
+      // 4. Referral & Creator Commission Attribution Pipeline
+      try {
+        const { data: attr } = await supabaseAdmin
+          .from("referral_attributions")
+          .select("id, creator_id, referrer_workspace_id, status, referral_code, activated_at")
+          .or(`referred_workspace_id.eq.${data.workspaceId},referred_user_id.eq.${userId}`)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (attr) {
+          const nowIso = now.toISOString();
+          await supabaseAdmin
+            .from("referral_attributions")
+            .update({
+              referred_workspace_id: data.workspaceId,
+              status: "converted",
+              converted_at: nowIso,
+              ...(!attr.activated_at ? { activated_at: nowIso } : {}),
+              updated_at: nowIso,
+            })
+            .eq("id", attr.id);
+
+          if (attr.creator_id) {
+            await triggerCreatorCommissionForPayment(payment.id);
+          }
+
+          if (attr.referrer_workspace_id) {
+            await supabaseAdmin.from("distribution_events").insert({
+              workspace_id: attr.referrer_workspace_id,
+              actor_user_id: userId,
+              event_type: "referral_converted",
+              referral_code: attr.referral_code,
+              source: "subscription_payment",
+              metadata: { referredWorkspaceId: data.workspaceId, planId: payment.plan_id },
+            });
+          }
+        }
+      } catch (attrErr) {
+        console.error("[Subscription] Attribution processing error:", attrErr);
+      }
 
       // 4. Send subscription confirmation email (safe, failures don't block success)
       const { data: ws } = await supabaseAdmin
