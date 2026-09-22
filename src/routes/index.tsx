@@ -16,6 +16,7 @@ import {
   Landmark,
   Layers,
   Lock,
+  Megaphone,
   PieChart,
   Receipt,
   Scale,
@@ -1331,6 +1332,82 @@ function LandingPage() {
                 <Link to="/pricing">View full pricing</Link>
               </Button>
             </div>
+          </div>
+        </section>
+
+        {/* ── Creator Program CTA ── */}
+        <section className="relative overflow-hidden bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 border-t border-zinc-800">
+          {/* Subtle grid overlay */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 opacity-[0.03]"
+            style={{
+              backgroundImage:
+                "linear-gradient(to right, #a1a1aa 1px, transparent 1px), linear-gradient(to bottom, #a1a1aa 1px, transparent 1px)",
+              backgroundSize: "32px 32px",
+            }}
+          />
+          {/* Glow accent */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[300px] rounded-full bg-primary/10 blur-3xl"
+          />
+
+          <div className="relative mx-auto max-w-5xl px-5 py-20 text-center">
+            {/* Eyebrow */}
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-semibold tracking-widest text-primary uppercase mb-6">
+              <Megaphone className="size-3.5" />
+              Creator Program
+            </div>
+
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight tracking-tight">
+              Earn while you teach
+              <br />
+              <span className="text-primary">independent finance.</span>
+            </h2>
+
+            <p className="mt-5 max-w-2xl mx-auto text-base sm:text-lg text-zinc-400 leading-relaxed">
+              SoloOS Creators earn a <span className="text-white font-semibold">20% recurring commission</span> on every
+              subscription they refer — for a full 12 months. If you create content for freelancers, consultants,
+              or digital nomads, your audience already needs SoloOS.
+            </p>
+
+            {/* Stats row */}
+            <div className="mt-10 grid grid-cols-3 gap-px max-w-xl mx-auto rounded-xl overflow-hidden border border-zinc-800 bg-zinc-800">
+              <div className="bg-zinc-900 px-4 py-5">
+                <div className="text-2xl font-bold text-white font-mono">20%</div>
+                <div className="text-[11px] text-zinc-500 mt-1">Commission rate</div>
+              </div>
+              <div className="bg-zinc-900 px-4 py-5">
+                <div className="text-2xl font-bold text-white font-mono">12mo</div>
+                <div className="text-[11px] text-zinc-500 mt-1">Recurring window</div>
+              </div>
+              <div className="bg-zinc-900 px-4 py-5">
+                <div className="text-2xl font-bold text-white font-mono">/c/you</div>
+                <div className="text-[11px] text-zinc-500 mt-1">Your vanity URL</div>
+              </div>
+            </div>
+
+            {/* CTA buttons */}
+            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Button
+                asChild
+                size="lg"
+                className="h-12 px-8 text-sm font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all"
+              >
+                <Link to="/app/creator">
+                  Apply to become a Creator
+                  <ArrowRight className="ml-2 size-4" />
+                </Link>
+              </Button>
+              <Button asChild size="lg" variant="ghost" className="h-12 px-6 text-sm text-zinc-400 hover:text-white">
+                <Link to="/app/creator">Learn how it works</Link>
+              </Button>
+            </div>
+
+            <p className="mt-6 text-[11px] text-zinc-600">
+              Applications reviewed within 3 business days · No follower minimum
+            </p>
           </div>
         </section>
       </main>
