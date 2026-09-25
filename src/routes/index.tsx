@@ -299,7 +299,7 @@ function LandingPage() {
             <p className="mt-7 max-w-2xl text-base sm:text-lg lg:text-xl text-muted-foreground leading-relaxed">
               SoloOS gives solo entrepreneurs, consultants, and independent operators real financial
               clarity. Multi-currency accounts, automatic tax reserves, and a Safe-to-Spend balance
-              you can trust — built to be accurate, not approximate.
+              you can trust, built to be accurate, not approximate.
             </p>
 
             <div className="mt-9 flex flex-wrap items-center gap-4">
@@ -1369,7 +1369,7 @@ function LandingPage() {
             <p className="mt-5 max-w-2xl mx-auto text-base sm:text-lg text-zinc-400 leading-relaxed">
               SoloOS Creators earn a{" "}
               <span className="text-white font-semibold">20% recurring commission</span> on every
-              subscription they refer — for a full 12 months. If you create content for freelancers,
+              subscription they refer for a full 12 months. If you create content for freelancers,
               consultants, or digital nomads, your audience already needs SoloOS.
             </p>
 
